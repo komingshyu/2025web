@@ -102,7 +102,7 @@
             100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
         }
         .results-grid img {
-            max-height: 300px;
+            max-height: 600px;
             object-fit: contain;
         }
         #results-area {
@@ -113,7 +113,7 @@
             display: flex;
             flex: 1;
             overflow: hidden;
-            height: calc(100vh - 64px - 56px); /* Account for header (64px) and footer (56px) */
+            height: calc(100vh - 64px - 56px);
         }
         .main-content > div {
             display: flex;
@@ -139,7 +139,6 @@
             flex: 1;
             overflow-y: auto;
         }
-        
     </style>
 </head>
 <body class="light bg-[var(--bg-primary)] text-[var(--text-primary)]">
@@ -164,7 +163,7 @@
                 </button>
                 <button id="settings-btn" class="p-2 rounded-full hover:bg-[var(--bg-tertiary)]">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c.94-1.543-.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                 </button>
@@ -306,7 +305,7 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <!-- Quick Tags -->
                         <div class="mb-3 flex flex-wrap gap-2">
                             <span class="tag px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full cursor-pointer">🏞️ 風景</span>
@@ -325,12 +324,12 @@
                             <span class="tag px-2 py-1 text-xs bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200 rounded-full cursor-pointer">💖 浪漫</span>
                             <span class="tag px-2 py-1 text-xs bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 rounded-full cursor-pointer">⚡️ 動感</span>
                         </div>
-                        
+
                         <!-- Prompt Textarea -->
                         <div class="relative">
                             <textarea id="prompt-editor" rows="3" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" placeholder="描述你想要生成的圖像..."></textarea>
                         </div>
-                        
+
                         <!-- Negative Prompt -->
                         <div class="mt-3">
                             <div class="flex justify-between items-center mb-1">
@@ -354,16 +353,16 @@
                                 </span>
                             </p>
                         </div>
-                        
+
                         <div id="empty-state" class="flex flex-col items-center justify-center h-full text-center">
                             <svg class="w-16 h-16 text-[var(--text-secondary)] opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 00.586-1.414L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
                             <h3 class="mt-4 text-lg font-medium text-[var(--text-primary)]">尚未生成圖像</h3>
                             <p class="mt-2 text-[var(--text-secondary)] max-w-sm">輸入提示詞並點擊「生成圖像」按鈕開始創作</p>
                         </div>
-                        
-                        <div id="results-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                        <div id="results-grid" class="hidden grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                             <!-- Generated images will be inserted here -->
                         </div>
                     </div>
@@ -371,18 +370,18 @@
             </div>
 
             <!-- Right Sidebar - History -->
-            <div class="sidebar-right w-64 border-l border-[var(--border)] bg-[var(--bg-secondary)] overflow-y-auto custom-scrollbar">
+            <div class="sidebar-right w-32 border-l border-[var(--border)] bg-[var(--bg-secondary)] overflow-y-auto custom-scrollbar">
                 <div class="p-4 border-b border-[var(--border)]">
                     <h2 class="text-lg font-medium">歷史創作記錄</h2>
                 </div>
-                
+
                 <div id="history-list" class="p-2 space-y-3">
                     <!-- History items will be inserted here -->
                     <div class="text-center text-sm text-[var(--text-secondary)] py-8">
                         尚無歷史記錄
                     </div>
                 </div>
-                
+
                 <div class="p-3 border-t border-[var(--border)]">
                     <button id="clear-history" class="w-full px-3 py-2 text-sm bg-[var(--bg-tertiary)] hover:bg-red-500 hover:text-white rounded-md transition-colors">
                         清空歷史記錄
@@ -408,7 +407,7 @@
                     </svg>
                 </button>
             </div>
-            
+
             <div class="p-4 space-y-4">
                 <!-- Theme Settings -->
                 <div>
@@ -432,7 +431,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Save/Load Settings -->
                 <div>
                     <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">設定管理</label>
@@ -440,7 +439,7 @@
                         <button id="save-settings" class="flex-1 px-3 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white">
                             <div class="flex items-center justify-center space-x-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
                                 <span>保存設定</span>
                             </div>
@@ -448,21 +447,21 @@
                         <button id="load-settings" class="flex-1 px-3 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white">
                             <div class="flex items-center justify-center space-x-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4 4m0 0l-4-4m4 4V4"></path>
                                 </svg>
                                 <span>載入設定</span>
                             </div>
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Default Negative Prompt -->
                 <div>
                     <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">預設負面提示詞</label>
                     <textarea id="default-negative-prompt" rows="3" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">low quality, blurry, distorted, deformed, extra fingers, extra legs, extra arms, watermark, signature, text</textarea>
                 </div>
             </div>
-            
+
             <div class="p-4 border-t border-[var(--border)] flex justify-end">
                 <button id="apply-settings" class="px-4 py-2 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)]">
                     套用設定
@@ -488,7 +487,9 @@
             </button>
             <button id="copy-link-fullscreen" class="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 flex items-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H8z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 5v14"></path>
                 </svg>
                 <span>複製連結</span>
             </button>
@@ -502,7 +503,7 @@
             const themeToggle = document.getElementById('theme-toggle');
             const moonIcon = document.getElementById('moon-icon');
             const sunIcon = document.getElementById('sun-icon');
-            
+
             function setTheme(theme) {
                 if (theme === 'dark') {
                     body.classList.remove('light');
@@ -518,13 +519,13 @@
                     localStorage.setItem('theme', 'light');
                 }
             }
-            
+
             // Check for saved theme preference
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 setTheme(savedTheme);
             }
-            
+
             themeToggle.addEventListener('click', function() {
                 if (body.classList.contains('light')) {
                     setTheme('dark');
@@ -532,7 +533,7 @@
                     setTheme('light');
                 }
             });
-            
+
             // Settings Modal
             const settingsBtn = document.getElementById('settings-btn');
             const settingsModal = document.getElementById('settings-modal');
@@ -540,39 +541,39 @@
             const applySettings = document.getElementById('apply-settings');
             const lightTheme = document.getElementById('light-theme');
             const darkTheme = document.getElementById('dark-theme');
-            
+
             settingsBtn.addEventListener('click', function() {
                 settingsModal.classList.remove('hidden');
             });
-            
+
             closeSettings.addEventListener('click', function() {
                 settingsModal.classList.add('hidden');
             });
-            
+
             lightTheme.addEventListener('click', function() {
                 setTheme('light');
             });
-            
+
             darkTheme.addEventListener('click', function() {
                 setTheme('dark');
             });
-            
+
             applySettings.addEventListener('click', function() {
                 // Save settings
                 const defaultNegativePrompt = document.getElementById('default-negative-prompt').value;
                 localStorage.setItem('defaultNegativePrompt', defaultNegativePrompt);
-                
+
                 // Close modal
                 settingsModal.classList.add('hidden');
-                
+
                 // Show notification
                 showNotification('設定已套用');
             });
-            
+
             // Save and Load Settings
             const saveSettings = document.getElementById('save-settings');
             const loadSettings = document.getElementById('load-settings');
-            
+
             saveSettings.addEventListener('click', function() {
                 const settings = {
                     theme: body.classList.contains('dark') ? 'dark' : 'light',
@@ -580,105 +581,105 @@
                     aiPlatform: document.getElementById('ai-platform').value,
                     stylePreset: document.getElementById('style-preset').value
                 };
-                
+
                 localStorage.setItem('aiGeneratorSettings', JSON.stringify(settings));
                 showNotification('設定已保存');
             });
-            
+
             loadSettings.addEventListener('click', function() {
                 const savedSettings = localStorage.getItem('aiGeneratorSettings');
                 if (savedSettings) {
                     const settings = JSON.parse(savedSettings);
-                    
+
                     // Apply settings
                     setTheme(settings.theme);
                     document.getElementById('default-negative-prompt').value = settings.defaultNegativePrompt || '';
                     document.getElementById('ai-platform').value = settings.aiPlatform || 'pollinations';
                     document.getElementById('style-preset').value = settings.stylePreset || '';
-                    
+
                     showNotification('設定已載入');
                 } else {
                     showNotification('沒有找到保存的設定', 'error');
                 }
             });
-            
+
             // Batch Generation
             const batchBtns = document.querySelectorAll('.batch-btn');
             let currentBatchCount = 1;
-            
+
             batchBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const count = parseInt(this.getAttribute('data-count'));
                     currentBatchCount = count;
-                    
-                    // Update UI
-        batchBtns.forEach(b => {
-            b.classList.remove('bg-[var(--accent)]', 'text-yellow-300');
-            b.classList.add('text-[var(--text-primary)]', 'bg-[var(--bg-tertiary)]');
-        });
 
-        this.classList.remove('bg-[var(--bg-tertiary)]', 'text-[var(--text-primary)]');
-        this.classList.add('bg-[var(--accent)]', 'text-yellow-300');
+                    // Update UI
+                    batchBtns.forEach(b => {
+                        b.classList.remove('bg-[var(--accent)]', 'text-yellow-300');
+                        b.classList.add('text-[var(--text-primary)]', 'bg-[var(--bg-tertiary)]');
+                    });
+
+                    this.classList.remove('bg-[var(--bg-tertiary)]', 'text-[var(--text-primary)]');
+                    this.classList.add('bg-[var(--accent)]', 'text-yellow-300');
                 });
             });
-            
+
             // Set default batch button
             batchBtns[0].click();
-            
+
             // Random Seed
             const seedInput = document.getElementById('seed');
             const randomSeedBtn = document.getElementById('random-seed');
-            
+
             randomSeedBtn.addEventListener('click', function() {
                 seedInput.value = Math.floor(Math.random() * 1000000);
             });
-            
+
             // Double-click to randomize seed
             seedInput.addEventListener('dblclick', function() {
                 seedInput.value = Math.floor(Math.random() * 1000000);
             });
-            
+
             // Quick Tags
-const tags = document.querySelectorAll('.tag');
-const promptEditor = document.getElementById('prompt-editor');
+            const tags = document.querySelectorAll('.tag');
+            const promptEditor = document.getElementById('prompt-editor');
 
-// Mapping Chinese tags to English prompts
-const tagMappings = {
-    "🏞️ 風景": "landscape",
-    "👤 人物": "person",
-    "🌆 城市": "city",
-    "🎨 水彩風": "watercolor style",
-    "📷 攝影風": "photographic style",
-    "✨ 高品質": "high quality",
-    "🌞 陽光": "sunlight",
-    "🌙 夜景": "night scene",
-    "🌌 星空": "starry sky",
-    "🔥 火焰": "flame",
-    "🌊 海洋": "ocean",
-    "🌿 森林": "forest",
-    "🍂 秋季": "autumn",
-    "💖 浪漫": "romantic",
-    "⚡️ 動感": "dynamic"
-};
+            // Mapping Chinese tags to English prompts
+            const tagMappings = {
+                "🏞️ 風景": "landscape",
+                "👤 人物": "person",
+                "🌆 城市": "city",
+                "🎨 水彩風": "watercolor style",
+                "📷 攝影風": "photographic style",
+                "✨ 高品質": "high quality",
+                "🌞 陽光": "sunlight",
+                "🌙 夜景": "night scene",
+                "🌌 星空": "starry sky",
+                "🔥 火焰": "flame",
+                "🌊 海洋": "ocean",
+                "🌿 森林": "forest",
+                "🍂 秋季": "autumn",
+                "💖 浪漫": "romantic",
+                "⚡️ 動感": "dynamic"
+            };
 
-tags.forEach(tag => {
-    tag.addEventListener('click', function() {
-        const tagText = this.textContent.trim();
-        const englishPrompt = tagMappings[tagText] || tagText;
-        const currentPrompt = promptEditor.value;
+            tags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const tagText = this.textContent.trim();
+                    const englishPrompt = tagMappings[tagText] || tagText;
+                    const currentPrompt = promptEditor.value;
 
-        if (currentPrompt) {
-            promptEditor.value = currentPrompt + ", " + englishPrompt;
-        } else {
-            promptEditor.value = englishPrompt;
-        }
-    });
-});
-            
+                    if (currentPrompt) {
+                        promptEditor.value = currentPrompt + ", " + englishPrompt;
+                    } else {
+                        promptEditor.value = englishPrompt;
+                    }
+                });
+            });
+
             // Default Negative Prompt
             const defaultNegativeBtn = document.getElementById('default-negative');
             const negativePrompt = document.getElementById('negative-prompt');
-            
+
             defaultNegativeBtn.addEventListener('click', function() {
                 const savedDefaultNegative = localStorage.getItem('defaultNegativePrompt');
                 if (savedDefaultNegative) {
@@ -687,14 +688,14 @@ tags.forEach(tag => {
                     negativePrompt.value = "low quality, blurry, distorted, deformed, extra fingers, extra legs, extra arms, watermark, signature, text";
                 }
             });
-            
+
             // Format Prompt
             const formatPromptBtn = document.getElementById('format-prompt');
-            
+
             formatPromptBtn.addEventListener('click', function() {
                 const currentPrompt = promptEditor.value;
                 if (!currentPrompt) return;
-                
+
                 // Simple formatting: trim, remove duplicate commas, normalize spacing
                 let formattedPrompt = currentPrompt
                     .trim()
@@ -704,58 +705,55 @@ tags.forEach(tag => {
                     .map(item => item.trim())
                     .filter(item => item)
                     .join(', ');
-                
+
                 promptEditor.value = formattedPrompt;
                 showNotification('提示詞已格式化');
             });
-            
+
             // Save Template
             const saveTemplateBtn = document.getElementById('save-template');
-            
+
             saveTemplateBtn.addEventListener('click', function() {
                 const currentPrompt = promptEditor.value;
                 if (!currentPrompt) {
                     showNotification('請先輸入提示詞', 'error');
                     return;
                 }
-                
+
                 const templates = JSON.parse(localStorage.getItem('promptTemplates') || '[]');
                 templates.push(currentPrompt);
                 localStorage.setItem('promptTemplates', JSON.stringify(templates));
-                
+
                 showNotification('模板已保存');
             });
-            
+
             // Random Prompt
             const randomPromptBtn = document.getElementById('random-prompt');
             const subjectIdeas = ['Cat', 'Dog', 'Mountain', 'Beach', 'City', 'Forest', 'Flower', 'Space', 'Robot', 'Castle', 'Dragon', 'Elf', 'Spaceship', 'Ancient Civilization', 'Waterfall', 'Snowy Mountain', 'Desert', 'Steam Train', 'Lighthouse', 'Magical Forest'];
-                const styleIdeas = ['Watercolor Style', 'Oil Painting Style', 'Photographic Style', 'Pixel Art', '3D Render', 'Illustration Style', 'Sketch Style', 'Neon Style', 'Cyberpunk', 'Retro Pop', 'Steampunk', 'Minimalist', 'Surrealism', 'Gothic Style', 'Ukiyo-e', 'Baroque Style', 'Impressionism', 'Futurism', 'Cartoon Comic', 'Realistic Lighting'];
-                const qualityIdeas = ['High Quality', '4K Resolution', 'Detailed', 'Fine Art', 'Professional Photography', 'Perfect Lighting', 'Cinematic Quality', 'Ultra High Resolution', 'Vivid Colors', 'Soft Lighting', 'Dynamic Composition', 'Immersive Experience', 'Intricate Textures', 'Atmospheric Render', 'Realistic Details', 'Dreamy Effect', 'High Contrast', 'Natural Lighting', 'Artistic Mood', 'Exquisite Presentation'];
-               
-            
-            
-            
+            const styleIdeas = ['Watercolor Style', 'Oil Painting Style', 'Photographic Style', 'Pixel Art', '3D Render', 'Illustration Style', 'Sketch Style', 'Neon Style', 'Cyberpunk', 'Retro Pop', 'Steampunk', 'Minimalist', 'Surrealism', 'Gothic Style', 'Ukiyo-e', 'Baroque Style', 'Impressionism', 'Futurism', 'Cartoon Comic', 'Realistic Lighting'];
+            const qualityIdeas = ['High Quality', '4K Resolution', 'Detailed', 'Fine Art', 'Professional Photography', 'Perfect Lighting', 'Cinematic Quality', 'Ultra High Resolution', 'Vivid Colors', 'Soft Lighting', 'Dynamic Composition', 'Immersive Experience', 'Intricate Textures', 'Atmospheric Render', 'Realistic Details', 'Dreamy Effect', 'High Contrast', 'Natural Lighting', 'Artistic Mood', 'Exquisite Presentation'];
+
             randomPromptBtn.addEventListener('click', function() {
                 const subject = subjectIdeas[Math.floor(Math.random() * subjectIdeas.length)];
                 const style = styleIdeas[Math.floor(Math.random() * styleIdeas.length)];
                 const quality = qualityIdeas[Math.floor(Math.random() * qualityIdeas.length)];
-                
+
                 promptEditor.value = `${subject}, ${style}, ${quality}`;
             });
-            
+
             // Random All
             const randomAllBtn = document.getElementById('random-all');
-            
+
             randomAllBtn.addEventListener('click', function() {
                 // Random prompt
                 const subject = subjectIdeas[Math.floor(Math.random() * subjectIdeas.length)];
                 const style = styleIdeas[Math.floor(Math.random() * styleIdeas.length)];
                 const quality = qualityIdeas[Math.floor(Math.random() * qualityIdeas.length)];
                 promptEditor.value = `${subject}, ${style}, ${quality}`;
-                
+
                 // Random seed
                 seedInput.value = Math.floor(Math.random() * 1000000);
-                
+
                 // Random style preset
                 const stylePreset = document.getElementById('style-preset');
                 const options = Array.from(stylePreset.options).filter(option => option.value);
@@ -763,66 +761,66 @@ tags.forEach(tag => {
                     const randomOption = options[Math.floor(Math.random() * options.length)];
                     stylePreset.value = randomOption.value;
                 }
-                
+
                 showNotification('已隨機化所有參數');
             });
-            
+
             // Generate Button
             const generateBtn = document.getElementById('generate-btn');
             const loadingIndicator = document.getElementById('loading-indicator');
             const emptyState = document.getElementById('empty-state');
             const resultsGrid = document.getElementById('results-grid');
-            
+
             generateBtn.addEventListener('click', function() {
                 const prompt = promptEditor.value;
                 if (!prompt) {
                     showNotification('請輸入提示詞', 'error');
                     return;
                 }
-                
+
                 // Show loading
                 emptyState.classList.add('hidden');
                 resultsGrid.classList.add('hidden');
                 loadingIndicator.classList.remove('hidden');
-                
+
                 // Generate images
                 generateImages(prompt);
             });
-            
+
             async function generateImages(prompt) {
                 // Get parameters
                 const platform = document.getElementById('ai-platform').value;
                 const stylePreset = document.getElementById('style-preset').value;
                 const negativePromptText = document.getElementById('negative-prompt').value;
-                
+
                 // Build the full prompt
                 let fullPrompt = prompt;
                 if (stylePreset) {
                     fullPrompt += `, ${stylePreset}`;
                 }
                 fullPrompt += ", high quality, detailed";
-                
+
                 // Encode the prompt for URL
                 const encodedPrompt = encodeURIComponent(fullPrompt);
-                
+
                 // Clear previous results
                 resultsGrid.innerHTML = '';
-                
+
                 // Generate the requested number of images
                 const promises = [];
                 for (let i = 0; i < currentBatchCount; i++) {
                     // Add delay to prevent API rate limiting
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    
+
                     // Add a random parameter and seed to ensure distinct images
                     const randomParam = Math.floor(Math.random() * 1000000);
                     const seed = document.getElementById('seed').value === '-1' ? randomParam : document.getElementById('seed').value;
                     const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&random=${randomParam}&width=1024&height=1024&nologo=true`;
-                    
+
                     // Create image card
                     const imageCard = createImageCard(fullPrompt, imageUrl, i);
                     resultsGrid.appendChild(imageCard);
-                    
+
                     // Add to promises array to track loading
                     const img = imageCard.querySelector('img');
                     const promise = new Promise((resolve) => {
@@ -834,30 +832,30 @@ tags.forEach(tag => {
                     });
                     promises.push(promise);
                 }
-                
+
                 // Wait for all images to load
                 const results = await Promise.all(promises);
-                
+
                 // Hide loading indicator
                 loadingIndicator.classList.add('hidden');
-                
+
                 // Show results
                 resultsGrid.classList.remove('hidden');
-                
+
                 // Add to history
-                addToHistory(prompt);
-                
+                addToHistory(prompt, results.map(result => result.url));
+
                 // Show notification
                 const successCount = results.filter(r => r.success).length;
                 showNotification(`已生成 ${successCount} 張圖像${successCount < currentBatchCount ? ` (${currentBatchCount - successCount} 張失敗)` : ''}`);
             }
-            
+
             function createImageCard(prompt, imageUrl, index) {
                 const imageId = `image-${Date.now()}-${index}`;
-                
+
                 const card = document.createElement('div');
                 card.className = 'bg-[var(--bg-secondary)] rounded-lg overflow-hidden border border-[var(--border)] slide-in';
-                
+
                 card.innerHTML = `
                     <div class="relative">
                         <img id="${imageId}" class="w-full h-auto image-preview cursor-pointer" src="${imageUrl}" alt="生成的圖像">
@@ -869,7 +867,9 @@ tags.forEach(tag => {
                             </button>
                             <button class="copy-link-btn p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600" data-image="${imageId}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H8z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 5v14"></path>
                                 </svg>
                             </button>
                         </div>
@@ -882,14 +882,14 @@ tags.forEach(tag => {
                         </div>
                     </div>
                 `;
-                
+
                 // Add event listeners
                 setTimeout(() => {
                     const img = document.getElementById(imageId);
                     img.addEventListener('click', function() {
                         openFullscreen(this.src);
                     });
-                    
+
                     const downloadBtn = card.querySelector('.download-btn');
                     downloadBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
@@ -897,7 +897,7 @@ tags.forEach(tag => {
                         const img = document.getElementById(imgId);
                         downloadImage(img.src);
                     });
-                    
+
                     const copyLinkBtn = card.querySelector('.copy-link-btn');
                     copyLinkBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
@@ -906,10 +906,10 @@ tags.forEach(tag => {
                         copyToClipboard(img.src);
                     });
                 }, 0);
-                
+
                 return card;
             }
-            
+
             function createErrorSVG() {
                 // Create a simple SVG for error display
                 const svg = `
@@ -920,46 +920,49 @@ tags.forEach(tag => {
                         </text>
                     </svg>
                 `;
-                
+
                 return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
             }
-            
+
             // History Management
             const historyList = document.getElementById('history-list');
             const clearHistoryBtn = document.getElementById('clear-history');
-            
-            function addToHistory(prompt) {
+
+            function addToHistory(prompt, urls) {
                 // Get history from localStorage
                 const history = JSON.parse(localStorage.getItem('imageHistory') || '[]');
-                
+
                 // Add new item
-                const historyItem = {
-                    id: Date.now(),
-                    prompt: prompt,
-                    timestamp: new Date().toISOString(),
-                    width: 1024,
-                    height: 1024,
-                    seed: document.getElementById('seed').value,
-                    platform: document.getElementById('ai-platform').value
-                };
-                
-                history.unshift(historyItem);
-                
+                urls.forEach(url => {
+                    const historyItem = {
+                        id: Date.now(),
+                        prompt: prompt,
+                        url: url,
+                        timestamp: new Date().toISOString(),
+                        width: 1024,
+                        height: 1024,
+                        seed: document.getElementById('seed').value,
+                        platform: document.getElementById('ai-platform').value
+                    };
+
+                    history.unshift(historyItem);
+                });
+
                 // Limit history to 50 items
                 if (history.length > 50) {
-                    history.pop();
+                    history.splice(50);
                 }
-                
+
                 // Save to localStorage
                 localStorage.setItem('imageHistory', JSON.stringify(history));
-                
+
                 // Update UI
                 updateHistoryUI();
             }
-            
+
             function updateHistoryUI() {
                 const history = JSON.parse(localStorage.getItem('imageHistory') || '[]');
-                
+
                 if (history.length === 0) {
                     historyList.innerHTML = `
                         <div class="text-center text-sm text-[var(--text-secondary)] py-8">
@@ -968,36 +971,35 @@ tags.forEach(tag => {
                     `;
                     return;
                 }
-                
+
                 historyList.innerHTML = '';
-                
+
                 history.forEach(item => {
                     const date = new Date(item.timestamp);
                     const formattedDate = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-                    
+
                     const historyItem = document.createElement('div');
                     historyItem.className = 'p-2 bg-[var(--bg-tertiary)] rounded-md cursor-pointer hover:bg-[var(--bg-primary)]';
                     historyItem.innerHTML = `
-                        <div class="text-xs font-medium truncate">${item.prompt}</div>
+                        <img src="${item.url}" class="w-full h-12 object-cover rounded-md" alt="歷史圖像">
                         <div class="mt-1 flex justify-between items-center">
-                            <div class="text-xs text-[var(--text-secondary)]">1024x1024</div>
                             <div class="text-xs text-[var(--text-secondary)]">${formattedDate}</div>
                         </div>
                     `;
-                    
+
                     historyItem.addEventListener('click', function() {
                         // Reuse settings
                         promptEditor.value = item.prompt;
                         document.getElementById('seed').value = item.seed;
                         document.getElementById('ai-platform').value = item.platform;
-                        
+
                         showNotification('已載入歷史設定');
                     });
-                    
+
                     historyList.appendChild(historyItem);
                 });
             }
-            
+
             clearHistoryBtn.addEventListener('click', function() {
                 if (confirm('確定要清空所有歷史記錄嗎？')) {
                     localStorage.removeItem('imageHistory');
@@ -1005,43 +1007,43 @@ tags.forEach(tag => {
                     showNotification('歷史記錄已清空');
                 }
             });
-            
+
             // Initialize history
             updateHistoryUI();
-            
+
             // Fullscreen Image Modal
             const fullscreenModal = document.getElementById('fullscreen-modal');
             const fullscreenImage = document.getElementById('fullscreen-image');
             const closeFullscreen = document.getElementById('close-fullscreen');
             const downloadFullscreen = document.getElementById('download-fullscreen');
             const copyLinkFullscreen = document.getElementById('copy-link-fullscreen');
-            
+
             function openFullscreen(src) {
                 fullscreenImage.src = src;
                 fullscreenModal.classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
             }
-            
+
             closeFullscreen.addEventListener('click', function() {
                 fullscreenModal.classList.add('hidden');
                 document.body.style.overflow = '';
             });
-            
+
             downloadFullscreen.addEventListener('click', function() {
                 downloadImage(fullscreenImage.src);
             });
-            
+
             copyLinkFullscreen.addEventListener('click', function() {
                 copyToClipboard(fullscreenImage.src);
             });
-            
+
             // Utility Functions
-            
+
             function downloadImage(src) {
                 window.open(src, '_blank');
                 showNotification('圖像已在新視窗開啟，請右鍵儲存');
             }
-            
+
             function copyToClipboard(text) {
                 navigator.clipboard.writeText(text).then(() => {
                     showNotification('連結已複製到剪貼簿');
@@ -1050,24 +1052,24 @@ tags.forEach(tag => {
                     showNotification('複製失敗', 'error');
                 });
             }
-            
+
             function showNotification(message, type = 'success', duration = 3000) {
                 const notification = document.createElement('div');
                 notification.className = `fixed bottom-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md text-white z-50 ${type === 'success' ? 'bg-[var(--accent)]' : 'bg-red-500'}`;
                 notification.textContent = message;
-                
+
                 document.body.appendChild(notification);
-                
+
                 setTimeout(() => {
                     notification.style.opacity = '0';
                     notification.style.transition = 'opacity 0.5s';
-                    
+
                     setTimeout(() => {
                         document.body.removeChild(notification);
                     }, 500);
                 }, duration);
             }
-            
+
             // Keyboard Shortcuts
             document.addEventListener('keydown', function(e) {
                 // Ctrl+Enter to generate
