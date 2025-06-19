@@ -83,23 +83,39 @@
             animation-delay: 0.4s;
         }
         @keyframes loadingDots {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
         }
         .slide-in {
             animation: slideIn 0.3s forwards;
         }
         @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
         .pulse {
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+            }
         }
         .results-grid img {
             max-height: 600px;
@@ -163,13 +179,12 @@
                 </button>
                 <button id="settings-btn" class="p-2 rounded-full hover:bg-[var(--bg-tertiary)]">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c.94-1.543-.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 001.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c.94-1.543-.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                 </button>
             </div>
         </header>
-
         <!-- Main Content -->
         <div class="main-content">
             <!-- Left Sidebar - Controls -->
@@ -184,7 +199,6 @@
                             <option value="pollinations/prompt">⚡ Pollinations 增強</option>
                         </select>
                     </div>
-
                     <!-- Batch Generation -->
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-[var(--text-secondary)]">批量生成數量</label>
@@ -194,7 +208,6 @@
                             <button class="batch-btn px-4 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white" data-count="4">4 張</button>
                         </div>
                     </div>
-
                     <!-- Seed Control -->
                     <div class="space-y-2">
                         <div class="flex justify-between items-center">
@@ -210,7 +223,6 @@
                             </button>
                         </div>
                     </div>
-
                     <!-- Style Presets -->
                     <div class="space-y-2">
                         <label class="block text-sm font-medium text-[var(--text-secondary)]">風格預設</label>
@@ -257,7 +269,6 @@
                             </optgroup>
                         </select>
                     </div>
-
                     <!-- Random Generator -->
                     <div class="pt-2">
                         <button id="random-all" class="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md hover:from-purple-600 hover:to-indigo-700 transition-all flex items-center justify-center space-x-2">
@@ -268,7 +279,6 @@
                         </button>
                     </div>
                 </div>
-
                 <!-- Generate Button -->
                 <div class="mt-auto pt-4">
                     <button id="generate-btn" class="w-full px-4 py-3 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)] transition-all font-medium flex items-center justify-center space-x-2">
@@ -279,7 +289,6 @@
                     </button>
                 </div>
             </div>
-
             <!-- Middle Section - Prompt Editor and Results -->
             <div class="middle-section">
                 <div>
@@ -305,7 +314,6 @@
                                 </button>
                             </div>
                         </div>
-
                         <!-- Quick Tags -->
                         <div class="mb-3 flex flex-wrap gap-2">
                             <span class="tag px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full cursor-pointer">🏞️ 風景</span>
@@ -324,12 +332,10 @@
                             <span class="tag px-2 py-1 text-xs bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200 rounded-full cursor-pointer">💖 浪漫</span>
                             <span class="tag px-2 py-1 text-xs bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 rounded-full cursor-pointer">⚡️ 動感</span>
                         </div>
-
                         <!-- Prompt Textarea -->
                         <div class="relative">
                             <textarea id="prompt-editor" rows="3" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" placeholder="描述你想要生成的圖像..."></textarea>
                         </div>
-
                         <!-- Negative Prompt -->
                         <div class="mt-3">
                             <div class="flex justify-between items-center mb-1">
@@ -339,7 +345,6 @@
                             <textarea id="negative-prompt" rows="2" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" placeholder="排除不想要的元素..."></textarea>
                         </div>
                     </div>
-
                     <!-- Results Area -->
                     <div class="results-area p-4 custom-scrollbar" id="results-area">
                         <div id="loading-indicator" class="hidden flex flex-col items-center justify-center h-full">
@@ -353,7 +358,6 @@
                                 </span>
                             </p>
                         </div>
-
                         <div id="empty-state" class="flex flex-col items-center justify-center h-full text-center">
                             <svg class="w-16 h-16 text-[var(--text-secondary)] opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 00.586-1.414L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -361,27 +365,23 @@
                             <h3 class="mt-4 text-lg font-medium text-[var(--text-primary)]">尚未生成圖像</h3>
                             <p class="mt-2 text-[var(--text-secondary)] max-w-sm">輸入提示詞並點擊「生成圖像」按鈕開始創作</p>
                         </div>
-
                         <div id="results-grid" class="hidden grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                             <!-- Generated images will be inserted here -->
                         </div>
                     </div>
                 </div>
             </div>
-
             <!-- Right Sidebar - History -->
             <div class="sidebar-right w-32 border-l border-[var(--border)] bg-[var(--bg-secondary)] overflow-y-auto custom-scrollbar">
                 <div class="p-4 border-b border-[var(--border)]">
                     <h2 class="text-lg font-medium">歷史創作記錄</h2>
                 </div>
-
                 <div id="history-list" class="p-2 space-y-3">
                     <!-- History items will be inserted here -->
                     <div class="text-center text-sm text-[var(--text-secondary)] py-8">
                         尚無歷史記錄
                     </div>
                 </div>
-
                 <div class="p-3 border-t border-[var(--border)]">
                     <button id="clear-history" class="w-full px-3 py-2 text-sm bg-[var(--bg-tertiary)] hover:bg-red-500 hover:text-white rounded-md transition-colors">
                         清空歷史記錄
@@ -389,13 +389,11 @@
                 </div>
             </div>
         </div>
-
         <!-- Footer -->
         <footer class="bg-[var(--bg-secondary)] border-t border-[var(--border)] py-4 px-6 text-center text-sm text-[var(--text-secondary)]">
             網頁設計者: koming
         </footer>
     </div>
-
     <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-[var(--bg-primary)] rounded-lg shadow-xl w-full max-w-md mx-4 theme-transition slide-in">
@@ -407,7 +405,6 @@
                     </svg>
                 </button>
             </div>
-
             <div class="p-4 space-y-4">
                 <!-- Theme Settings -->
                 <div>
@@ -431,7 +428,6 @@
                         </button>
                     </div>
                 </div>
-
                 <!-- Save/Load Settings -->
                 <div>
                     <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">設定管理</label>
@@ -454,14 +450,12 @@
                         </button>
                     </div>
                 </div>
-
                 <!-- Default Negative Prompt -->
                 <div>
                     <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">預設負面提示詞</label>
                     <textarea id="default-negative-prompt" rows="3" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">low quality, blurry, distorted, deformed, extra fingers, extra legs, extra arms, watermark, signature, text</textarea>
                 </div>
             </div>
-
             <div class="p-4 border-t border-[var(--border)] flex justify-end">
                 <button id="apply-settings" class="px-4 py-2 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)]">
                     套用設定
@@ -469,7 +463,6 @@
             </div>
         </div>
     </div>
-
     <!-- Fullscreen Image Modal -->
     <div id="fullscreen-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex items-center justify-center">
         <button id="close-fullscreen" class="absolute top-4 right-4 text-white hover:text-gray-300">
@@ -495,7 +488,6 @@
             </button>
         </div>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Theme Toggle
@@ -581,7 +573,6 @@
                     aiPlatform: document.getElementById('ai-platform').value,
                     stylePreset: document.getElementById('style-preset').value
                 };
-
                 localStorage.setItem('aiGeneratorSettings', JSON.stringify(settings));
                 showNotification('設定已保存');
             });
@@ -617,7 +608,6 @@
                         b.classList.remove('bg-[var(--accent)]', 'text-yellow-300');
                         b.classList.add('text-[var(--text-primary)]', 'bg-[var(--bg-tertiary)]');
                     });
-
                     this.classList.remove('bg-[var(--bg-tertiary)]', 'text-[var(--text-primary)]');
                     this.classList.add('bg-[var(--accent)]', 'text-yellow-300');
                 });
@@ -723,7 +713,6 @@
                 const templates = JSON.parse(localStorage.getItem('promptTemplates') || '[]');
                 templates.push(currentPrompt);
                 localStorage.setItem('promptTemplates', JSON.stringify(templates));
-
                 showNotification('模板已保存');
             });
 
@@ -749,6 +738,7 @@
                 const subject = subjectIdeas[Math.floor(Math.random() * subjectIdeas.length)];
                 const style = styleIdeas[Math.floor(Math.random() * styleIdeas.length)];
                 const quality = qualityIdeas[Math.floor(Math.random() * qualityIdeas.length)];
+
                 promptEditor.value = `${subject}, ${style}, ${quality}`;
 
                 // Random seed
@@ -852,10 +842,8 @@
 
             function createImageCard(prompt, imageUrl, index) {
                 const imageId = `image-${Date.now()}-${index}`;
-
                 const card = document.createElement('div');
                 card.className = 'bg-[var(--bg-secondary)] rounded-lg overflow-hidden border border-[var(--border)] slide-in';
-
                 card.innerHTML = `
                     <div class="relative">
                         <img id="${imageId}" class="w-full h-auto image-preview cursor-pointer" src="${imageUrl}" alt="生成的圖像">
@@ -920,7 +908,6 @@
                         </text>
                     </svg>
                 `;
-
                 return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
             }
 
@@ -944,7 +931,6 @@
                         seed: document.getElementById('seed').value,
                         platform: document.getElementById('ai-platform').value
                     };
-
                     history.unshift(historyItem);
                 });
 
@@ -962,7 +948,6 @@
 
             function updateHistoryUI() {
                 const history = JSON.parse(localStorage.getItem('imageHistory') || '[]');
-
                 if (history.length === 0) {
                     historyList.innerHTML = `
                         <div class="text-center text-sm text-[var(--text-secondary)] py-8">
@@ -973,32 +958,63 @@
                 }
 
                 historyList.innerHTML = '';
-
                 history.forEach(item => {
                     const date = new Date(item.timestamp);
                     const formattedDate = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
 
                     const historyItem = document.createElement('div');
-                    historyItem.className = 'p-2 bg-[var(--bg-tertiary)] rounded-md cursor-pointer hover:bg-[var(--bg-primary)]';
+                    historyItem.className = 'p-2 bg-[var(--bg-tertiary)] rounded-md hover:bg-[var(--bg-primary)]';
                     historyItem.innerHTML = `
                         <img src="${item.url}" class="w-full h-12 object-cover rounded-md" alt="歷史圖像">
                         <div class="mt-1 flex justify-between items-center">
                             <div class="text-xs text-[var(--text-secondary)]">${formattedDate}</div>
+                            <button class="delete-history-btn text-xs text-red-500 hover:text-red-700" data-id="${item.id}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
                         </div>
                     `;
 
-                    historyItem.addEventListener('click', function() {
-                        // Reuse settings
-                        promptEditor.value = item.prompt;
-                        document.getElementById('seed').value = item.seed;
-                        document.getElementById('ai-platform').value = item.platform;
-
-                        showNotification('已載入歷史設定');
+                    historyItem.addEventListener('click', function(e) {
+                        // Avoid triggering the history item click event when clicking the delete button
+                        if (!e.target.closest('.delete-history-btn')) {
+                            promptEditor.value = item.prompt;
+                            document.getElementById('seed').value = item.seed;
+                            document.getElementById('ai-platform').value = item.platform;
+                            showNotification('已載入歷史設定');
+                        }
                     });
 
                     historyList.appendChild(historyItem);
                 });
             }
+
+            // Add event listener for delete buttons
+            historyList.addEventListener('click', function(e) {
+                if (e.target.closest('.delete-history-btn')) {
+                    const deleteBtn = e.target.closest('.delete-history-btn');
+                    const itemId = deleteBtn.getAttribute('data-id');
+
+                    // Confirm deletion
+                    if (confirm('確定要刪除這個歷史記錄嗎？')) {
+                        // Get history from localStorage
+                        const history = JSON.parse(localStorage.getItem('imageHistory') || '[]');
+
+                        // Filter out the item to be deleted
+                        const updatedHistory = history.filter(item => item.id != itemId);
+
+                        // Save the updated history back to localStorage
+                        localStorage.setItem('imageHistory', JSON.stringify(updatedHistory));
+
+                        // Update UI
+                        updateHistoryUI();
+
+                        // Show notification
+                        showNotification('歷史記錄已刪除');
+                    }
+                }
+            });
 
             clearHistoryBtn.addEventListener('click', function() {
                 if (confirm('確定要清空所有歷史記錄嗎？')) {
@@ -1038,7 +1054,6 @@
             });
 
             // Utility Functions
-
             function downloadImage(src) {
                 window.open(src, '_blank');
                 showNotification('圖像已在新視窗開啟，請右鍵儲存');
@@ -1057,13 +1072,11 @@
                 const notification = document.createElement('div');
                 notification.className = `fixed bottom-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md text-white z-50 ${type === 'success' ? 'bg-[var(--accent)]' : 'bg-red-500'}`;
                 notification.textContent = message;
-
                 document.body.appendChild(notification);
 
                 setTimeout(() => {
                     notification.style.opacity = '0';
                     notification.style.transition = 'opacity 0.5s';
-
                     setTimeout(() => {
                         document.body.removeChild(notification);
                     }, 500);
