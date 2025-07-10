@@ -1,0 +1,148 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活動報名表單</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            background-color: #f0f9ff;
+        }
+        .form-container {
+            background: linear-gradient(135deg, #ffffff, #f0f9ff);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .header-bg {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-blue-50">
+    <div class="form-container w-full max-w-lg rounded-xl overflow-hidden">
+        <div class="header-bg p-6 text-center">
+            <h1 class="text-2xl font-bold text-white">活動報名表單</h1>
+            <p class="text-blue-100 mt-2">請填寫以下資訊完成報名</p>
+        </div>
+        
+        <form id="registrationForm" class="p-6 space-y-6">
+            <div class="space-y-2">
+                <label for="name" class="block text-sm font-medium text-gray-700">姓名 <span class="text-red-500">*</span></label>
+                <input type="text" id="name" name="name" required class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none transition duration-200">
+            </div>
+            
+            <div class="space-y-2">
+                <label for="email" class="block text-sm font-medium text-gray-700">電子郵件 <span class="text-red-500">*</span></label>
+                <input type="email" id="email" name="email" required class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none transition duration-200">
+            </div>
+            
+            <div class="space-y-2">
+                <label for="phone" class="block text-sm font-medium text-gray-700">電話號碼 <span class="text-red-500">*</span></label>
+                <input type="tel" id="phone" name="phone" required class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none transition duration-200">
+            </div>
+            
+            <div class="space-y-2">
+                <label for="event" class="block text-sm font-medium text-gray-700">選擇活動 <span class="text-red-500">*</span></label>
+                <select id="event" name="event" required class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none transition duration-200 bg-white">
+                    <option value="" disabled selected>請選擇活動</option>
+                    <option value="workshop1">工作坊：創意思考與問題解決</option>
+                    <option value="workshop2">工作坊：數位行銷策略</option>
+                    <option value="seminar1">講座：職涯發展與規劃</option>
+                    <option value="seminar2">講座：創業經驗分享</option>
+                    <option value="networking">交流活動：產業人脈建立</option>
+                </select>
+            </div>
+            
+            <div class="space-y-2">
+                <label for="notes" class="block text-sm font-medium text-gray-700">備註（選填）</label>
+                <textarea id="notes" name="notes" rows="3" class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none transition duration-200"></textarea>
+            </div>
+            
+            <div class="pt-4">
+                <button type="submit" class="btn-primary w-full py-3 px-4 rounded-lg text-white font-medium">
+                    提交報名
+                </button>
+            </div>
+        </form>
+        
+        <!-- 提交成功訊息 -->
+        <div id="successMessage" class="hidden p-6 text-center">
+            <div class="bg-green-100 p-6 rounded-lg">
+                <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <h2 class="mt-3 text-lg font-medium text-gray-900">報名成功！</h2>
+                <p class="mt-2 text-gray-600">感謝您的報名，我們已收到您的資訊。</p>
+                <button id="newRegistration" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    填寫新的報名
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registrationForm');
+            const successMessage = document.getElementById('successMessage');
+            const newRegistrationBtn = document.getElementById('newRegistration');
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 收集表單數據
+                const formData = {
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    event: document.getElementById('event').value,
+                    notes: document.getElementById('notes').value,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // 發送數據到 Google Apps Script
+                fetch('https://script.google.com/a/macros/ymjh.kh.edu.tw/s/AKfycbyacAv0oSfe1TiHk0ht4gocJn-Q70_asX1WRQ52SUmc2d_RLhjaPlxhbWOqEefahZAe/exec', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result === 'success') {
+                        // 顯示成功訊息
+                        form.classList.add('hidden');
+                        successMessage.classList.remove('hidden');
+                    } else {
+                        alert('提交失敗，請稍後再試');
+                        console.error('錯誤：', data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('提交失敗，請稍後再試');
+                    console.error('錯誤：', error);
+                });
+            });
+            
+            newRegistrationBtn.addEventListener('click', function() {
+                // 重置表單
+                form.reset();
+                successMessage.classList.add('hidden');
+                form.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
