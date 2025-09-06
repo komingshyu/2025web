@@ -1,1095 +1,292 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 圖像生成器</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>與AI合作設計的有用網頁</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #1a5276;
+            --secondary-color: #2980b9;
+            --accent-color: #3498db;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            transition: background-color 0.3s, color 0.3s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: var(--dark-color);
+            line-height: 1.6;
         }
-        .dark {
-            --bg-primary: #121212;
-            --bg-secondary: #1e1e1e;
-            --bg-tertiary: #2d2d2d;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --accent: #8b5cf6;
-            --accent-hover: #7c3aed;
-            --border: #3d3d3d;
-        }
-        .light {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f3f4f6;
-            --bg-tertiary: #e5e7eb;
-            --text-primary: #111827;
-            --text-secondary: #4b5563;
-            --accent: #8b5cf6;
-            --accent-hover: #7c3aed;
-            --border: #d1d5db;
-        }
-        .theme-transition {
-            transition: all 0.3s ease;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: var(--border);
-            border-radius: 20px;
-        }
-        .tag {
-            transition: all 0.2s;
-        }
-        .tag:hover {
-            transform: translateY(-2px);
-        }
-        .image-preview {
-            transition: transform 0.3s ease;
-        }
-        .image-preview:hover {
-            transform: scale(1.02);
-        }
-        .tooltip {
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
             position: relative;
+            overflow: hidden;
         }
-        .tooltip:hover::after {
-            content: attr(data-tooltip);
+
+        .header::before {
+            content: "";
             position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 5px 10px;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 10;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(45deg);
         }
-        .loading-dots span {
-            animation: loadingDots 1.4s infinite ease-in-out both;
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
-        .loading-dots span:nth-child(2) {
-            animation-delay: 0.2s;
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
         }
-        .loading-dots span:nth-child(3) {
-            animation-delay: 0.4s;
+
+        .intro {
+            background-color: white;
+            padding: 2rem;
+            text-align: center;
+            max-width: 800px;
+            margin: 2rem auto;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
         }
-        @keyframes loadingDots {
-            0%, 80%, 100% {
-                transform: scale(0);
-            }
-            40% {
-                transform: scale(1);
-            }
+
+        .intro p {
+            color: #555;
+            font-size: 1.1rem;
         }
-        .slide-in {
-            animation: slideIn 0.3s forwards;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
         }
-        @keyframes slideIn {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            padding: 2rem 0;
         }
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
-            }
-        }
-        .results-grid img {
-            max-height: 600px;
-            object-fit: contain;
-        }
-        #results-area {
-            min-height: 70vh;
-        }
-        /* Ensure equal heights for left, middle, and right sections */
-        .main-content {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            height: calc(100vh - 64px - 56px);
-        }
-        .main-content > div {
+
+        .link-box {
+            background-color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
             height: 100%;
-        }
-        .sidebar-left, .sidebar-right {
-            flex-shrink: 0;
-        }
-        .middle-section {
-            flex: 1;
+            position: relative;
             overflow: hidden;
         }
-        .middle-section > div {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+
+        .link-box::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
         }
-        .prompt-editor {
-            flex-shrink: 0;
+
+        .link-box:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
-        .results-area {
-            flex: 1;
-            overflow-y: auto;
+
+        .link-box .icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-color);
+            transition: var(--transition);
+        }
+
+        .link-box:hover .icon {
+            transform: scale(1.2);
+            color: var(--secondary-color);
+        }
+
+        .link-box a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            transition: var(--transition);
+        }
+
+        .link-box:hover a {
+            color: var(--secondary-color);
+        }
+
+        .link-box p {
+            font-size: 1rem;
+            color: #666;
+            margin: 0;
+        }
+
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .footer p {
+            margin: 0;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .links {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header {
+                padding: 2rem 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .links {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
-<body class="light bg-[var(--bg-primary)] text-[var(--text-primary)]">
-    <div class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header class="bg-[var(--bg-secondary)] border-b border-[var(--border)] py-4 px-6 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <svg class="w-8 h-8 text-[var(--accent)]" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M13.6,2.4 C12.2,1 9.9,1 8.4,2.4 L2.4,8.4 C1,9.9 1,12.2 2.4,13.6 C3.9,15 6.2,15 7.6,13.6 L13.6,7.6 C15,6.2 15,3.9 13.6,2.4 Z" fill="currentColor"></path>
-                    <path d="M17.7,6.3 C16.3,4.9 14,4.9 12.5,6.3 L6.5,12.3 C5.1,13.8 5.1,16.1 6.5,17.5 C8,18.9 10.3,18.9 11.7,17.5 L17.7,11.5 C19.1,10.1 19.1,7.8 17.7,6.3 Z" fill="currentColor" opacity="0.4"></path>
-                </svg>
-                <h1 class="text-2xl font-bold">Pollinations AI 圖像生成器</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button id="theme-toggle" class="p-2 rounded-full hover:bg-[var(--bg-tertiary)]">
-                    <svg id="moon-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                    </svg>
-                    <svg id="sun-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                    </svg>
-                </button>
-                <button id="settings-btn" class="p-2 rounded-full hover:bg-[var(--bg-tertiary)]">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 001.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c.94-1.543-.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                </button>
-            </div>
-        </header>
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Left Sidebar - Controls -->
-            <div class="sidebar-left w-80 border-r border-[var(--border)] bg-[var(--bg-secondary)] p-4 flex flex-col overflow-y-auto custom-scrollbar">
-                <!-- Generation Controls -->
-                <div class="space-y-4">
-                    <!-- AI Platform Selection -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-[var(--text-secondary)]">AI 生成平台</label>
-                        <select id="ai-platform" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
-                            <option value="pollinations">🚀 Pollinations</option>
-                            <option value="pollinations/prompt">⚡ Pollinations 增強</option>
-                        </select>
-                    </div>
-                    <!-- Batch Generation -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-[var(--text-secondary)]">批量生成數量</label>
-                        <div class="flex space-x-2">
-                            <button class="batch-btn px-4 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white" data-count="1">1 張</button>
-                            <button class="batch-btn px-4 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white" data-count="2">2 張</button>
-                            <button class="batch-btn px-4 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white" data-count="4">4 張</button>
-                        </div>
-                    </div>
-                    <!-- Seed Control -->
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <label class="block text-sm font-medium text-[var(--text-secondary)]">種子值</label>
-                            <div class="text-xs text-[var(--text-secondary)]">雙擊隨機化</div>
-                        </div>
-                        <div class="flex space-x-2">
-                            <input type="number" id="seed" value="-1" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
-                            <button id="random-seed" class="p-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Style Presets -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-[var(--text-secondary)]">風格預設</label>
-                        <select id="style-preset" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
-                            <option value="">-- 選擇風格 --</option>
-                            <optgroup label="攝影風格">
-                                <option value="portrait photography">📸 人像攝影</option>
-                                <option value="landscape photography">📸 風景攝影</option>
-                                <option value="street photography">📸 街拍攝影</option>
-                                <option value="macro photography">📸 微距攝影</option>
-                                <option value="black and white photography">📸 黑白攝影</option>
-                                <option value="long exposure photography">📸 長曝光攝影</option>
-                            </optgroup>
-                            <optgroup label="藝術風格">
-                                <option value="van gogh style">🎭 梵谷風格</option>
-                                <option value="picasso style">🎭 畢卡索風格</option>
-                                <option value="monet style">🎭 莫內風格</option>
-                                <option value="rembrandt style">🎭 林布蘭風格</option>
-                                <option value="dali style">🎭 達利風格</option>
-                                <option value="klimt style">🎭 克林姆風格</option>
-                            </optgroup>
-                            <optgroup label="流行風格">
-                                <option value="ghibli style">🎮 吉卜力風格</option>
-                                <option value="disney style">🎮 迪士尼風格</option>
-                                <option value="comic book style">🎮 漫畫風格</option>
-                                <option value="pixar style">🎮 皮克斯風格</option>
-                                <option value="cyberpunk style">🎮 賽博朋克風格</option>
-                                <option value="retro arcade style">🎮 復古街機風格</option>
-                            </optgroup>
-                            <optgroup label="藝術類型">
-                                <option value="anime style">🎨 動漫風格</option>
-                                <option value="cartoon style">🎨 卡通風格</option>
-                                <option value="watercolor">🎨 水彩風格</option>
-                                <option value="oil painting">🎨 油畫風格</option>
-                                <option value="photorealistic">🎨 寫實風格</option>
-                                <option value="sketch style">🎨 素描風格</option>
-                                <option value="abstract art">🎨 抽象藝術</option>
-                                <option value="surrealism">🎨 超現實主義</option>
-                            </optgroup>
-                            <optgroup label="未來風格">
-                                <option value="sci-fi futuristic">🚀 科幻未來風格</option>
-                                <option value="steampunk">🚀 蒸汽朋克風格</option>
-                                <option value="neon futuristic">🚀 霓虹未來風格</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <!-- Random Generator -->
-                    <div class="pt-2">
-                        <button id="random-all" class="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md hover:from-purple-600 hover:to-indigo-700 transition-all flex items-center justify-center space-x-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                            </svg>
-                            <span>隨機化全部參數</span>
-                        </button>
-                    </div>
-                </div>
-                <!-- Generate Button -->
-                <div class="mt-auto pt-4">
-                    <button id="generate-btn" class="w-full px-4 py-3 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)] transition-all font-medium flex items-center justify-center space-x-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                        <span>生成圖像</span>
-                    </button>
-                </div>
-            </div>
-            <!-- Middle Section - Prompt Editor and Results -->
-            <div class="middle-section">
-                <div>
-                    <!-- Prompt Editor -->
-                    <div class="prompt-editor p-4 border-b border-[var(--border)] bg-[var(--bg-secondary)]">
-                        <div class="flex justify-between items-center mb-2">
-                            <h2 class="text-lg font-medium">自動提示詞編輯器</h2>
-                            <div class="flex space-x-2">
-                                <button id="format-prompt" class="tooltip px-2 py-1 text-xs rounded bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white" data-tooltip="格式化提示詞">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                                    </svg>
-                                </button>
-                                <button id="save-template" class="tooltip px-2 py-1 text-xs rounded bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white" data-tooltip="保存模板">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-                                    </svg>
-                                </button>
-                                <button id="random-prompt" class="tooltip px-2 py-1 text-xs rounded bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white" data-tooltip="隨機提示詞">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <!-- Quick Tags -->
-                        <div class="mb-3 flex flex-wrap gap-2">
-                            <span class="tag px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full cursor-pointer">🏞️ 風景</span>
-                            <span class="tag px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full cursor-pointer">👤 人物</span>
-                            <span class="tag px-2 py-1 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full cursor-pointer">🌆 城市</span>
-                            <span class="tag px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 rounded-full cursor-pointer">🎨 水彩風</span>
-                            <span class="tag px-2 py-1 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full cursor-pointer">📷 攝影風</span>
-                            <span class="tag px-2 py-1 text-xs bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200 rounded-full cursor-pointer">✨ 高品質</span>
-                            <span class="tag px-2 py-1 text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 rounded-full cursor-pointer">🌞 陽光</span>
-                            <span class="tag px-2 py-1 text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-full cursor-pointer">🌙 夜景</span>
-                            <span class="tag px-2 py-1 text-xs bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 rounded-full cursor-pointer">🌌 星空</span>
-                            <span class="tag px-2 py-1 text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 rounded-full cursor-pointer">🔥 火焰</span>
-                            <span class="tag px-2 py-1 text-xs bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 rounded-full cursor-pointer">🌊 海洋</span>
-                            <span class="tag px-2 py-1 text-xs bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200 rounded-full cursor-pointer">🌿 森林</span>
-                            <span class="tag px-2 py-1 text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 rounded-full cursor-pointer">🍂 秋季</span>
-                            <span class="tag px-2 py-1 text-xs bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200 rounded-full cursor-pointer">💖 浪漫</span>
-                            <span class="tag px-2 py-1 text-xs bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 rounded-full cursor-pointer">⚡️ 動感</span>
-                        </div>
-                        <!-- Prompt Textarea -->
-                        <div class="relative">
-                            <textarea id="prompt-editor" rows="3" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" placeholder="描述你想要生成的圖像..."></textarea>
-                        </div>
-                        <!-- Negative Prompt -->
-                        <div class="mt-3">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-sm font-medium text-[var(--text-secondary)]">負面提示詞</label>
-                                <button id="default-negative" class="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]">使用預設</button>
-                            </div>
-                            <textarea id="negative-prompt" rows="2" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]" placeholder="排除不想要的元素..."></textarea>
-                        </div>
-                    </div>
-                    <!-- Results Area -->
-                    <div class="results-area p-4 custom-scrollbar" id="results-area">
-                        <div id="loading-indicator" class="hidden flex flex-col items-center justify-center h-full">
-                            <div class="w-16 h-16 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"></div>
-                            <p class="mt-4 text-[var(--text-secondary)] flex items-center">
-                                生成中
-                                <span class="loading-dots ml-2 flex">
-                                    <span class="mx-0.5 h-2 w-2 rounded-full bg-[var(--accent)]"></span>
-                                    <span class="mx-0.5 h-2 w-2 rounded-full bg-[var(--accent)]"></span>
-                                    <span class="mx-0.5 h-2 w-2 rounded-full bg-[var(--accent)]"></span>
-                                </span>
-                            </p>
-                        </div>
-                        <div id="empty-state" class="flex flex-col items-center justify-center h-full text-center">
-                            <svg class="w-16 h-16 text-[var(--text-secondary)] opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 00.586-1.414L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            <h3 class="mt-4 text-lg font-medium text-[var(--text-primary)]">尚未生成圖像</h3>
-                            <p class="mt-2 text-[var(--text-secondary)] max-w-sm">輸入提示詞並點擊「生成圖像」按鈕開始創作</p>
-                        </div>
-                        <div id="results-grid" class="hidden grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                            <!-- Generated images will be inserted here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Right Sidebar - History -->
-            <div class="sidebar-right w-32 border-l border-[var(--border)] bg-[var(--bg-secondary)] overflow-y-auto custom-scrollbar">
-                <div class="p-4 border-b border-[var(--border)]">
-                    <h2 class="text-lg font-medium">歷史創作記錄</h2>
-                </div>
-                <div id="history-list" class="p-2 space-y-3">
-                    <!-- History items will be inserted here -->
-                    <div class="text-center text-sm text-[var(--text-secondary)] py-8">
-                        尚無歷史記錄
-                    </div>
-                </div>
-                <div class="p-3 border-t border-[var(--border)]">
-                    <button id="clear-history" class="w-full px-3 py-2 text-sm bg-[var(--bg-tertiary)] hover:bg-red-500 hover:text-white rounded-md transition-colors">
-                        清空歷史記錄
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- Footer -->
-        <footer class="bg-[var(--bg-secondary)] border-t border-[var(--border)] py-4 px-6 text-center text-sm text-[var(--text-secondary)]">
-            網頁設計者: koming
-        </footer>
+<body>
+    <div class="header">
+        <h1>Koming與AI合作設計的有用小工具2025年版</h1>
+        <div class="subtitle">專業、高效、安全的線上工具集合</div>
     </div>
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-[var(--bg-primary)] rounded-lg shadow-xl w-full max-w-md mx-4 theme-transition slide-in">
-            <div class="flex justify-between items-center p-4 border-b border-[var(--border)]">
-                <h3 class="text-lg font-medium">個人化設定</h3>
-                <button id="close-settings" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="p-4 space-y-4">
-                <!-- Theme Settings -->
-                <div>
-                    <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">介面主題</label>
-                    <div class="flex space-x-2">
-                        <button id="light-theme" class="flex-1 px-3 py-2 rounded-md border border-[var(--border)] hover:bg-[var(--bg-tertiary)]">
-                            <div class="flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                </svg>
-                                <span>淺色模式</span>
-                            </div>
-                        </button>
-                        <button id="dark-theme" class="flex-1 px-3 py-2 rounded-md border border-[var(--border)] hover:bg-[var(--bg-tertiary)]">
-                            <div class="flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                                </svg>
-                                <span>深色模式</span>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-                <!-- Save/Load Settings -->
-                <div>
-                    <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">設定管理</label>
-                    <div class="flex space-x-2">
-                        <button id="save-settings" class="flex-1 px-3 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white">
-                            <div class="flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                <span>保存設定</span>
-                            </div>
-                        </button>
-                        <button id="load-settings" class="flex-1 px-3 py-2 rounded-md bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white">
-                            <div class="flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                                <span>載入設定</span>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-                <!-- Default Negative Prompt -->
-                <div>
-                    <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2">預設負面提示詞</label>
-                    <textarea id="default-negative-prompt" rows="3" class="w-full px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">low quality, blurry, distorted, deformed, extra fingers, extra legs, extra arms, watermark, signature, text</textarea>
-                </div>
-            </div>
-            <div class="p-4 border-t border-[var(--border)] flex justify-end">
-                <button id="apply-settings" class="px-4 py-2 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)]">
-                    套用設定
-                </button>
-            </div>
+    
+    <div class="container">
+        <div class="intro">
+            <p>這是透過AI協助設計的網頁工具，提供大家參考使用，資料不會上傳，都在電腦本機處理。</p>
+        </div>
+        
+        <div class="links" id="links">
+            <!-- Links will be dynamically inserted here -->
         </div>
     </div>
-    <!-- Fullscreen Image Modal -->
-    <div id="fullscreen-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex items-center justify-center">
-        <button id="close-fullscreen" class="absolute top-4 right-4 text-white hover:text-gray-300">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-        <img id="fullscreen-image" class="max-h-[90vh] max-w-[90vw] object-contain" src="" alt="全螢幕圖像">
-        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-4">
-            <button id="download-fullscreen" class="px-4 py-2 bg-[var(--accent)] text-white rounded-md hover:bg-[var(--accent-hover)] flex items-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                <span>下載圖像</span>
-            </button>
-            <button id="copy-link-fullscreen" class="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 flex items-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H8z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 5v14"></path>
-                </svg>
-                <span>複製連結</span>
-            </button>
-        </div>
+    
+    <div class="footer">
+        <p>© 2025 Koming與AI合作設計 | 所有工具均在本地運行，保護您的隱私安全</p>
     </div>
+
+    <script src="data.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Theme Toggle
-            const body = document.body;
-            const themeToggle = document.getElementById('theme-toggle');
-            const moonIcon = document.getElementById('moon-icon');
-            const sunIcon = document.getElementById('sun-icon');
-
-            function setTheme(theme) {
-                if (theme === 'dark') {
-                    body.classList.remove('light');
-                    body.classList.add('dark');
-                    moonIcon.classList.add('hidden');
-                    sunIcon.classList.remove('hidden');
-                    localStorage.setItem('theme', 'dark');
-                } else {
-                    body.classList.remove('dark');
-                    body.classList.add('light');
-                    moonIcon.classList.remove('hidden');
-                    sunIcon.classList.add('hidden');
-                    localStorage.setItem('theme', 'light');
-                }
-            }
-
-            // Check for saved theme preference
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                setTheme(savedTheme);
-            }
-
-            themeToggle.addEventListener('click', function() {
-                if (body.classList.contains('light')) {
-                    setTheme('dark');
-                } else {
-                    setTheme('light');
-                }
-            });
-
-            // Settings Modal
-            const settingsBtn = document.getElementById('settings-btn');
-            const settingsModal = document.getElementById('settings-modal');
-            const closeSettings = document.getElementById('close-settings');
-            const applySettings = document.getElementById('apply-settings');
-            const lightTheme = document.getElementById('light-theme');
-            const darkTheme = document.getElementById('dark-theme');
-
-            settingsBtn.addEventListener('click', function() {
-                settingsModal.classList.remove('hidden');
-            });
-
-            closeSettings.addEventListener('click', function() {
-                settingsModal.classList.add('hidden');
-            });
-
-            lightTheme.addEventListener('click', function() {
-                setTheme('light');
-            });
-
-            darkTheme.addEventListener('click', function() {
-                setTheme('dark');
-            });
-
-            applySettings.addEventListener('click', function() {
-                // Save settings
-                const defaultNegativePrompt = document.getElementById('default-negative-prompt').value;
-                localStorage.setItem('defaultNegativePrompt', defaultNegativePrompt);
-
-                // Close modal
-                settingsModal.classList.add('hidden');
-
-                // Show notification
-                showNotification('設定已套用');
-            });
-
-            // Save and Load Settings
-            const saveSettings = document.getElementById('save-settings');
-            const loadSettings = document.getElementById('load-settings');
-
-            saveSettings.addEventListener('click', function() {
-                const settings = {
-                    theme: body.classList.contains('dark') ? 'dark' : 'light',
-                    defaultNegativePrompt: document.getElementById('default-negative-prompt').value,
-                    aiPlatform: document.getElementById('ai-platform').value,
-                    stylePreset: document.getElementById('style-preset').value
-                };
-                localStorage.setItem('aiGeneratorSettings', JSON.stringify(settings));
-                showNotification('設定已保存');
-            });
-
-            loadSettings.addEventListener('click', function() {
-                const savedSettings = localStorage.getItem('aiGeneratorSettings');
-                if (savedSettings) {
-                    const settings = JSON.parse(savedSettings);
-
-                    // Apply settings
-                    setTheme(settings.theme);
-                    document.getElementById('default-negative-prompt').value = settings.defaultNegativePrompt || '';
-                    document.getElementById('ai-platform').value = settings.aiPlatform || 'pollinations';
-                    document.getElementById('style-preset').value = settings.stylePreset || '';
-
-                    showNotification('設定已載入');
-                } else {
-                    showNotification('沒有找到保存的設定', 'error');
-                }
-            });
-
-            // Batch Generation
-            const batchBtns = document.querySelectorAll('.batch-btn');
-            let currentBatchCount = 1;
-
-            batchBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const count = parseInt(this.getAttribute('data-count'));
-                    currentBatchCount = count;
-
-                    // Update UI
-                    batchBtns.forEach(b => {
-                        b.classList.remove('bg-[var(--accent)]', 'text-yellow-300');
-                        b.classList.add('text-[var(--text-primary)]', 'bg-[var(--bg-tertiary)]');
-                    });
-                    this.classList.remove('bg-[var(--bg-tertiary)]', 'text-[var(--text-primary)]');
-                    this.classList.add('bg-[var(--accent)]', 'text-yellow-300');
-                });
-            });
-
-            // Set default batch button
-            batchBtns[0].click();
-
-            // Random Seed
-            const seedInput = document.getElementById('seed');
-            const randomSeedBtn = document.getElementById('random-seed');
-
-            randomSeedBtn.addEventListener('click', function() {
-                seedInput.value = Math.floor(Math.random() * 1000000);
-            });
-
-            // Double-click to randomize seed
-            seedInput.addEventListener('dblclick', function() {
-                seedInput.value = Math.floor(Math.random() * 1000000);
-            });
-
-            // Quick Tags
-            const tags = document.querySelectorAll('.tag');
-            const promptEditor = document.getElementById('prompt-editor');
-
-            // Mapping Chinese tags to English prompts
-            const tagMappings = {
-                "🏞️ 風景": "landscape",
-                "👤 人物": "person",
-                "🌆 城市": "city",
-                "🎨 水彩風": "watercolor style",
-                "📷 攝影風": "photographic style",
-                "✨ 高品質": "high quality",
-                "🌞 陽光": "sunlight",
-                "🌙 夜景": "night scene",
-                "🌌 星空": "starry sky",
-                "🔥 火焰": "flame",
-                "🌊 海洋": "ocean",
-                "🌿 森林": "forest",
-                "🍂 秋季": "autumn",
-                "💖 浪漫": "romantic",
-                "⚡️ 動感": "dynamic"
-            };
-
-            tags.forEach(tag => {
-                tag.addEventListener('click', function() {
-                    const tagText = this.textContent.trim();
-                    const englishPrompt = tagMappings[tagText] || tagText;
-                    const currentPrompt = promptEditor.value;
-
-                    if (currentPrompt) {
-                        promptEditor.value = currentPrompt + ", " + englishPrompt;
-                    } else {
-                        promptEditor.value = englishPrompt;
-                    }
-                });
-            });
-
-            // Default Negative Prompt
-            const defaultNegativeBtn = document.getElementById('default-negative');
-            const negativePrompt = document.getElementById('negative-prompt');
-
-            defaultNegativeBtn.addEventListener('click', function() {
-                const savedDefaultNegative = localStorage.getItem('defaultNegativePrompt');
-                if (savedDefaultNegative) {
-                    negativePrompt.value = savedDefaultNegative;
-                } else {
-                    negativePrompt.value = "low quality, blurry, distorted, deformed, extra fingers, extra legs, extra arms, watermark, signature, text";
-                }
-            });
-
-            // Format Prompt
-            const formatPromptBtn = document.getElementById('format-prompt');
-
-            formatPromptBtn.addEventListener('click', function() {
-                const currentPrompt = promptEditor.value;
-                if (!currentPrompt) return;
-
-                // Simple formatting: trim, remove duplicate commas, normalize spacing
-                let formattedPrompt = currentPrompt
-                    .trim()
-                    .replace(/,\s*,+/g, ',')
-                    .replace(/\s+/g, ' ')
-                    .split(',')
-                    .map(item => item.trim())
-                    .filter(item => item)
-                    .join(', ');
-
-                promptEditor.value = formattedPrompt;
-                showNotification('提示詞已格式化');
-            });
-
-            // Save Template
-            const saveTemplateBtn = document.getElementById('save-template');
-
-            saveTemplateBtn.addEventListener('click', function() {
-                const currentPrompt = promptEditor.value;
-                if (!currentPrompt) {
-                    showNotification('請先輸入提示詞', 'error');
-                    return;
-                }
-
-                const templates = JSON.parse(localStorage.getItem('promptTemplates') || '[]');
-                templates.push(currentPrompt);
-                localStorage.setItem('promptTemplates', JSON.stringify(templates));
-                showNotification('模板已保存');
-            });
-
-            // Random Prompt
-            const randomPromptBtn = document.getElementById('random-prompt');
-            const subjectIdeas = ['Cat', 'Dog', 'Mountain', 'Beach', 'City', 'Forest', 'Flower', 'Space', 'Robot', 'Castle', 'Dragon', 'Elf', 'Spaceship', 'Ancient Civilization', 'Waterfall', 'Snowy Mountain', 'Desert', 'Steam Train', 'Lighthouse', 'Magical Forest'];
-            const styleIdeas = ['Watercolor Style', 'Oil Painting Style', 'Photographic Style', 'Pixel Art', '3D Render', 'Illustration Style', 'Sketch Style', 'Neon Style', 'Cyberpunk', 'Retro Pop', 'Steampunk', 'Minimalist', 'Surrealism', 'Gothic Style', 'Ukiyo-e', 'Baroque Style', 'Impressionism', 'Futurism', 'Cartoon Comic', 'Realistic Lighting'];
-            const qualityIdeas = ['High Quality', '4K Resolution', 'Detailed', 'Fine Art', 'Professional Photography', 'Perfect Lighting', 'Cinematic Quality', 'Ultra High Resolution', 'Vivid Colors', 'Soft Lighting', 'Dynamic Composition', 'Immersive Experience', 'Intricate Textures', 'Atmospheric Render', 'Realistic Details', 'Dreamy Effect', 'High Contrast', 'Natural Lighting', 'Artistic Mood', 'Exquisite Presentation'];
-
-            randomPromptBtn.addEventListener('click', function() {
-                const subject = subjectIdeas[Math.floor(Math.random() * subjectIdeas.length)];
-                const style = styleIdeas[Math.floor(Math.random() * styleIdeas.length)];
-                const quality = qualityIdeas[Math.floor(Math.random() * qualityIdeas.length)];
-
-                promptEditor.value = `${subject}, ${style}, ${quality}`;
-            });
-
-            // Random All
-            const randomAllBtn = document.getElementById('random-all');
-
-            randomAllBtn.addEventListener('click', function() {
-                // Random prompt
-                const subject = subjectIdeas[Math.floor(Math.random() * subjectIdeas.length)];
-                const style = styleIdeas[Math.floor(Math.random() * styleIdeas.length)];
-                const quality = qualityIdeas[Math.floor(Math.random() * qualityIdeas.length)];
-
-                promptEditor.value = `${subject}, ${style}, ${quality}`;
-
-                // Random seed
-                seedInput.value = Math.floor(Math.random() * 1000000);
-
-                // Random style preset
-                const stylePreset = document.getElementById('style-preset');
-                const options = Array.from(stylePreset.options).filter(option => option.value);
-                if (options.length) {
-                    const randomOption = options[Math.floor(Math.random() * options.length)];
-                    stylePreset.value = randomOption.value;
-                }
-
-                showNotification('已隨機化所有參數');
-            });
-
-            // Generate Button
-            const generateBtn = document.getElementById('generate-btn');
-            const loadingIndicator = document.getElementById('loading-indicator');
-            const emptyState = document.getElementById('empty-state');
-            const resultsGrid = document.getElementById('results-grid');
-
-            generateBtn.addEventListener('click', function() {
-                const prompt = promptEditor.value;
-                if (!prompt) {
-                    showNotification('請輸入提示詞', 'error');
-                    return;
-                }
-
-                // Show loading
-                emptyState.classList.add('hidden');
-                resultsGrid.classList.add('hidden');
-                loadingIndicator.classList.remove('hidden');
-
-                // Generate images
-                generateImages(prompt);
-            });
-
-            async function generateImages(prompt) {
-                // Get parameters
-                const platform = document.getElementById('ai-platform').value;
-                const stylePreset = document.getElementById('style-preset').value;
-                const negativePromptText = document.getElementById('negative-prompt').value;
-
-                // Build the full prompt
-                let fullPrompt = prompt;
-                if (stylePreset) {
-                    fullPrompt += `, ${stylePreset}`;
-                }
-                fullPrompt += ", high quality, detailed";
-
-                // Encode the prompt for URL
-                const encodedPrompt = encodeURIComponent(fullPrompt);
-
-                // Clear previous results
-                resultsGrid.innerHTML = '';
-
-                // Generate the requested number of images
-                const promises = [];
-                for (let i = 0; i < currentBatchCount; i++) {
-                    // Add delay to prevent API rate limiting
-                    await new Promise(resolve => setTimeout(resolve, 100));
-
-                    // Add a random parameter and seed to ensure distinct images
-                    const randomParam = Math.floor(Math.random() * 1000000);
-                    const seed = document.getElementById('seed').value === '-1' ? randomParam : document.getElementById('seed').value;
-                    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&random=${randomParam}&width=1024&height=1024&nologo=true`;
-
-                    // Create image card
-                    const imageCard = createImageCard(fullPrompt, imageUrl, i);
-                    resultsGrid.appendChild(imageCard);
-
-                    // Add to promises array to track loading
-                    const img = imageCard.querySelector('img');
-                    const promise = new Promise((resolve) => {
-                        img.onload = () => resolve({ success: true, url: imageUrl });
-                        img.onerror = () => {
-                            img.src = createErrorSVG();
-                            resolve({ success: false, url: createErrorSVG() });
-                        };
-                    });
-                    promises.push(promise);
-                }
-
-                // Wait for all images to load
-                const results = await Promise.all(promises);
-
-                // Hide loading indicator
-                loadingIndicator.classList.add('hidden');
-
-                // Show results
-                resultsGrid.classList.remove('hidden');
-
-                // Add to history
-                addToHistory(prompt, results.map(result => result.url));
-
-                // Show notification
-                const successCount = results.filter(r => r.success).length;
-                showNotification(`已生成 ${successCount} 張圖像${successCount < currentBatchCount ? ` (${currentBatchCount - successCount} 張失敗)` : ''}`);
-            }
-
-            function createImageCard(prompt, imageUrl, index) {
-                const imageId = `image-${Date.now()}-${index}`;
-                const card = document.createElement('div');
-                card.className = 'bg-[var(--bg-secondary)] rounded-lg overflow-hidden border border-[var(--border)] slide-in';
-                card.innerHTML = `
-                    <div class="relative">
-                        <img id="${imageId}" class="w-full h-auto image-preview cursor-pointer" src="${imageUrl}" alt="生成的圖像">
-                        <div class="absolute bottom-2 right-2 flex space-x-2">
-                            <button class="download-btn p-2 rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]" data-image="${imageId}">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                            </button>
-                            <button class="copy-link-btn p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600" data-image="${imageId}">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H8z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 5v14"></path>
-                                </svg>
-                            </button>
-                        </div>
+        // 校園與風景相關圖標集合
+        const iconClasses = [
+            // 校園相關圖標
+            'fa-school', 'fa-graduation-cap', 'fa-book', 'fa-chalkboard-teacher',
+            'fa-user-graduate', 'fa-laptop', 'fa-flask', 'fa-microscope',
+            'fa-calculator', 'fa-ruler-combined', 'fa-clipboard-list', 'fa-pen',
+            
+            // 風景相關圖標
+            'fa-mountain', 'fa-tree', 'fa-sun', 'fa-cloud-sun',
+            'fa-water', 'fa-leaf', 'fa-campground', 'fa-umbrella-beach',
+            'fa-snowflake', 'fa-wind', 'fa-cloud-rain', 'fa-bridge',
+            'fa-landmark', 'fa-monument', 'fa-mosque', 'fa-church',
+            'fa-synagogue', 'fa-hindu', 'fa-vihara', 'fa-torii-gate',
+            'fa-archway', 'fa-dharmachakra', 'fa-om', 'fa-star-and-crescent',
+            'fa-menorah', 'fa-cross', 'fa-yin-yang', 'fa-peace'
+        ];
+        
+        // 專業配色方案
+        const colorSchemes = [
+            { primary: '#3498db', secondary: '#2980b9' },
+            { primary: '#2ecc71', secondary: '#27ae60' },
+            { primary: '#e74c3c', secondary: '#c0392b' },
+            { primary: '#f39c12', secondary: '#d35400' },
+            { primary: '#9b59b6', secondary: '#8e44ad' },
+            { primary: '#1abc9c', secondary: '#16a085' },
+            { primary: '#34495e', secondary: '#2c3e50' }
+        ];
+        
+        function getRandomIcon() {
+            return iconClasses[Math.floor(Math.random() * iconClasses.length)];
+        }
+        
+        function getRandomColorScheme() {
+            return colorSchemes[Math.floor(Math.random() * colorSchemes.length)];
+        }
+        
+        function loadLinks(data) {
+            const linksContainer = document.getElementById('links');
+            
+            data.forEach(item => {
+                const colorScheme = getRandomColorScheme();
+                const linkBox = document.createElement('div');
+                linkBox.className = 'link-box';
+                
+                // 添加自定義樣式
+                linkBox.style.setProperty('--accent-color', colorScheme.primary);
+                linkBox.style.setProperty('--secondary-color', colorScheme.secondary);
+                
+                linkBox.innerHTML = `
+                    <div class="icon">
+                        <i class="fas ${getRandomIcon()}"></i>
                     </div>
-                    <div class="p-3">
-                        <div class="text-xs text-[var(--text-secondary)] truncate">${prompt}</div>
-                        <div class="mt-1 flex justify-between items-center">
-                            <div class="text-xs text-[var(--text-secondary)]">1024x1024</div>
-                            <div class="text-xs text-[var(--text-secondary)]">種子: ${document.getElementById('seed').value}</div>
-                        </div>
-                    </div>
+                    <a href="${item.link}" target="_blank">${item.name}</a>
+                    <p>${item.description}</p>
                 `;
-
-                // Add event listeners
-                setTimeout(() => {
-                    const img = document.getElementById(imageId);
-                    img.addEventListener('click', function() {
-                        openFullscreen(this.src);
-                    });
-
-                    const downloadBtn = card.querySelector('.download-btn');
-                    downloadBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const imgId = this.getAttribute('data-image');
-                        const img = document.getElementById(imgId);
-                        downloadImage(img.src);
-                    });
-
-                    const copyLinkBtn = card.querySelector('.copy-link-btn');
-                    copyLinkBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const imgId = this.getAttribute('data-image');
-                        const img = document.getElementById(imgId);
-                        copyToClipboard(img.src);
-                    });
-                }, 0);
-
-                return card;
-            }
-
-            function createErrorSVG() {
-                // Create a simple SVG for error display
-                const svg = `
-                    <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100%" height="100%" fill="#f87171" />
-                        <text x="50%" y="50%" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dominant-baseline="middle">
-                            圖像生成失敗，請重試
-                        </text>
-                    </svg>
-                `;
-                return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-            }
-
-            // History Management
-            const historyList = document.getElementById('history-list');
-            const clearHistoryBtn = document.getElementById('clear-history');
-
-            function addToHistory(prompt, urls) {
-                // Get history from localStorage
-                const history = JSON.parse(localStorage.getItem('imageHistory') || '[]');
-
-                // Add new items with unique IDs
-                urls.forEach(url => {
-                    const historyItem = {
-                        id: Date.now() + Math.random().toString(36).substring(2, 9),
-                        prompt: prompt,
-                        url: url,
-                        timestamp: new Date().toISOString(),
-                        width: 1024,
-                        height: 1024,
-                        seed: document.getElementById('seed').value,
-                        platform: document.getElementById('ai-platform').value
-                    };
-                    history.unshift(historyItem);
-                });
-
-                // Limit history to 50 items
-                if (history.length > 50) {
-                    history.splice(50);
-                }
-
-                // Save to localStorage
-                localStorage.setItem('imageHistory', JSON.stringify(history));
-
-                // Update UI
-                updateHistoryUI();
-            }
-
-            function updateHistoryUI() {
-                const history = JSON.parse(localStorage.getItem('imageHistory') || '[]');
-                if (history.length === 0) {
-                    historyList.innerHTML = `
-                        <div class="text-center text-sm text-[var(--text-secondary)] py-8">
-                            尚無歷史記錄
-                        </div>
-                    `;
-                    return;
-                }
-
-                historyList.innerHTML = '';
-                history.forEach(item => {
-                    const date = new Date(item.timestamp);
-                    const formattedDate = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-
-                    const historyItem = document.createElement('div');
-                    historyItem.className = 'p-2 bg-[var(--bg-tertiary)] rounded-md hover:bg-[var(--bg-primary)]';
-                    historyItem.innerHTML = `
-                        <img src="${item.url}" class="w-full h-12 object-cover rounded-md" alt="歷史圖像">
-                        <div class="mt-1 flex justify-between items-center">
-                            <div class="text-xs text-[var(--text-secondary)]">${formattedDate}</div>
-                            <button class="delete-history-btn text-xs text-red-500 hover:text-red-700" data-id="${item.id}">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    `;
-
-                    historyItem.addEventListener('click', function(e) {
-                        // Avoid triggering the history item click event when clicking the delete button
-                        if (!e.target.closest('.delete-history-btn')) {
-                            promptEditor.value = item.prompt;
-                            document.getElementById('seed').value = item.seed;
-                            document.getElementById('ai-platform').value = item.platform;
-                            showNotification('已載入歷史設定');
-                        }
-                    });
-
-                    historyList.appendChild(historyItem);
-                });
-            }
-
-            // Add event listener for delete buttons
-            historyList.addEventListener('click', function(e) {
-                if (e.target.closest('.delete-history-btn')) {
-                    const deleteBtn = e.target.closest('.delete-history-btn');
-                    const itemId = deleteBtn.getAttribute('data-id');
-
-                    // Confirm deletion
-                    if (confirm('確定要刪除這個歷史記錄嗎？')) {
-                        // Get history from localStorage
-                        const history = JSON.parse(localStorage.getItem('imageHistory') || '[]');
-
-                        // Filter out the item to be deleted
-                        const updatedHistory = history.filter(item => item.id != itemId);
-
-                        // Save the updated history back to localStorage
-                        localStorage.setItem('imageHistory', JSON.stringify(updatedHistory));
-
-                        // Update UI
-                        updateHistoryUI();
-
-                        // Show notification
-                        showNotification('歷史記錄已刪除');
-                    }
-                }
+                
+                linksContainer.appendChild(linkBox);
             });
-
-            clearHistoryBtn.addEventListener('click', function() {
-                if (confirm('確定要清空所有歷史記錄嗎？')) {
-                    localStorage.removeItem('imageHistory');
-                    updateHistoryUI();
-                    showNotification('歷史記錄已清空');
-                }
-            });
-
-            // Initialize history
-            updateHistoryUI();
-
-            // Fullscreen Image Modal
-            const fullscreenModal = document.getElementById('fullscreen-modal');
-            const fullscreenImage = document.getElementById('fullscreen-image');
-            const closeFullscreen = document.getElementById('close-fullscreen');
-            const downloadFullscreen = document.getElementById('download-fullscreen');
-            const copyLinkFullscreen = document.getElementById('copy-link-fullscreen');
-
-            function openFullscreen(src) {
-                fullscreenImage.src = src;
-                fullscreenModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+        }
+        
+        // 頁面載入後執行
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof linksData !== 'undefined') {
+                loadLinks(linksData);
+            } else {
+                console.error('linksData is not defined');
             }
-
-            closeFullscreen.addEventListener('click', function() {
-                fullscreenModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            });
-
-            downloadFullscreen.addEventListener('click', function() {
-                downloadImage(fullscreenImage.src);
-            });
-
-            copyLinkFullscreen.addEventListener('click', function() {
-                copyToClipboard(fullscreenImage.src);
-            });
-
-            // Utility Functions
-            function downloadImage(src) {
-                window.open(src, '_blank');
-                showNotification('圖像已在新視窗開啟，請右鍵儲存');
-            }
-
-            function copyToClipboard(text) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showNotification('連結已複製到剪貼簿');
-                }).catch(err => {
-                    console.error('Clipboard error: ', err);
-                    showNotification('複製失敗', 'error');
-                });
-            }
-
-            function showNotification(message, type = 'success', duration = 3000) {
-                const notification = document.createElement('div');
-                notification.className = `fixed bottom-20 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md text-white z-50 ${type === 'success' ? 'bg-[var(--accent)]' : 'bg-red-500'}`;
-                notification.textContent = message;
-                document.body.appendChild(notification);
-
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                    notification.style.transition = 'opacity 0.5s';
-                    setTimeout(() => {
-                        document.body.removeChild(notification);
-                    }, 500);
-                }, duration);
-            }
-
-            // Keyboard Shortcuts
-            document.addEventListener('keydown', function(e) {
-                // Ctrl+Enter to generate
-                if (e.ctrlKey && e.key === 'Enter') {
-                    generateBtn.click();
-                }
-            });
         });
     </script>
 </body>

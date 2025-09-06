@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>當地天氣查詢系統</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: #ffeef8; /* 淡粉色背景 */
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .weather-container {
+            flex: 1;
+            padding: 15px; /* 減少上下間距 */
+            background-color: #fff5fc; /* 淡粉色背景 */
+            box-shadow: -2px 0 10px rgba(255, 182, 193, 0.3); /* 粉色陰影 */
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+        
+        h1 {
+            color: #ff6b9d; /* 粉色標題 */
+            margin-bottom: 15px; /* 減少間距 */
+            text-align: center;
+            font-size: 24px; /* 稍微縮小標題 */
+        }
+        
+        .coordinate-section {
+            margin-bottom: 15px; /* 減少間距 */
+            padding: 12px; /* 減少內邊距 */
+            background-color: #fff0f5; /* 淡粉色背景 */
+            border-radius: 12px;
+            border: 1px solid #ffd1dc; /* 淡粉色邊框 */
+        }
+        
+        .coordinate-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px; /* 減少間距 */
+        }
+        
+        .coordinate-inputs div {
+            flex: 1;
+        }
+        
+        .coordinate-inputs label {
+            display: block;
+            margin-bottom: 4px; /* 減少間距 */
+            font-weight: bold;
+            color: #ff6b9d; /* 粉色文字 */
+        }
+        
+        .coordinate-inputs input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ffb6c1; /* 粉色邊框 */
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        
+        .query-button {
+            width: 100%;
+            padding: 10px; /* 減少按鈕高度 */
+            background-color: #ff6b9d; /* 粉色按鈕 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .query-button:hover {
+            background-color: #ff4d7d; /* 深一點的粉色 */
+        }
+        
+        .weather-result {
+            margin-top: 15px; /* 減少間距 */
+            padding: 12px; /* 減少內邊距 */
+            background-color: #fff0f5; /* 淡粉色背景 */
+            border-radius: 12px;
+            border: 1px solid #ffd1dc; /* 淡粉色邊框 */
+            display: none;
+        }
+        
+        .weather-result h2 {
+            margin-bottom: 12px; /* 減少間距 */
+            color: #ff6b9d; /* 粉色標題 */
+            border-bottom: 1px solid #ffd1dc; /* 淡粉色邊框 */
+            padding-bottom: 8px; /* 減少間距 */
+            font-size: 18px; /* 縮小標題 */
+        }
+        
+        .weather-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px; /* 減少間距 */
+        }
+        
+        .weather-info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .weather-info-item label {
+            font-weight: bold;
+            margin-bottom: 4px; /* 減少間距 */
+            color: #ff6b9d; /* 粉色文字 */
+        }
+        
+        .weather-info-item span {
+            font-size: 16px; /* 縮小字體 */
+            color: #333;
+        }
+        
+        .weather-icon {
+            width: 120px; /* 增大圖標尺寸 */
+            height: 120px; /* 增大圖標尺寸 */
+            margin: 0 auto 10px; /* 減少底部間距 */
+            filter: drop-shadow(0 0 5px rgba(255, 107, 157, 0.5)); /* 添加粉色光暈效果 */
+        }
+        
+        .location-name {
+            text-align: center;
+            font-size: 20px; /* 縮小字體 */
+            margin-bottom: 10px; /* 減少間距 */
+            color: #ff6b9d; /* 粉色文字 */
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 15px; /* 減少間距 */
+        }
+        
+        .loading-spinner {
+            border: 4px solid #ffb6c1; /* 粉色邊框 */
+            border-top: 4px solid #ff6b9d; /* 粉色頂部 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            display: none;
+            color: #ff4d7d; /* 粉色錯誤訊息 */
+            margin-top: 8px; /* 減少間距 */
+            text-align: center;
+        }
+        
+        .api-info {
+            margin-top: 15px; /* 減少間距 */
+            padding: 8px; /* 減少內邊距 */
+            background-color: #ffe0ec; /* 淡粉色背景 */
+            border-radius: 8px;
+            font-size: 12px; /* 縮小字體 */
+            color: #ff6b9d; /* 粉色文字 */
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+    
+    <div class="weather-container">
+        <h1>🌤️ 當地天氣查詢 🌈</h1>
+        
+        <div class="coordinate-section">
+            <div class="coordinate-inputs">
+                <div>
+                    <label for="latitude">緯度</label>
+                    <input type="text" id="latitude" placeholder="例如: 25.0330" readonly>
+                </div>
+                <div>
+                    <label for="longitude">經度</label>
+                    <input type="text" id="longitude" placeholder="例如: 121.5654" readonly>
+                </div>
+            </div>
+            <button class="query-button" id="queryWeather">🔍 天氣查詢</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>正在查詢天氣資訊...</p>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="weather-result" id="weatherResult">
+            <div class="location-name" id="locationName">--</div>
+            <img class="weather-icon" id="weatherIcon" src="" alt="天氣圖標">
+            
+            <h2>🌦️ 天氣資訊 🌦️</h2>
+            <div class="weather-info">
+                <div class="weather-info-item">
+                    <label>📍 座標</label>
+                    <span id="coordinates">--</span>
+                </div>
+                <div class="weather-info-item">
+                    <label>🌍 國家</label>
+                    <span id="country">--</span>
+                </div>
+                <div class="weather-info-item">
+                    <label>🌡️ 氣溫</label>
+                    <span id="temperature">--</span>
+                </div>
+                <div class="weather-info-item">
+                    <label>☁️ 天氣狀況</label>
+                    <span id="weatherCondition">--</span>
+                </div>
+                <div class="weather-info-item">
+                    <label>💧 濕度</label>
+                    <span id="humidity">--</span>
+                </div>
+                <div class="weather-info-item">
+                    <label>🌧️ 下雨機率</label>
+                    <span id="rainProbability">--</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="api-info">
+            <p>🗺️ 地圖資料來源: OpenStreetMap (免費開源地圖)</p>
+            <p>🌤️ 天氣資料來源: Open-Meteo (免費開放天氣API)</p>
+            <p>🔄 資料更新時間: 每小時更新</p>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        let map;
+        let marker;
+        
+        // 天氣代碼映射表
+        const weatherCodeMap = {
+            0: { description: "晴朗", icon: "01d" },
+            1: { description: "晴朗", icon: "01d" },
+            2: { description: "多雲", icon: "02d" },
+            3: { description: "多雲", icon: "03d" },
+            45: { description: "霧", icon: "50d" },
+            48: { description: "霧", icon: "50d" },
+            51: { description: "毛毛雨", icon: "09d" },
+            53: { description: "毛毛雨", icon: "09d" },
+            55: { description: "毛毛雨", icon: "09d" },
+            56: { description: "凍雨", icon: "09d" },
+            57: { description: "凍雨", icon: "09d" },
+            61: { description: "小雨", icon: "10d" },
+            63: { description: "中雨", icon: "10d" },
+            65: { description: "大雨", icon: "10d" },
+            66: { description: "凍雨", icon: "10d" },
+            67: { description: "凍雨", icon: "10d" },
+            71: { description: "小雪", icon: "13d" },
+            73: { description: "中雪", icon: "13d" },
+            75: { description: "大雪", icon: "13d" },
+            77: { description: "雪粒", icon: "13d" },
+            80: { description: "陣雨", icon: "09d" },
+            81: { description: "陣雨", icon: "09d" },
+            82: { description: "陣雨", icon: "09d" },
+            85: { description: "陣雪", icon: "13d" },
+            86: { description: "陣雪", icon: "13d" },
+            95: { description: "雷暴", icon: "11d" },
+            96: { description: "雷暴", icon: "11d" },
+            99: { description: "雷暴", icon: "11d" }
+        };
+        
+        // 初始化地圖
+        function initMap() {
+            // 預設位置（台北101）
+            const defaultLocation = [25.0336, 121.5650];
+            
+            // 創建地圖
+            map = L.map('map').setView(defaultLocation, 13);
+            
+            // 添加地圖圖層
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // 添加預設標記
+            marker = L.marker(defaultLocation, {
+                draggable: true
+            }).addTo(map);
+            
+            // 更新座標顯示
+            updateCoordinateDisplay(defaultLocation[0], defaultLocation[1]);
+            
+            // 點擊地圖事件
+            map.on('click', function(e) {
+                placeMarker(e.latlng);
+            });
+            
+            // 拖曳標記事件
+            marker.on('dragend', function(e) {
+                const position = e.target.getLatLng();
+                updateCoordinateDisplay(position.lat, position.lng);
+            });
+        }
+        
+        // 放置標記
+        function placeMarker(location) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            
+            marker = L.marker(location, {
+                draggable: true
+            }).addTo(map);
+            
+            // 拖曳標記事件
+            marker.on('dragend', function(e) {
+                const position = e.target.getLatLng();
+                updateCoordinateDisplay(position.lat, position.lng);
+            });
+            
+            updateCoordinateDisplay(location.lat, location.lng);
+        }
+        
+        // 更新座標顯示
+        function updateCoordinateDisplay(lat, lng) {
+            document.getElementById("latitude").value = lat.toFixed(6);
+            document.getElementById("longitude").value = lng.toFixed(6);
+        }
+        
+        // 查詢天氣
+        document.getElementById("queryWeather").addEventListener("click", function() {
+            const lat = document.getElementById("latitude").value;
+            const lng = document.getElementById("longitude").value;
+            
+            if (!lat || !lng) {
+                showError("請先在地圖上選擇一個位置");
+                return;
+            }
+            
+            // 顯示載入中
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("weatherResult").style.display = "none";
+            document.getElementById("errorMessage").style.display = "none";
+            
+            // 使用Open-Meteo API查詢天氣
+            const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&hourly=relativehumidity_2m,precipitation_probability&timezone=auto`;
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('天氣資料獲取失敗');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayWeatherData(data, lat, lng);
+                })
+                .catch(error => {
+                    showError("無法獲取天氣資料: " + error.message);
+                })
+                .finally(() => {
+                    document.getElementById("loading").style.display = "none";
+                });
+        });
+        
+        // 顯示天氣資料
+        function displayWeatherData(data, lat, lng) {
+            // 使用Nominatim API獲取地名資訊
+            const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=zh-TW`;
+            
+            fetch(nominatimUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('地名資料獲取失敗');
+                    }
+                    return response.json();
+                })
+                .then(locationData => {
+                    // 提取地區和國家資訊
+                    let locationName = "未知地區";
+                    let country = "未知國家";
+                    
+                    if (locationData.address) {
+                        if (locationData.address.city || locationData.address.town || locationData.address.village) {
+                            locationName = locationData.address.city || 
+                                           locationData.address.town || 
+                                           locationData.address.village;
+                        } else if (locationData.address.county) {
+                            locationName = locationData.address.county;
+                        } else if (locationData.address.state) {
+                            locationName = locationData.address.state;
+                        }
+                        
+                        if (locationData.address.country) {
+                            country = locationData.address.country;
+                        }
+                    }
+                    
+                    document.getElementById("locationName").textContent = locationName;
+                    document.getElementById("country").textContent = country;
+                    
+                    // 繼續顯示天氣資訊
+                    continueDisplayWeather(data, lat, lng);
+                })
+                .catch(error => {
+                    console.error("獲取地名資訊失敗:", error);
+                    document.getElementById("locationName").textContent = "未知地區";
+                    document.getElementById("country").textContent = "未知國家";
+                    
+                    // 繼續顯示天氣資訊
+                    continueDisplayWeather(data, lat, lng);
+                });
+        }
+        
+        // 繼續顯示天氣資訊
+        function continueDisplayWeather(data, lat, lng) {
+            // 獲取當前時間索引
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentHourIndex = data.hourly.time.findIndex(time => {
+                const hour = new Date(time).getHours();
+                return hour === currentHour;
+            });
+            
+            // 獲取天氣代碼
+            const weatherCode = data.current_weather.weathercode;
+            const weatherInfo = weatherCodeMap[weatherCode] || { description: "未知", icon: "01d" };
+            
+            // 顯示天氣資訊
+            document.getElementById("coordinates").textContent = `${lat}, ${lng}`;
+            document.getElementById("temperature").textContent = `${data.current_weather.temperature} °C`;
+            document.getElementById("weatherCondition").textContent = weatherInfo.description;
+            
+            // 獲取濕度和降水機率
+            if (currentHourIndex !== -1) {
+                document.getElementById("humidity").textContent = `${data.hourly.relativehumidity_2m[currentHourIndex]}%`;
+                document.getElementById("rainProbability").textContent = `${data.hourly.precipitation_probability[currentHourIndex]}%`;
+            } else {
+                document.getElementById("humidity").textContent = "無數據";
+                document.getElementById("rainProbability").textContent = "無數據";
+            }
+            
+            // 天氣圖標 (使用OpenWeatherMap的圖標，因為Open-Meteo不提供圖標)
+            document.getElementById("weatherIcon").src = `https://openweathermap.org/img/wn/${weatherInfo.icon}@2x.png`;
+            
+            // 顯示結果
+            document.getElementById("weatherResult").style.display = "block";
+        }
+        
+        // 顯示錯誤訊息
+        function showError(message) {
+            document.getElementById("errorMessage").textContent = message;
+            document.getElementById("errorMessage").style.display = "block";
+        }
+        
+        // 初始化地圖
+        window.onload = function() {
+            initMap();
+        };
+    </script>
+</body>
+</html>

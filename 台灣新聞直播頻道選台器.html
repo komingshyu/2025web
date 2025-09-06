@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣新聞直播頻道選台器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #dc3545;
+            --secondary-color: #343a40;
+            --bg-dark: #1a1a1a;
+            --bg-card: #2d2d2d;
+            --text-light: #ffffff;
+            --text-muted: #adb5bd;
+            --taiwan-color: #0052CC;
+            --youtube-red: #FF0000;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--taiwan-color) 100%);
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+            padding-top: 1rem;
+        }
+        /* Video Player Section */
+        .player-section {
+            flex: 1;
+            padding-right: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .video-container {
+            background-color: #000;
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            margin-bottom: 1rem;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+        }
+        /* Channel Selection Section */
+        .channel-section {
+            width: 280px;
+            background-color: var(--bg-card);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        /* Channel Cards */
+        .channel-card {
+            background-color: rgba(255,255,255,0.05);
+            border: 2px solid transparent;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+        .channel-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 82, 204, 0.3);
+            border-color: var(--taiwan-color);
+            background-color: rgba(0, 82, 204, 0.1);
+        }
+        .channel-card.active {
+            border-color: var(--taiwan-color);
+            background-color: rgba(0, 82, 204, 0.2);
+        }
+        .channel-card.active::before {
+            content: 'LIVE';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: var(--taiwan-color);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        .channel-logo {
+            width: 45px;
+            height: 45px;
+            background-color: var(--taiwan-color);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+        .channel-info {
+            flex-grow: 1;
+        }
+        .channel-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.15rem;
+        }
+        .channel-country {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        /* Channel Info Panel */
+        .channel-info-panel {
+            background-color: var(--bg-card);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .channel-info-panel h3 {
+            color: var(--taiwan-color);
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+        .channel-info-panel p {
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .channel-info-panel .d-flex {
+            font-size: 0.85rem;
+        }
+        .channel-info-panel .d-flex span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        /* Loading Animation */
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.2rem;
+            z-index: 10;
+        }
+        .loading.show {
+            display: block;
+        }
+        /* Error Message */
+        .error-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 2rem;
+            border-radius: 0.5rem;
+            z-index: 10;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .error-message i {
+            font-size: 3rem;
+            color: var(--taiwan-color);
+            margin-bottom: 1rem;
+        }
+        .error-message h4 {
+            margin-bottom: 1rem;
+        }
+        /* Search and Filter */
+        .search-container {
+            margin-bottom: 1rem;
+        }
+        .search-container h5 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .search-input {
+            background-color: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+        }
+        .search-input:focus {
+            background-color: rgba(255,255,255,0.15);
+            border-color: var(--taiwan-color);
+            box-shadow: 0 0 0 0.2rem rgba(0, 82, 204, 0.25);
+            color: white;
+        }
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+        #channelList h5 {
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+        /* Alternative Links */
+        .alternative-links {
+            margin-top: 1rem;
+        }
+        .alternative-links button {
+            background-color: var(--taiwan-color);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+        }
+        .alternative-links button:hover {
+            background-color: #0041a8;
+            transform: translateY(-2px);
+        }
+        /* Responsive */
+        @media (max-width: 992px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .player-section {
+                padding-right: 0;
+                margin-bottom: 1rem;
+            }
+            .channel-section {
+                width: 100%;
+                height: 250px;
+            }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--secondary-color);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--taiwan-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="logo">
+                        <i class="bi bi-tv"></i>
+                        台灣新聞直播頻道選台器
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="container-fluid main-container">
+        <!-- Video Player Section -->
+        <div class="player-section">
+            <div class="video-container">
+                <div class="loading">
+                    <i class="bi bi-arrow-clockwise spinner-border me-2"></i>
+                    載入中...
+                </div>
+                <div class="error-message" id="errorMessage">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <h4>無法播放影片</h4>
+                    <p>此頻道可能暫時無法嵌入播放</p>
+                    <div class="alternative-links">
+                        <button onclick="openLivePage()">
+                            <i class="bi bi-box-arrow-up-right"></i> 在 YouTube 觀看
+                        </button>
+                        <button onclick="tryAlternativeSource()">
+                            <i class="bi bi-arrow-clockwise"></i> 試試其他來源
+                        </button>
+                    </div>
+                </div>
+                <iframe id="videoPlayer" 
+                        src="https://www.youtube.com/embed/dCVt4g75C98?autoplay=1&mute=0" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+            </div>
+            
+            <!-- Channel Info Panel -->
+            <div class="channel-info-panel" id="channelInfo">
+                <h3 id="currentChannelName">請選擇頻道</h3>
+                <p id="currentChannelDesc">從右側選擇您想觀看的新聞頻道</p>
+                <div class="d-flex gap-3">
+                    <span><i class="bi bi-geo-alt"></i> <span id="currentChannelCountry">-</span></span>
+                    <span><i class="bi bi-tag"></i> <span id="currentChannelCategory">-</span></span>
+                    <span><i class="bi bi-eye"></i> 直播中</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Channel Selection Section -->
+        <div class="channel-section">
+            <div class="search-container">
+                <h5><i class="bi bi-search"></i> 搜尋頻道</h5>
+                <input type="text" class="search-input" id="searchInput" placeholder="輸入頻道名稱...">
+            </div>
+            
+            <h5><i class="bi bi-list"></i> 頻道列表</h5>
+            <div id="channelList">
+                <!-- Taiwan channels will be dynamically inserted here -->
+            </div>
+        </div>
+    </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Taiwan channels with working video IDs
+        const taiwanChannels = [
+            {
+                id: 'ctv',
+                name: '中視新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'TCnaIE_SAtM',
+                url: 'https://www.youtube.com/watch?v=TCnaIE_SAtM',
+                description: '中國電視公司新聞頻道，提供國內外新聞資訊'
+            },
+            
+            {
+                id: 'ftv',
+                name: '民視新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'ylYJSBUgaMA',
+                url: 'https://www.youtube.com/watch?v=ylYJSBUgaMA',
+                description: '民間電視台新聞頻道，提供台灣在地新聞'
+            },
+            {
+                id: 'cti',
+                name: '中天新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'vr3XyVCR4T0',
+                url: 'https://www.youtube.com/watch?v=vr3XyVCR4T0',
+                description: '中天新聞頻道，提供國內外新聞資訊'
+            },
+            {
+                id: 'set',
+                name: '三立新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'MV9mI0GChwo',
+                url: 'https://www.youtube.com/watch?v=MV9mI0GChwo',
+                description: '三立電視新聞頻道，提供台灣新聞與節目'
+            },
+            
+            
+            {
+                id: 'pts',
+                name: '公視新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'quwqlazU-c8',
+                url: 'https://www.youtube.com/watch?v=quwqlazU-c8',
+                description: '公共電視新聞頻道，提供公共事務報導'
+            },
+            {
+                id: 'cna',
+                name: '中央社直播',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'dCVt4g75C98',
+                url: 'https://www.youtube.com/watch?v=dCVt4g75C98',
+                description: '中央通訊社，提供台灣即時新聞報導'
+            },
+
+            {
+                id: 'tvbs',
+                name: 'TVBS新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'm_dhMSvUCIc',
+                url: 'https://www.youtube.com/watch?v=m_dhMSvUCIc',
+                description: 'TVBS新聞頻道，提供即時新聞與深度報導'
+            },
+            
+            {
+                id: 'ebc',
+                name: '東森新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'V1p33hqPrUk',
+                url: 'https://www.youtube.com/watch?v=V1p33hqPrUk',
+                description: '東森電視新聞頻道，提供24小時新聞播報'
+            },
+            {
+                id: 'ebc57',
+                name: '東森財經新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'AEBeWMM1atA',
+                url: 'https://www.youtube.com/watch?v=AEBeWMM1atA',
+                description: '東森電視財經新聞頻道，提供24小時財經新聞播報'
+            },
+
+            {
+                id: 'ttv',
+                name: '台視新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'xL0ch83RAK8',
+                url: 'https://www.youtube.com/watch?v=xL0ch83RAK8',
+                description: '台灣電視公司新聞頻道，提供台灣即時新聞報導'
+            },
+            {
+                id: 'cts',
+                name: '華視新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: 'wM0g8EoUZ_E',
+                url: 'https://www.youtube.com/watch?v=wM0g8EoUZ_E',
+                description: '中華電視台公司新聞頻道，提供台灣即時新聞報導'
+            },
+
+            {
+                id: 'news',
+                name: '寰宇新聞',
+                country: '台灣',
+                category: 'taiwan',
+                videoId: '6IquAgfvYmc',
+                url: 'https://www.youtube.com/watch?v=6IquAgfvYmc',
+                description: '寰宇新聞頻道，提供國內外新聞資訊'
+            }
+
+            
+        ];
+        
+        let currentChannel = null;
+       
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderChannels();
+            setupEventListeners();
+            
+            
+            // Auto-select first channel
+            if (taiwanChannels.length > 0) {
+                selectChannel(taiwanChannels[0]);
+            }
+        });
+        
+        // Render channels
+        function renderChannels() {
+            const channelList = document.getElementById('channelList');
+            channelList.innerHTML = '';
+            
+            taiwanChannels.forEach(channel => {
+                const card = createChannelCard(channel);
+                channelList.appendChild(card);
+            });
+        }
+        
+        // Create channel card
+        function createChannelCard(channel) {
+            const card = document.createElement('div');
+            card.className = 'channel-card';
+            card.dataset.channelId = channel.id;
+            
+            card.innerHTML = `
+                <div class="channel-logo">${channel.name.substring(0, 2)}</div>
+                <div class="channel-info">
+                    <div class="channel-name">${channel.name}</div>
+                    <div class="channel-country">
+                        <i class="bi bi-geo-alt"></i> ${channel.country}
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => selectChannel(channel));
+            
+            return card;
+        }
+        
+        // Select channel
+        function selectChannel(channel) {
+            currentChannel = channel;
+            
+            // Update active state
+            document.querySelectorAll('.channel-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-channel-id="${channel.id}"]`).classList.add('active');
+            
+            // Update video player
+            const player = document.getElementById('videoPlayer');
+            const loading = document.querySelector('.loading');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Hide error message and show loading
+            errorMessage.classList.remove('show');
+            loading.classList.add('show');
+            player.style.display = 'block';
+            
+            // Load the video
+            player.src = `https://www.youtube.com/embed/${channel.videoId}?autoplay=1&mute=0`;
+            
+            // Set timeout for error handling
+            const timeoutId = setTimeout(() => {
+                if (loading.classList.contains('show')) {
+                    showError();
+                }
+            }, 10000);
+            
+            // Handle successful load
+            player.onload = function() {
+                clearTimeout(timeoutId);
+                setTimeout(() => {
+                    loading.classList.remove('show');
+                }, 1000);
+            };
+            
+            // Handle error
+            player.onerror = function() {
+                clearTimeout(timeoutId);
+                showError();
+            };
+            
+            // Update channel info
+            document.getElementById('currentChannelName').textContent = channel.name;
+            document.getElementById('currentChannelDesc').textContent = channel.description;
+            document.getElementById('currentChannelCountry').textContent = channel.country;
+            document.getElementById('currentChannelCategory').textContent = '台灣新聞';
+        }
+        
+        // Show error message
+        function showError() {
+            const loading = document.querySelector('.loading');
+            const player = document.getElementById('videoPlayer');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            loading.classList.remove('show');
+            player.style.display = 'none';
+            errorMessage.classList.add('show');
+        }
+        
+        // Open live page
+        function openLivePage() {
+            if (currentChannel) {
+                window.open(currentChannel.url, '_blank');
+            }
+        }
+        
+        // Try alternative source
+        function tryAlternativeSource() {
+            if (currentChannel) {
+                // Try a common live stream video ID as fallback
+                const fallbackVideoId = 'dCVt4g75C98';
+                const player = document.getElementById('videoPlayer');
+                const loading = document.querySelector('.loading');
+                const errorMessage = document.getElementById('errorMessage');
+                
+                errorMessage.classList.remove('show');
+                loading.classList.add('show');
+                player.style.display = 'block';
+                
+                player.src = `https://www.youtube.com/embed/${fallbackVideoId}?autoplay=1&mute=0`;
+                
+                player.onload = function() {
+                    setTimeout(() => {
+                        loading.classList.remove('show');
+                    }, 1000);
+                };
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const filtered = taiwanChannels.filter(channel => 
+                    channel.name.toLowerCase().includes(searchTerm)
+                );
+                
+                // Clear and render filtered channels
+                const channelList = document.getElementById('channelList');
+                channelList.innerHTML = '';
+                
+                if (filtered.length > 0) {
+                    filtered.forEach(channel => {
+                        const card = createChannelCard(channel);
+                        channelList.appendChild(card);
+                    });
+                } else {
+                    channelList.innerHTML = '<div class="text-center text-muted py-3">沒有找到符合的頻道</div>';
+                }
+            });
+        }
+        
+        
+    </script>
+</body>
+</html>

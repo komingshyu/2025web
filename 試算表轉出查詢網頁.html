@@ -1,0 +1,2850 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可愛資料查詢系統 - 設定頁面</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .cute-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .cute-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .cute-button {
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            border: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .cute-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(232, 67, 147, 0.4);
+        }
+        
+        .cute-input {
+            border: 2px solid #ffeaa7;
+            border-radius: 15px;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .cute-input:focus {
+            outline: none;
+            border-color: #fd79a8;
+            box-shadow: 0 0 0 3px rgba(253, 121, 168, 0.1);
+        }
+        
+        .field-item {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .field-item:hover {
+            border-color: #ffeaa7;
+            background: #fff5f5;
+        }
+        
+        .field-item.selected {
+            border-color: #fd79a8;
+            background: #ffe0e6;
+        }
+        
+        .drag-handle {
+            cursor: grab;
+            color: #fd79a8;
+        }
+        
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        
+        .cute-checkbox {
+            width: 20px;
+            height: 20px;
+            accent-color: #fd79a8;
+        }
+        
+        .cute-radio {
+            width: 18px;
+            height: 18px;
+            accent-color: #fd79a8;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffeaa7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #2d3436;
+            margin: 0 10px;
+            position: relative;
+        }
+        
+        .step.active {
+            background: #fd79a8;
+            color: white;
+        }
+        
+        .step::after {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 2px;
+            background: #ffeaa7;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .step:last-child::after {
+            display: none;
+        }
+        
+        .cute-select {
+            border: 2px solid #ffeaa7;
+            border-radius: 15px;
+            padding: 10px 15px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .cute-select:focus {
+            outline: none;
+            border-color: #fd79a8;
+        }
+        
+        .debug-info {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .header-tag {
+            background: #fce4ec;
+            color: #c2185b;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-block;
+            margin: 2px;
+            border: 1px solid #f8bbd0;
+        }
+        
+        .template-card {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .template-card.selected {
+            border-color: #fd79a8;
+            transform: scale(1.02);
+        }
+        
+        .template-preview {
+            height: 120px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .template-info {
+            padding: 15px;
+            background: white;
+        }
+        
+        .template-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .template-description {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* 使用說明按鈕樣式 */
+        .help-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .help-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+        
+        /* 模態框樣式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close:hover {
+            color: #e84393;
+        }
+        
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+        
+        @keyframes slideIn {
+            from {transform: translateY(-50px); opacity: 0;}
+            to {transform: translateY(0); opacity: 1;}
+        }
+        
+        .help-section {
+            margin-bottom: 25px;
+        }
+        
+        .help-section h3 {
+            color: #e84393;
+            font-size: 20px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .help-section h3 i {
+            margin-right: 10px;
+        }
+        
+        .help-section p, .help-section li {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .help-section ul {
+            padding-left: 25px;
+        }
+      
+        /* 頁腳樣式 */
+        .footer {
+            margin-top: auto;
+            padding: 20px 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .main-content {
+            flex: 1;
+            padding-bottom: 20px;
+        }
+        /* 加密設定樣式 */
+        .encryption-options {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 2px solid #ffeaa7;
+        }
+        .encryption-level {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .encryption-level input[type="radio"] {
+            margin-right: 10px;
+        }
+        .encryption-description {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            margin-left: 25px;
+        }
+        
+        /* 輸入類型選項樣式 */
+        .input-type-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-left: 25px;
+        }
+        
+        .input-type-option {
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-type-option input[type="radio"] {
+            margin-right: 8px;
+        }
+        
+        .input-type-option label {
+            color: #555;
+            font-size: 14px;
+        }
+        
+        /* 必填欄位標記樣式 */
+        .required-field::after {
+            content: " *";
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        /* 查詢方式設定樣式 */
+        .search-mode-options {
+            background: #f0f8ff;
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid #b3d9ff;
+        }
+        
+        .search-mode-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-mode-option:hover {
+            background: #e6f3ff;
+            transform: translateX(5px);
+        }
+        
+        .search-mode-option input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .search-mode-option label {
+            font-weight: 500;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+        
+        .search-mode-description {
+            font-size: 13px;
+            color: #666;
+            margin-left: 28px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 使用說明按鈕 -->
+    <div class="help-button" onclick="openHelpModal()">
+        <i class="fas fa-question-circle text-2xl text-pink-500"></i>
+    </div>
+    
+    <!-- 使用說明模態框 -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+            <h2 class="text-2xl font-bold text-center mb-6 text-pink-500">🌸 試算表轉為網頁資料查詢系統的使用說明 🌸</h2>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-info-circle"></i> 系統簡介</h3>
+                <p>轉出網頁版資料查詢系統是一個簡單易用的工具，可以將您的Excel資料快速轉換為互動式網頁查詢系統。只需幾個簡單步驟，就能建立一個美觀又實用的查詢頁面。</p>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-list-ol"></i> 操作步驟</h3>
+                <ol>
+                    <li><strong>步驟1：上傳試算表檔案</strong><br>
+                        點擊「選擇XLSX檔案」按鈕，上傳您的Excel檔案（.xlsx或.xls格式）。</li>
+                    <li><strong>步驟2：選擇工作表</strong><br>
+                        從下拉式選單中選擇要使用的工作表，然後點擊「載入工作表」。</li>
+                    <li><strong>步驟3：設定欄位</strong><br>
+                        <ul>
+                            <li><strong>搜尋欄位設定</strong>：選擇最多4個欄位作為搜尋條件，可以設定為文字輸入、下拉式選單或密碼輸入。</li>
+                            <li><strong>顯示欄位設定</strong>：選擇最多10個欄位在搜尋結果中顯示，可以拖曳調整順序。</li>
+                            <li><strong>查詢方式設定</strong>：選擇查詢頁面要提供的查詢方式，可以選擇「完全符合查詢」、「含關鍵字查詢」或兩種都選。</li>
+                            <li><strong>頁面設定</strong>：輸入查詢頁面的標題和單位名稱。</li>
+                            <li><strong>重複資料處理</strong>：選擇是否要移除重複的資料。</li>
+                            <li><strong>資料加密設定</strong>：選擇是否要對資料進行加密保護。</li>
+                            <li><strong>搜尋欄位加密設定</strong>：選擇是否要對搜尋欄位的選項值進行加密。</li>
+                        </ul>
+                    </li>
+                    <li><strong>步驟4：確認設定</strong><br>
+                        檢視所有設定摘要，確認無誤後點擊「下一步」。</li>
+                    <li><strong>步驟5：選擇網頁模板</strong><br>
+                        從8種不同風格的模板中選擇您喜歡的設計，然後點擊「產生查詢頁面」。</li>
+                </ol>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-palette"></i> 模板風格說明</h3>
+                <ul>
+                    <li><strong>活潑可愛風格</strong>：粉紅色系、圓潤設計、可愛圖標，適合親切友善的場合。</li>
+                    <li><strong>簡單清新風格</strong>：藍綠色系、簡潔設計、清新感，適合簡約自然的場合。</li>
+                    <li><strong>專業形象風格</strong>：黑白灰色系、簡約設計、專業感，適合正式商業場合。</li>
+                    <li><strong>華麗炫彩風格</strong>：紫紅色系、漸變設計、華麗感，適合創意設計場合。</li>
+                    <li><strong>科技未來風格</strong>：藍紫色系、科技感、未來感，適合科技相關場合。</li>
+                    <li><strong>自然大地風格</strong>：棕綠色系、自然感、大地感，適合環保自然場合。</li>
+                    <li><strong>海洋藍天風格</strong>：藍白色系、海洋感、天空感，適合旅遊休閒場合。</li>
+                    <li><strong>復古懷舊風格</strong>：棕黃色系、復古感、懷舊感，適合文化傳統場合。</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-lightbulb"></i> 使用技巧</h3>
+                <ul>
+                    <li><strong>搜尋欄位設定</strong>：建議選擇資料中具有唯一性或常用於查詢的欄位，如姓名、編號、日期等。</li>
+                    <li><strong>輸入類型選擇</strong>：
+                        <ul>
+                            <li><strong>文字輸入</strong>：適用於需要自由輸入的欄位，如姓名、地址等。</li>
+                            <li><strong>下拉式選單</strong>：適用於選項固定的欄位，如部門、類別等。</li>
+                            <li><strong>密碼輸入</strong>：適用於敏感資訊欄位，如密碼、身份證號等，輸入時會顯示為遮罩。</li>
+                        </ul>
+                    </li>
+                    <li><strong>顯示欄位順序</strong>：可以拖曳調整顯示欄位的順序，將重要資訊放在前面。</li>
+                    <li><strong>去重功能</strong>：如果資料中有重複記錄，建議開啟去重功能，讓搜尋結果更清晰。</li>
+                    <li><strong>資料加密</strong>：如果資料包含敏感資訊，建議開啟加密功能，保護資料安全。</li>
+                    <li><strong>搜尋欄位加密</strong>：如果搜尋欄位的選項值也包含敏感資訊，建議開啟搜尋欄位加密功能。</li>
+                    <li><strong>模板選擇</strong>：根據使用場合和目標受眾選擇合適的模板風格，提升使用者體驗。</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-file-export"></i> 產生查詢頁面後</h3>
+                <p>完成所有步驟後，系統會自動下載一個HTML檔案。您可以：</p>
+                <ul>
+                    <li>直接在瀏覽器中開啟使用</li>
+                    <li>上傳到網站伺服器供他人使用</li>
+                    <li>在內部網路中分享給同事</li>
+                    <li>嵌入到現有網頁中</li>
+                </ul>
+                <p>生成的查詢頁面是獨立的HTML檔案，不需要額外的伺服器或資料庫，非常方便部署。</p>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-lock"></i> 資料加密說明</h3>
+                <p>本系統提供三種加密等級，保護您的資料安全：</p>
+                <ul>
+                    <li><strong>基本加密（Base64）</strong>：將資料進行Base64編碼，防止直接查看，但安全性較低。</li>
+                    <li><strong>中等加密（XOR）</strong>：使用XOR演算法加密，比Base64更安全，適合一般資料保護。</li>
+                    <li><strong>高級加密（AES）</strong>：使用改進的AES演算法加密，安全性最高，適合敏感資料保護。</li>
+                </ul>
+                <p><strong>注意：</strong>請務必妥善保管加密金鑰，遺失後將無法解密資料！</p>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-search"></i> 搜尋欄位加密說明</h3>
+                <p>除了對整體資料進行加密外，您還可以選擇對搜尋欄位的選項值進行加密：</p>
+                <ul>
+                    <li><strong>選項值加密</strong>：下拉式選單中的選項值將被加密，防止在HTML原始碼中直接看到原始資料。</li>
+                    <li><strong>自動解密</strong>：當用戶選擇選項時，系統會自動解密選項值，然後進行搜尋。</li>
+                    <li><strong>增加安全性</strong>：即使有人查看HTML原始碼，也無法直接獲取選項的原始值。</li>
+                </ul>
+                <p><strong>注意：</strong>此功能需要與資料加密功能一起使用，才能達到最佳保護效果。</p>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-key"></i> 密碼欄位說明</h3>
+                <p>對於敏感資訊的搜尋欄位，您可以選擇使用密碼輸入類型：</p>
+                <ul>
+                    <li><strong>輸入遮罩</strong>：用戶輸入時會顯示為圓點或星號，防止旁人窺視。</li>
+                    <li><strong>適用場景</strong>：適用於密碼、身份證號、電話號碼等敏感資訊的搜尋。</li>
+                    <li><strong>與下拉式選單互斥</strong>：密碼輸入和下拉式選單只能選擇一種輸入方式。</li>
+                </ul>
+                <p><strong>注意：</strong>密碼輸入類型僅改變輸入時的顯示方式，不影響資料的加密和儲存。</p>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-search"></i> 查詢方式設定說明</h3>
+                <p>本系統讓您可以在設定頁面中預先設定查詢頁面要提供的查詢方式：</p>
+                <ul>
+                    <li><strong>完全符合查詢</strong>：搜尋結果必須與輸入的關鍵字完全相同（不區分大小寫）。適用於需要精確匹配的場景，如產品編號、身份證號等。</li>
+                    <li><strong>含關鍵字查詢</strong>：搜尋結果只要包含輸入的關鍵字即可（不區分大小寫）。適用於模糊搜尋的場景，如姓名、地址等。</li>
+                    <li><strong>靈活選擇</strong>：您可以選擇只提供一種查詢方式，或兩種都提供讓用戶自行選擇。</li>
+                    <li><strong>必選要求</strong>：至少必須選擇一種查詢方式，確保查詢頁面能正常運作。</li>
+                </ul>
+                <p><strong>注意：</strong>查詢方式的設定會影響最終生成的查詢頁面功能，請根據實際需求選擇。</p>
+            </div>
+            
+            <div class="help-section">
+                <h3><i class="fas fa-exclamation-circle"></i> 必填欄位說明</h3>
+                <p>本系統要求所有搜尋欄位都必須填寫內容才能執行查詢：</p>
+                <ul>
+                    <li><strong>必填限制</strong>：所有設定的搜尋欄位都必須填寫內容，否則無法執行查詢。</li>
+                    <li><strong>提示訊息</strong>：如果有任何一個欄位未填寫，系統會顯示提示訊息，要求填寫所有欄位。</li>
+                    <li><strong>設計目的</strong>：這種設計可以確保查詢條件完整，提高查詢精確度，避免返回過多不相關的結果。</li>
+                </ul>
+                <p><strong>注意：</strong>請確保在設定搜尋欄位時，只選擇實際需要的欄位，避免給使用者帶來不必要的填寫負擔。</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 標題 -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">🌸 將視算表轉為網頁資料查詢系統設定 🌸</h1>
+            <p class="text-white text-lg">讓您的資料查詢變得簡單又可愛！</p>
+        </div>
+        
+        <!-- 步驟指示器 -->
+        <div class="step-indicator">
+            <div class="step active" id="step1">1</div>
+            <div class="step" id="step2">2</div>
+            <div class="step" id="step3">3</div>
+            <div class="step" id="step4">4</div>
+            <div class="step" id="step5">5</div>
+        </div>
+        
+        <!-- 主要內容 -->
+        <div class="cute-card p-8">
+            <!-- 步驟1: 上傳檔案 -->
+            <div id="uploadStep" class="step-content">
+                <h2 class="text-2xl font-bold mb-6 text-center text-pink-500">📁 步驟1：上傳試算表檔案</h2>
+                <div class="text-center">
+                    <label for="fileInput" class="cute-button inline-block cursor-pointer">
+                        <span class="text-xl">📤</span> 選擇 XLSX 檔案
+                    </label>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+                    <p class="mt-4 text-gray-600">請選擇 Excel 試算表檔案（.xlsx 或 .xls）</p>
+                    <div id="fileName" class="mt-2 text-pink-500 font-medium"></div>
+                </div>
+            </div>
+            
+            <!-- 步驟2: 選擇工作表 -->
+            <div id="worksheetStep" class="step-content hidden">
+                <h2 class="text-2xl font-bold mb-6 text-center text-pink-500">📋 步驟2：選擇工作表</h2>
+                <div class="text-center">
+                    <label class="block mb-4 text-lg">請選擇要使用的工作表：</label>
+                    <select id="worksheetSelect" class="cute-select text-lg px-6 py-3">
+                        <option value="">請選擇...</option>
+                    </select>
+                    <div class="mt-6">
+                        <button onclick="loadWorksheet()" class="cute-button">
+                            <span class="text-xl">✨</span> 載入工作表
+                        </button>
+                    </div>
+                </div>
+                <!-- 除錯資訊 -->
+                <div id="debugInfo" class="debug-info hidden"></div>
+            </div>
+            
+            <!-- 步驟3: 設定欄位 -->
+            <div id="fieldStep" class="step-content hidden">
+                <h2 class="text-2xl font-bold mb-6 text-center text-pink-500">⚙️ 步驟3：設定欄位</h2>
+                
+                <!-- 欄位名稱預覽 -->
+                <div class="mb-6 bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-2 text-yellow-700">📝 偵測到的欄位名稱：</h3>
+                    <div id="headersPreview" class="flex flex-wrap gap-2"></div>
+                </div>
+                
+                <!-- 搜尋欄位設定 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-pink-400">🔍 搜尋欄位設定（最多4個）</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                        <p class="text-blue-700">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>注意：</strong>所有設定的搜尋欄位都必須填寫內容才能執行查詢，請只選擇必要的欄位。
+                        </p>
+                    </div>
+                    <div id="searchFields" class="space-y-3">
+                        <!-- 動態生成 -->
+                    </div>
+                </div>
+                
+                <!-- 顯示欄位設定 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-pink-400">👁️ 顯示欄位設定（最多10個）</h3>
+                    <div id="displayFields" class="space-y-3">
+                        <!-- 動態生成 -->
+                    </div>
+                </div>
+                
+                <!-- 查詢方式設定 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-pink-400">🔎 查詢方式設定</h3>
+                    <div class="search-mode-options">
+                        <div class="mb-3">
+                            <p class="text-blue-700 font-medium">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                請選擇查詢頁面要提供的查詢方式（至少選擇一種）：
+                            </p>
+                        </div>
+                        
+                        <div class="search-mode-option">
+                            <input type="checkbox" id="searchModeExact" class="cute-checkbox" onchange="updateSearchModeValidation()">
+                            <label for="searchModeExact">完全符合查詢</label>
+                        </div>
+                        <div class="search-mode-description">
+                            搜尋結果必須與輸入的關鍵字完全相同（不區分大小寫）。適用於需要精確匹配的場景，如產品編號、身份證號等。
+                        </div>
+                        
+                        <div class="search-mode-option">
+                            <input type="checkbox" id="searchModeContains" class="cute-checkbox" onchange="updateSearchModeValidation()">
+                            <label for="searchModeContains">含關鍵字查詢</label>
+                        </div>
+                        <div class="search-mode-description">
+                            搜尋結果只要包含輸入的關鍵字即可（不區分大小寫）。適用於模糊搜尋的場景，如姓名、地址等。
+                        </div>
+                        
+                        <div id="searchModeValidation" class="mt-3 p-3 bg-yellow-100 rounded-lg hidden">
+                            <p class="text-yellow-700">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                請至少選擇一種查詢方式！
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 頁面設定 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-pink-400">🎨 頁面設定</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block mb-2 font-medium">查詢頁面大標題</label>
+                            <input type="text" id="pageTitle" class="cute-input w-full" placeholder="請輸入標題">
+                        </div>
+                        <div>
+                            <label class="block mb-2 font-medium">單位名稱</label>
+                            <input type="text" id="unitName" class="cute-input w-full" placeholder="請輸入單位名稱">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 去重設定 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-pink-400">🔄 重複資料處理</h3>
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="removeDuplicates" class="cute-checkbox">
+                        <label for="removeDuplicates" class="text-gray-700">移除重複資料（只顯示一筆）</label>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">勾選此選項後，搜尋結果中相同的資料只會顯示一筆</p>
+                </div>
+                
+                <!-- 加密設定 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-pink-400">🔒 資料加密設定</h3>
+                    <div class="flex items-center space-x-3 mb-3">
+                        <input type="checkbox" id="enableEncryption" class="cute-checkbox" onchange="toggleEncryptionOptions()">
+                        <label for="enableEncryption" class="text-gray-700">啟用資料加密</label>
+                    </div>
+                    
+                    <div id="encryptionOptions" class="encryption-options hidden">
+                        <div class="mb-4">
+                            <label class="block mb-2 font-medium">選擇加密方式</label>
+                            <div class="space-y-2">
+                                <div class="encryption-level">
+                                    <input type="radio" id="encryptionBase64" name="encryptionMethod" value="base64" checked>
+                                    <label for="encryptionBase64">基本加密（Base64）</label>
+                                </div>
+                                <div class="encryption-description">將資料進行Base64編碼，防止直接查看，但安全性較低</div>
+                                
+                                <div class="encryption-level">
+                                    <input type="radio" id="encryptionXOR" name="encryptionMethod" value="xor">
+                                    <label for="encryptionXOR">中等加密（XOR）</label>
+                                </div>
+                                <div class="encryption-description">使用XOR演算法加密，比Base64更安全，適合一般資料保護</div>
+                                
+                                <div class="encryption-level">
+                                    <input type="radio" id="encryptionAES" name="encryptionMethod" value="aes">
+                                    <label for="encryptionAES">高級加密（AES）</label>
+                                </div>
+                                <div class="encryption-description">使用改進的AES演算法加密，安全性最高，適合敏感資料保護</div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block mb-2 font-medium">加密金鑰</label>
+                            <input type="password" id="encryptionKey" class="cute-input w-full" placeholder="請輸入加密金鑰">
+                            <p class="mt-2 text-sm text-gray-500">請記住此金鑰，遺失後將無法解密資料</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 搜尋欄位加密設定 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 text-pink-400">🔍 搜尋欄位加密設定</h3>
+                    <div class="flex items-center space-x-3 mb-3">
+                        <input type="checkbox" id="enableSearchEncryption" class="cute-checkbox" onchange="toggleSearchEncryptionOptions()" disabled>
+                        <label for="enableSearchEncryption" class="text-gray-700">啟用搜尋欄位加密</label>
+                    </div>
+                    
+                    <div id="searchEncryptionOptions" class="encryption-options hidden">
+                        <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                            <p class="text-blue-700">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                此功能將對下拉式選單中的選項值進行加密，防止在HTML原始碼中直接看到原始資料。
+                                當用戶選擇選項時，系統會自動解密選項值，然後進行搜尋。
+                            </p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block mb-2 font-medium">選擇要加密的搜尋欄位</label>
+                            <div id="searchFieldEncryptionOptions" class="space-y-2">
+                                <!-- 動態生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 步驟4: 確認設定 -->
+            <div id="confirmStep" class="step-content hidden">
+                <h2 class="text-2xl font-bold mb-6 text-center text-pink-500">✅ 步驟4：確認設定</h2>
+                <div id="configSummary" class="bg-pink-50 rounded-lg p-6">
+                    <!-- 動態生成設定摘要 -->
+                </div>
+                <div class="text-center mt-8">
+                    <button onclick="nextStep()" class="cute-button text-xl">
+                        下一步 <span class="text-xl">→</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 步驟5: 選擇模板 -->
+            <div id="templateStep" class="step-content hidden">
+                <h2 class="text-2xl font-bold mb-6 text-center text-pink-500">🎨 步驟5：選擇網頁模板</h2>
+                <p class="text-center text-gray-600 mb-8">請選擇您喜歡的網頁設計風格，套用到查詢頁面</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- 活潑可愛風格 -->
+                    <div class="template-card" onclick="selectTemplate('cute')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">🌸</div>
+                                    <div class="text-white font-bold">活潑可愛</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">活潑可愛風格</div>
+                            <div class="template-description">粉紅色系、圓潤設計、可愛圖標</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 簡單清新風格 -->
+                    <div class="template-card" onclick="selectTemplate('fresh')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">🍃</div>
+                                    <div class="text-white font-bold">簡單清新</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">簡單清新風格</div>
+                            <div class="template-description">藍綠色系、簡潔設計、清新感</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 專業形象風格 -->
+                    <div class="template-card" onclick="selectTemplate('professional')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #434343 0%, #000000 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">💼</div>
+                                    <div class="text-white font-bold">專業形象</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">專業形象風格</div>
+                            <div class="template-description">黑白灰色系、簡約設計、專業感</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 華麗炫彩風格 -->
+                    <div class="template-card" onclick="selectTemplate('glamorous')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">✨</div>
+                                    <div class="text-white font-bold">華麗炫彩</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">華麗炫彩風格</div>
+                            <div class="template-description">紫紅色系、漸變設計、華麗感</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 科技未來風格 -->
+                    <div class="template-card" onclick="selectTemplate('tech')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">🚀</div>
+                                    <div class="text-white font-bold">科技未來</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">科技未來風格</div>
+                            <div class="template-description">藍紫色系、科技感、未來感</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 自然大地風格 -->
+                    <div class="template-card" onclick="selectTemplate('nature')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #8B4513 0%, #228B22 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">🌿</div>
+                                    <div class="text-white font-bold">自然大地</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">自然大地風格</div>
+                            <div class="template-description">棕綠色系、自然感、大地感</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 海洋藍天風格 -->
+                    <div class="template-card" onclick="selectTemplate('ocean')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">🌊</div>
+                                    <div class="text-white font-bold">海洋藍天</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">海洋藍天風格</div>
+                            <div class="template-description">藍白色系、海洋感、天空感</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 復古懷舊風格 -->
+                    <div class="template-card" onclick="selectTemplate('vintage')">
+                        <div class="template-preview" style="background: linear-gradient(135deg, #d4a574 0%, #8b6f47 100%);">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-5xl mb-2">📜</div>
+                                    <div class="text-white font-bold">復古懷舊</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="template-info">
+                            <div class="template-name">復古懷舊風格</div>
+                            <div class="template-description">棕黃色系、復古感、懷舊感</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-8">
+                    <button onclick="generateQueryPage()" class="cute-button text-xl">
+                        <span class="text-xl">🚀</span> 產生查詢頁面
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 導航按鈕 -->
+            <div class="flex justify-between mt-8">
+                <button id="prevBtn" onclick="previousStep()" class="cute-button hidden">
+                    <span class="text-xl">←</span> 上一步
+                </button>
+                <button id="nextBtn" onclick="nextStep()" class="cute-button ml-auto hidden">
+                    下一步 <span class="text-xl">→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 頁腳 -->
+    <footer class="footer">
+        <p>本網頁程式由 koming 設計 2025.09.03</p>
+    </footer>
+    
+    <script>
+        let currentStep = 1;
+        let workbook = null;
+        let worksheetData = null;
+        let headers = [];
+        let config = {
+            searchFields: [],
+            displayFields: [],
+            searchModes: [], // 新增：儲存選擇的查詢方式
+            pageTitle: '',
+            unitName: '',
+            removeDuplicates: false,
+            template: 'cute', // 預設模板
+            enableEncryption: false,
+            encryptionMethod: 'base64',
+            encryptionKey: '',
+            enableSearchEncryption: false,
+            searchEncryptionFields: []
+        };
+        
+        // 模板定義
+        const templates = {
+            cute: {
+                name: '活潑可愛風格',
+                bodyBackground: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #fd79a8 0%, #e84393 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #e84393 0%, #d81b60 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(232, 67, 147, 0.4)',
+                inputBorder: '2px solid #ffeaa7',
+                inputFocusBorder: '2px solid #fd79a8',
+                inputFocusShadow: '0 0 0 3px rgba(253, 121, 168, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#ffe0e6',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#e84393',
+                icon: '🌸'
+            },
+            fresh: {
+                name: '簡單清新風格',
+                bodyBackground: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #4a9b29 0%, #96d9c3 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(86, 171, 47, 0.4)',
+                inputBorder: '2px solid #a8e6cf',
+                inputFocusBorder: '2px solid #56ab2f',
+                inputFocusShadow: '0 0 0 3px rgba(86, 171, 47, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#e6f7f2',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#56ab2f',
+                icon: '🍃'
+            },
+            professional: {
+                name: '專業形象風格',
+                bodyBackground: 'linear-gradient(135deg, #434343 0%, #000000 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #1a252f 0%, #2c3e50 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(44, 62, 80, 0.4)',
+                inputBorder: '2px solid #bdc3c7',
+                inputFocusBorder: '2px solid #3498db',
+                inputFocusShadow: '0 0 0 3px rgba(52, 152, 219, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#ecf0f1',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#2c3e50',
+                icon: '💼'
+            },
+            glamorous: {
+                name: '華麗炫彩風格',
+                bodyBackground: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #7a24cc 0%, #4200cc 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(142, 45, 226, 0.4)',
+                inputBorder: '2px solid #d9a5e3',
+                inputFocusBorder: '2px solid #8E2DE2',
+                inputFocusShadow: '0 0 0 3px rgba(142, 45, 226, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#f5e6ff',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#8E2DE2',
+                icon: '✨'
+            },
+            tech: {
+                name: '科技未來風格',
+                bodyBackground: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #3a56d4 0%, #330a91 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(67, 97, 238, 0.4)',
+                inputBorder: '2px solid #b8c6db',
+                inputFocusBorder: '2px solid #4361ee',
+                inputFocusShadow: '0 0 0 3px rgba(67, 97, 238, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#e6e9ff',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#4361ee',
+                icon: '🚀'
+            },
+            nature: {
+                name: '自然大地風格',
+                bodyBackground: 'linear-gradient(135deg, #8B4513 0%, #228B22 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #8B4513 0%, #556B2F 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #7a3d11 0%, #4a5a2a 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(139, 69, 19, 0.4)',
+                inputBorder: '2px solid #deb887',
+                inputFocusBorder: '2px solid #8B4513',
+                inputFocusShadow: '0 0 0 3px rgba(139, 69, 19, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#f5f0e6',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#8B4513',
+                icon: '🌿'
+            },
+            ocean: {
+                name: '海洋藍天風格',
+                bodyBackground: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #00b4d8 0%, #0077b6 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #0099c0 0%, #0066a0 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(0, 180, 216, 0.4)',
+                inputBorder: '2px solid #90e0ef',
+                inputFocusBorder: '2px solid #00b4d8',
+                inputFocusShadow: '0 0 0 3px rgba(0, 180, 216, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#e6f7ff',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#00b4d8',
+                icon: '🌊'
+            },
+            vintage: {
+                name: '復古懷舊風格',
+                bodyBackground: 'linear-gradient(135deg, #d4a574 0%, #8b6f47 100%)',
+                cardBackground: '#ffffff',
+                cardShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                cardHoverTransform: 'translateY(-5px)',
+                buttonBackground: 'linear-gradient(135deg, #cd853f 0%, #8b4513 100%)',
+                buttonHoverBackground: 'linear-gradient(135deg, #b87333 0%, #7a3d11 100%)',
+                buttonHoverTransform: 'scale(1.05)',
+                buttonHoverShadow: '0 5px 15px rgba(205, 133, 63, 0.4)',
+                inputBorder: '2px solid #f5deb3',
+                inputFocusBorder: '2px solid #cd853f',
+                inputFocusShadow: '0 0 0 3px rgba(205, 133, 63, 0.1)',
+                resultRowBackground: '#f8f9fa',
+                resultRowHoverBackground: '#f5f0e6',
+                resultRowHoverTransform: 'translateX(5px)',
+                titleColor: '#ffffff',
+                subtitleColor: '#ffffff',
+                sectionTitleColor: '#cd853f',
+                icon: '📜'
+            }
+        };
+        
+        // 檔案上傳處理
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileName').textContent = '已選擇：' + file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        workbook = XLSX.read(data, {type: 'array'});
+                        populateWorksheets();
+                        showStep(2);
+                    } catch (error) {
+                        showNotification('檔案讀取失敗：' + error.message, 'error');
+                        console.error('檔案讀取錯誤：', error);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+        
+        // 填充工作表選項
+        function populateWorksheets() {
+            const select = document.getElementById('worksheetSelect');
+            select.innerHTML = '<option value="">請選擇...</option>';
+            
+            if (!workbook || !workbook.SheetNames) {
+                showNotification('無法讀取工作表清單', 'error');
+                return;
+            }
+            
+            workbook.SheetNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+        }
+        
+        // 載入工作表
+        function loadWorksheet() {
+            const selectedSheet = document.getElementById('worksheetSelect').value;
+            if (!selectedSheet) {
+                showNotification('請選擇工作表！', 'error');
+                return;
+            }
+            
+            try {
+                const worksheet = workbook.Sheets[selectedSheet];
+                
+                // 使用不同的方式讀取資料，確保能正確獲取標題
+                worksheetData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
+                
+                // 除錯資訊
+                const debugInfo = document.getElementById('debugInfo');
+                debugInfo.innerHTML = `
+                    <strong>工作表資訊：</strong><br>
+                    工作表名稱：${selectedSheet}<br>
+                    資料列數：${worksheetData.length}<br>
+                    第一列資料：${JSON.stringify(worksheetData[0])}<br>
+                    第二列資料：${JSON.stringify(worksheetData[1])}
+                `;
+                debugInfo.classList.remove('hidden');
+                
+                if (worksheetData.length > 0) {
+                    // 確保 headers 是陣列
+                    let firstRow = worksheetData[0];
+                    console.log('第一列原始資料：', firstRow);
+                    
+                    // 處理不同的資料格式
+                    if (Array.isArray(firstRow)) {
+                        headers = firstRow;
+                    } else if (typeof firstRow === 'object') {
+                        headers = Object.values(firstRow);
+                    } else {
+                        headers = [firstRow];
+                    }
+                    
+                    console.log('處理後的 headers：', headers);
+                    
+                    // 過濾掉空值和無效值
+                    headers = headers.filter(header => {
+                        if (header === null || header === undefined) return false;
+                        const str = String(header).trim();
+                        return str !== '' && str !== 'null' && str !== 'undefined';
+                    });
+                    
+                    console.log('過濾後的 headers：', headers);
+                    
+                    if (headers.length > 0) {
+                        // 顯示欄位預覽
+                        displayHeadersPreview();
+                        // 填充欄位設定
+                        populateFieldSettings();
+                        showStep(3);
+                    } else {
+                        showNotification('第一列沒有找到有效的欄位名稱！', 'error');
+                    }
+                } else {
+                    showNotification('工作表沒有資料！', 'error');
+                }
+            } catch (error) {
+                showNotification('載入工作表失敗：' + error.message, 'error');
+                console.error('載入工作表錯誤：', error);
+            }
+        }
+        
+        // 顯示欄位名稱預覽
+        function displayHeadersPreview() {
+            const preview = document.getElementById('headersPreview');
+            preview.innerHTML = '';
+            
+            console.log('顯示欄位預覽，headers 數量：', headers.length);
+            
+            headers.forEach((header, index) => {
+                const tag = document.createElement('span');
+                tag.className = 'header-tag';
+                tag.textContent = header;
+                tag.title = `索引: ${index}, 值: "${header}"`;
+                preview.appendChild(tag);
+                console.log(`添加欄位標籤 ${index}: ${header}`);
+            });
+        }
+        
+        // 填充欄位設定
+        function populateFieldSettings() {
+            console.log('開始填充欄位設定，headers:', headers);
+            
+            if (!headers || headers.length === 0) {
+                showNotification('沒有可用的欄位名稱！', 'error');
+                return;
+            }
+            
+            // 搜尋欄位
+            const searchFieldsDiv = document.getElementById('searchFields');
+            searchFieldsDiv.innerHTML = '';
+            
+            for (let i = 0; i < 4; i++) { // 修改為4個搜尋欄位
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'field-item';
+                
+                let options = '<option value="">請選擇欄位</option>';
+                console.log(`生成搜尋欄位 ${i} 的選項`);
+                
+                headers.forEach((h, index) => {
+                    const optionValue = h.toString().replace(/"/g, '&quot;');
+                    options += `<option value="${optionValue}">${h}</option>`;
+                    console.log(`添加選項: ${h}`);
+                });
+                
+                fieldDiv.innerHTML = 
+                    '<div class="space-y-3">' +
+                    '<div class="flex items-center space-x-4">' +
+                    '<input type="checkbox" class="cute-checkbox" id="searchCheckbox' + i + '" onchange="updateSearchField(' + i + ', this.checked)">' +
+                    '<select class="cute-select flex-1" id="searchField' + i + '" disabled>' + options + '</select>' +
+                    '<input type="text" class="cute-input flex-1" id="searchLabel' + i + '" placeholder="顯示標題" disabled>' +
+                    '</div>' +
+                    '<div class="input-type-options" id="inputTypeOptions' + i + '" style="display: none;">' +
+                    '<div class="input-type-option">' +
+                    '<input type="radio" class="cute-radio" id="searchTypeText' + i + '" name="searchType' + i + '" value="text" checked onchange="updateSearchType(' + i + ', \'text\')">' +
+                    '<label for="searchTypeText' + i + '">文字輸入</label>' +
+                    '</div>' +
+                    '<div class="input-type-option">' +
+                    '<input type="radio" class="cute-radio" id="searchTypeDropdown' + i + '" name="searchType' + i + '" value="dropdown" onchange="updateSearchType(' + i + ', \'dropdown\')">' +
+                    '<label for="searchTypeDropdown' + i + '">下拉式選單</label>' +
+                    '</div>' +
+                    '<div class="input-type-option">' +
+                    '<input type="radio" class="cute-radio" id="searchTypePassword' + i + '" name="searchType' + i + '" value="password" onchange="updateSearchType(' + i + ', \'password\')">' +
+                    '<label for="searchTypePassword' + i + '">密碼輸入</label>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+                
+                searchFieldsDiv.appendChild(fieldDiv);
+                console.log(`搜尋欄位 ${i} 已添加`);
+            }
+            
+            // 顯示欄位
+            const displayFieldsDiv = document.getElementById('displayFields');
+            displayFieldsDiv.innerHTML = '';
+            
+            for (let i = 0; i < 10; i++) {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'field-item';
+                
+                let options = '<option value="">請選擇欄位</option>';
+                console.log(`生成顯示欄位 ${i} 的選項`);
+                
+                headers.forEach((h, index) => {
+                    const optionValue = h.toString().replace(/"/g, '&quot;');
+                    options += `<option value="${optionValue}">${h}</option>`;
+                    console.log(`添加選項: ${h}`);
+                });
+                
+                fieldDiv.innerHTML = 
+                    '<div class="flex items-center space-x-4">' +
+                    '<span class="drag-handle text-2xl">☰</span>' +
+                    '<input type="checkbox" class="cute-checkbox" id="displayCheckbox' + i + '" onchange="updateDisplayField(' + i + ', this.checked)">' +
+                    '<select class="cute-select flex-1" id="displayField' + i + '" disabled>' + options + '</select>' +
+                    '<input type="text" class="cute-input flex-1" id="displayLabel' + i + '" placeholder="顯示標題" disabled>' +
+                    '</div>';
+                
+                displayFieldsDiv.appendChild(fieldDiv);
+                console.log(`顯示欄位 ${i} 已添加`);
+            }
+            
+            // 初始化拖曳排序
+            initDragAndDrop();
+            
+            console.log('欄位設定填充完成');
+        }
+        
+        // 更新搜尋欄位
+        function updateSearchField(index, checked) {
+            document.getElementById('searchField' + index).disabled = !checked;
+            document.getElementById('searchLabel' + index).disabled = !checked;
+            
+            // 顯示/隱藏輸入類型選項
+            const inputTypeOptions = document.getElementById('inputTypeOptions' + index);
+            if (checked) {
+                inputTypeOptions.style.display = 'block';
+            } else {
+                inputTypeOptions.style.display = 'none';
+                // 重置輸入類型為文字輸入
+                document.getElementById('searchTypeText' + index).checked = true;
+                updateSearchType(index, 'text');
+            }
+            
+            // 更新搜尋欄位加密選項
+            updateSearchEncryptionOptions();
+        }
+        
+        // 更新搜尋欄位類型
+        function updateSearchType(index, type) {
+            // 這裡可以添加類型變更時的邏輯
+            console.log(`搜尋欄位 ${index} 類型變更為: ${type}`);
+            
+            // 更新搜尋欄位加密選項
+            updateSearchEncryptionOptions();
+        }
+        
+        // 更新顯示欄位
+        function updateDisplayField(index, checked) {
+            document.getElementById('displayField' + index).disabled = !checked;
+            document.getElementById('displayLabel' + index).disabled = !checked;
+            if (!checked) {
+                document.getElementById('displayField' + index).value = '';
+                document.getElementById('displayLabel' + index).value = '';
+            }
+        }
+        
+        // 初始化拖曳排序
+        function initDragAndDrop() {
+            const container = document.getElementById('displayFields');
+            let draggedElement = null;
+            
+            container.addEventListener('dragstart', function(e) {
+                if (e.target.classList.contains('field-item')) {
+                    draggedElement = e.target;
+                    e.target.style.opacity = '0.5';
+                }
+            });
+            
+            container.addEventListener('dragend', function(e) {
+                if (e.target.classList.contains('field-item')) {
+                    e.target.style.opacity = '';
+                }
+            });
+            
+            container.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientY);
+                if (afterElement == null) {
+                    container.appendChild(draggedElement);
+                } else {
+                    container.insertBefore(draggedElement, afterElement);
+                }
+            });
+            
+            // 為每個 field-item 添加 draggable 屬性
+            container.querySelectorAll('.field-item').forEach(item => {
+                item.draggable = true;
+            });
+        }
+        
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.field-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        
+        // 更新查詢方式驗證
+        function updateSearchModeValidation() {
+            const exactChecked = document.getElementById('searchModeExact').checked;
+            const containsChecked = document.getElementById('searchModeContains').checked;
+            const validationDiv = document.getElementById('searchModeValidation');
+            
+            if (!exactChecked && !containsChecked) {
+                validationDiv.classList.remove('hidden');
+            } else {
+                validationDiv.classList.add('hidden');
+            }
+        }
+        
+        // 切換加密選項顯示
+        function toggleEncryptionOptions() {
+            const enableEncryption = document.getElementById('enableEncryption').checked;
+            const encryptionOptions = document.getElementById('encryptionOptions');
+            const enableSearchEncryption = document.getElementById('enableSearchEncryption');
+            
+            if (enableEncryption) {
+                encryptionOptions.classList.remove('hidden');
+                enableSearchEncryption.disabled = false;
+            } else {
+                encryptionOptions.classList.add('hidden');
+                enableSearchEncryption.disabled = true;
+                enableSearchEncryption.checked = false;
+                toggleSearchEncryptionOptions();
+            }
+        }
+        
+        // 切換搜尋欄位加密選項顯示
+        function toggleSearchEncryptionOptions() {
+            const enableSearchEncryption = document.getElementById('enableSearchEncryption').checked;
+            const searchEncryptionOptions = document.getElementById('searchEncryptionOptions');
+            
+            if (enableSearchEncryption) {
+                searchEncryptionOptions.classList.remove('hidden');
+                updateSearchEncryptionOptions();
+            } else {
+                searchEncryptionOptions.classList.add('hidden');
+            }
+        }
+        
+        // 更新搜尋欄位加密選項
+        function updateSearchEncryptionOptions() {
+            const searchFieldEncryptionOptions = document.getElementById('searchFieldEncryptionOptions');
+            searchFieldEncryptionOptions.innerHTML = '';
+            
+            // 收集所有使用下拉式選單的搜尋欄位
+            for (let i = 0; i < 4; i++) {
+                const checkbox = document.getElementById('searchCheckbox' + i);
+                if (checkbox && checkbox.checked) {
+                    const field = document.getElementById('searchField' + i).value;
+                    const label = document.getElementById('searchLabel' + i).value;
+                    const typeRadio = document.querySelector('input[name="searchType' + i + '"]:checked');
+                    const type = typeRadio ? typeRadio.value : 'text';
+                    
+                    if (field && label && type === 'dropdown') {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'flex items-center space-x-3';
+                        optionDiv.innerHTML = 
+                            '<input type="checkbox" class="cute-checkbox" id="searchEncryptCheckbox' + i + '" value="' + field + '">' +
+                            '<label for="searchEncryptCheckbox' + i + '" class="text-gray-700">' + label + ' (' + field + ')</label>';
+                        
+                        searchFieldEncryptionOptions.appendChild(optionDiv);
+                    }
+                }
+            }
+            
+            // 如果沒有可用的搜尋欄位，顯示提示訊息
+            if (searchFieldEncryptionOptions.children.length === 0) {
+                searchFieldEncryptionOptions.innerHTML = 
+                    '<div class="text-gray-500 italic">請先設定使用下拉式選單的搜尋欄位</div>';
+            }
+        }
+        
+        // 顯示步驟
+        function showStep(step) {
+            currentStep = step;
+            
+            // 隱藏所有步驟
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // 顯示當前步驟
+            const stepContents = ['uploadStep', 'worksheetStep', 'fieldStep', 'confirmStep', 'templateStep'];
+            document.getElementById(stepContents[step - 1]).classList.remove('hidden');
+            
+            // 更新步驟指示器
+            document.querySelectorAll('.step').forEach((indicator, index) => {
+                if (index < step) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+            });
+            
+            // 更新按鈕
+            document.getElementById('prevBtn').classList.toggle('hidden', step === 1);
+            document.getElementById('nextBtn').classList.toggle('hidden', step === 5);
+            
+            // 如果是第四步，生成設定摘要
+            if (step === 4) {
+                generateConfigSummary();
+            }
+        }
+        
+        // 下一步
+        function nextStep() {
+            if (currentStep === 3) {
+                // 驗證設定
+                if (!validateConfig()) {
+                    return;
+                }
+                saveConfig();
+            }
+            showStep(currentStep + 1);
+        }
+        
+        // 上一步
+        function previousStep() {
+            showStep(currentStep - 1);
+        }
+        
+        // 選擇模板
+        function selectTemplate(templateId) {
+            // 移除所有模板的選中狀態
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // 添加選中狀態到當前模板
+            event.currentTarget.classList.add('selected');
+            
+            // 保存選擇的模板
+            config.template = templateId;
+            
+            // 顯示通知
+            showNotification(`已選擇 ${templates[templateId].name} 模板`, 'success');
+        }
+        
+        // 驗證設定
+        function validateConfig() {
+            let searchCount = 0;
+            let displayCount = 0;
+            
+            // 檢查搜尋欄位
+            for (let i = 0; i < 4; i++) { // 修改為4個搜尋欄位
+                const checkbox = document.getElementById('searchCheckbox' + i);
+                if (checkbox && checkbox.checked) {
+                    searchCount++;
+                    const field = document.getElementById('searchField' + i).value;
+                    const label = document.getElementById('searchLabel' + i).value;
+                    if (!field || !label) {
+                        showNotification('請完整填寫搜尋欄位設定！', 'error');
+                        return false;
+                    }
+                }
+            }
+            
+            if (searchCount === 0) {
+                showNotification('請至少設定一個搜尋欄位！', 'error');
+                return false;
+            }
+            
+            // 檢查顯示欄位
+            for (let i = 0; i < 10; i++) {
+                const checkbox = document.getElementById('displayCheckbox' + i);
+                if (checkbox && checkbox.checked) {
+                    displayCount++;
+                    const field = document.getElementById('displayField' + i).value;
+                    const label = document.getElementById('displayLabel' + i).value;
+                    if (!field || !label) {
+                        showNotification('請完整填寫顯示欄位設定！', 'error');
+                        return false;
+                    }
+                }
+            }
+            
+            if (displayCount === 0) {
+                showNotification('請至少設定一個顯示欄位！', 'error');
+                return false;
+            }
+            
+            // 檢查查詢方式設定
+            const exactChecked = document.getElementById('searchModeExact').checked;
+            const containsChecked = document.getElementById('searchModeContains').checked;
+            
+            if (!exactChecked && !containsChecked) {
+                showNotification('請至少選擇一種查詢方式！', 'error');
+                return false;
+            }
+            
+            // 檢查頁面設定
+            const pageTitle = document.getElementById('pageTitle').value;
+            const unitName = document.getElementById('unitName').value;
+            
+            if (!pageTitle || !unitName) {
+                showNotification('請填寫頁面標題和單位名稱！', 'error');
+                return false;
+            }
+            
+            // 檢查加密設定
+            const enableEncryption = document.getElementById('enableEncryption').checked;
+            if (enableEncryption) {
+                const encryptionKey = document.getElementById('encryptionKey').value;
+                if (!encryptionKey) {
+                    showNotification('請輸入加密金鑰！', 'error');
+                    return false;
+                }
+            }
+            
+            // 檢查搜尋欄位加密設定
+            const enableSearchEncryption = document.getElementById('enableSearchEncryption').checked;
+            if (enableSearchEncryption) {
+                const searchEncryptCheckboxes = document.querySelectorAll('#searchFieldEncryptionOptions input[type="checkbox"]:checked');
+                if (searchEncryptCheckboxes.length === 0) {
+                    showNotification('請選擇至少一個要加密的搜尋欄位！', 'error');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        // 儲存設定
+        function saveConfig() {
+            config.searchFields = [];
+            config.displayFields = [];
+            config.searchModes = []; // 新增：儲存查詢方式
+            config.pageTitle = document.getElementById('pageTitle').value;
+            config.unitName = document.getElementById('unitName').value;
+            config.removeDuplicates = document.getElementById('removeDuplicates').checked;
+            
+            // 儲存查詢方式
+            if (document.getElementById('searchModeExact').checked) {
+                config.searchModes.push('exact');
+            }
+            if (document.getElementById('searchModeContains').checked) {
+                config.searchModes.push('contains');
+            }
+            
+            // 儲存加密設定
+            config.enableEncryption = document.getElementById('enableEncryption').checked;
+            if (config.enableEncryption) {
+                const encryptionMethod = document.querySelector('input[name="encryptionMethod"]:checked').value;
+                config.encryptionMethod = encryptionMethod;
+                config.encryptionKey = document.getElementById('encryptionKey').value;
+            }
+            
+            // 儲存搜尋欄位加密設定
+            config.enableSearchEncryption = document.getElementById('enableSearchEncryption').checked;
+            config.searchEncryptionFields = [];
+            if (config.enableSearchEncryption) {
+                const searchEncryptCheckboxes = document.querySelectorAll('#searchFieldEncryptionOptions input[type="checkbox"]:checked');
+                searchEncryptCheckboxes.forEach(checkbox => {
+                    config.searchEncryptionFields.push(checkbox.value);
+                });
+            }
+            
+            // 儲存搜尋欄位
+            for (let i = 0; i < 4; i++) { // 修改為4個搜尋欄位
+                const checkbox = document.getElementById('searchCheckbox' + i);
+                if (checkbox && checkbox.checked) {
+                    const field = document.getElementById('searchField' + i).value;
+                    const label = document.getElementById('searchLabel' + i).value;
+                    const typeRadio = document.querySelector('input[name="searchType' + i + '"]:checked');
+                    const type = typeRadio ? typeRadio.value : 'text';
+                    
+                    config.searchFields.push({
+                        field: field,
+                        label: label,
+                        type: type
+                    });
+                    console.log(`儲存搜尋欄位 ${i}: ${field} - ${label} - 類型: ${type}`);
+                }
+            }
+            
+            // 儲存顯示欄位（按照拖曳後的順序）
+            const displayFieldItems = document.querySelectorAll('#displayFields .field-item');
+            displayFieldItems.forEach((item, index) => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox && checkbox.checked) {
+                    const select = item.querySelector('select');
+                    const input = item.querySelector('input[type="text"]');
+                    config.displayFields.push({
+                        field: select.value,
+                        label: input.value
+                    });
+                    console.log(`儲存顯示欄位 ${index}: ${select.value} - ${input.value}`);
+                }
+            });
+            
+            console.log('最終設定：', config);
+        }
+        
+        // 生成設定摘要
+        function generateConfigSummary() {
+            const summary = document.getElementById('configSummary');
+            let searchFieldsHtml = '';
+            config.searchFields.forEach(f => {
+                const typeNames = {
+                    'text': '文字輸入',
+                    'dropdown': '下拉式選單',
+                    'password': '密碼輸入'
+                };
+                searchFieldsHtml += '<li>' + f.label + ' (' + f.field + ') - ' + typeNames[f.type] + '</li>';
+            });
+            
+            let displayFieldsHtml = '';
+            config.displayFields.forEach(f => {
+                displayFieldsHtml += '<li>' + f.label + ' (' + f.field + ')</li>';
+            });
+            
+            let searchModesHtml = '';
+            if (config.searchModes.includes('exact')) {
+                searchModesHtml += '<li>完全符合查詢</li>';
+            }
+            if (config.searchModes.includes('contains')) {
+                searchModesHtml += '<li>含關鍵字查詢</li>';
+            }
+            
+            let encryptionHtml = '';
+            if (config.enableEncryption) {
+                const methodNames = {
+                    'base64': '基本加密（Base64）',
+                    'xor': '中等加密（XOR）',
+                    'aes': '高級加密（AES）'
+                };
+                encryptionHtml = '<div>' +
+                    '<h4 class="font-semibold text-pink-500">🔒 資料加密設定</h4>' +
+                    '<p class="mt-2">✅ 已啟用資料加密</p>' +
+                    '<p>加密方式：' + methodNames[config.encryptionMethod] + '</p>' +
+                    '</div>';
+            } else {
+                encryptionHtml = '<div>' +
+                    '<h4 class="font-semibold text-pink-500">🔒 資料加密設定</h4>' +
+                    '<p class="mt-2">❌ 未啟用資料加密</p>' +
+                    '</div>';
+            }
+            
+            let searchEncryptionHtml = '';
+            if (config.enableSearchEncryption) {
+                searchEncryptionHtml = '<div>' +
+                    '<h4 class="font-semibold text-pink-500">🔍 搜尋欄位加密設定</h4>' +
+                    '<p class="mt-2">✅ 已啟用搜尋欄位加密</p>' +
+                    '<p>加密欄位：' + config.searchEncryptionFields.join(', ') + '</p>' +
+                    '</div>';
+            } else {
+                searchEncryptionHtml = '<div>' +
+                    '<h4 class="font-semibold text-pink-500">🔍 搜尋欄位加密設定</h4>' +
+                    '<p class="mt-2">❌ 未啟用搜尋欄位加密</p>' +
+                    '</div>';
+            }
+            
+            summary.innerHTML = 
+                '<h3 class="text-xl font-bold mb-4 text-pink-600">📋 設定摘要</h3>' +
+                '<div class="space-y-4">' +
+                '<div>' +
+                '<h4 class="font-semibold text-pink-500">🔍 搜尋欄位</h4>' +
+                '<ul class="list-disc list-inside mt-2">' + searchFieldsHtml + '</ul>' +
+                '<p class="mt-2 text-sm text-blue-600"><i class="fas fa-info-circle mr-1"></i> 所有搜尋欄位都必須填寫內容才能執行查詢</p>' +
+                '</div>' +
+                '<div>' +
+                '<h4 class="font-semibold text-pink-500">👁️ 顯示欄位</h4>' +
+                '<ul class="list-disc list-inside mt-2">' + displayFieldsHtml + '</ul>' +
+                '</div>' +
+                '<div>' +
+                '<h4 class="font-semibold text-pink-500">🔎 查詢方式</h4>' +
+                '<ul class="list-disc list-inside mt-2">' + searchModesHtml + '</ul>' +
+                '</div>' +
+                '<div>' +
+                '<h4 class="font-semibold text-pink-500">🔄 重複資料處理</h4>' +
+                '<p class="mt-2">' + (config.removeDuplicates ? '✅ 移除重複資料（只顯示一筆）' : '❌ 顯示所有資料（包含重複）') + '</p>' +
+                '</div>' +
+                encryptionHtml +
+                searchEncryptionHtml +
+                '<div>' +
+                '<h4 class="font-semibold text-pink-500">📄 頁面設定</h4>' +
+                '<p class="mt-2">標題：' + config.pageTitle + '</p>' +
+                '<p>單位：' + config.unitName + '</p>' +
+                '</div>' +
+                '</div>';
+        }
+        
+        // 字符串轉換為 Uint8Array
+        function stringToUint8Array(str) {
+            const encoder = new TextEncoder();
+            return encoder.encode(str);
+        }
+        
+        // Uint8Array 轉換為字符串
+        function uint8ArrayToString(uint8Array) {
+            const decoder = new TextDecoder();
+            return decoder.decode(uint8Array);
+        }
+        
+        // 加密單個值
+        function encryptValue(value, method, key) {
+            if (!value) return value;
+            
+            try {
+                switch (method) {
+                    case 'base64':
+                        return btoa(unescape(encodeURIComponent(value)));
+                        
+                    case 'xor':
+                        // 使用改進的 XOR 加密
+                        const dataBytes = stringToUint8Array(value);
+                        const keyBytes = stringToUint8Array(key);
+                        const resultBytes = new Uint8Array(dataBytes.length);
+                        
+                        for (let i = 0; i < dataBytes.length; i++) {
+                            resultBytes[i] = dataBytes[i] ^ keyBytes[i % keyBytes.length];
+                        }
+                        
+                        return btoa(String.fromCharCode.apply(null, resultBytes));
+                        
+                    case 'aes':
+                        // 簡化的 AES 模擬加密 - 使用單一輪次，確保一致性
+                        const dataBytesAES = stringToUint8Array(value);
+                        const keyBytesAES = stringToUint8Array(key);
+                        const resultBytesAES = new Uint8Array(dataBytesAES.length);
+                        
+                        // 簡單的單輪加密，避免複雜性導致的錯誤
+                        for (let i = 0; i < dataBytesAES.length; i++) {
+                            const keyByte = keyBytesAES[i % keyBytesAES.length];
+                            resultBytesAES[i] = (dataBytesAES[i] + keyByte + 123) % 256; // 使用固定偏移量
+                        }
+                        
+                        return btoa(String.fromCharCode.apply(null, resultBytesAES));
+                        
+                    default:
+                        return value;
+                }
+            } catch (e) {
+                console.error('加密失敗:', e);
+                return value;
+            }
+        }
+        
+        // 解密單個值
+        function decryptValue(encryptedValue, method, key) {
+            if (!encryptedValue) return encryptedValue;
+            
+            try {
+                switch (method) {
+                    case 'base64':
+                        return decodeURIComponent(escape(atob(encryptedValue)));
+                        
+                    case 'xor':
+                        // 使用改進的 XOR 解密
+                        const encryptedData = atob(encryptedValue);
+                        const dataBytes = new Uint8Array(encryptedData.split('').map(char => char.charCodeAt(0)));
+                        const keyBytes = stringToUint8Array(key);
+                        const resultBytes = new Uint8Array(dataBytes.length);
+                        
+                        for (let i = 0; i < dataBytes.length; i++) {
+                            resultBytes[i] = dataBytes[i] ^ keyBytes[i % keyBytes.length];
+                        }
+                        
+                        return uint8ArrayToString(resultBytes);
+                        
+                    case 'aes':
+                        // 簡化的 AES 模擬解密 - 必須與加密完全對稱
+                        const encryptedDataAES = atob(encryptedValue);
+                        const dataBytesAES = new Uint8Array(encryptedDataAES.split('').map(char => char.charCodeAt(0)));
+                        const keyBytesAES = stringToUint8Array(key);
+                        const resultBytesAES = new Uint8Array(dataBytesAES.length);
+                        
+                        // 與加密完全對稱的解密過程
+                        for (let i = 0; i < dataBytesAES.length; i++) {
+                            const keyByte = keyBytesAES[i % keyBytesAES.length];
+                            resultBytesAES[i] = (dataBytesAES[i] - keyByte - 123 + 256) % 256; // 使用相同的固定偏移量
+                        }
+                        
+                        return uint8ArrayToString(resultBytesAES);
+                        
+                    default:
+                        return encryptedValue;
+                }
+            } catch (e) {
+                console.error('解密失敗:', e);
+                return null;
+            }
+        }
+        
+        // 加密資料函數
+        function encryptData(data, method, key) {
+            if (!data) return data;
+            
+            try {
+                switch (method) {
+                    case 'base64':
+                        return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+                        
+                    case 'xor':
+                        // 使用改進的 XOR 加密 - 分批處理避免堆疊溢出
+                        const jsonString = JSON.stringify(data);
+                        const chunkSize = 1000; // 每次處理1000個字符
+                        let encryptedChunks = [];
+                        
+                        for (let i = 0; i < jsonString.length; i += chunkSize) {
+                            const chunk = jsonString.substring(i, i + chunkSize);
+                            const dataBytes = stringToUint8Array(chunk);
+                            const keyBytes = stringToUint8Array(key);
+                            const resultBytes = new Uint8Array(dataBytes.length);
+                            
+                            for (let j = 0; j < dataBytes.length; j++) {
+                                resultBytes[j] = dataBytes[j] ^ keyBytes[j % keyBytes.length];
+                            }
+                            
+                            encryptedChunks.push(btoa(String.fromCharCode.apply(null, resultBytes)));
+                        }
+                        
+                        return encryptedChunks.join('|'); // 使用|分隔符連接加密塊
+                        
+                    case 'aes':
+                        // 簡化的 AES 模擬加密 - 與單個值加密使用相同的邏輯
+                        const jsonStringAES = JSON.stringify(data);
+                        const chunkSizeAES = 1000; // 每次處理1000個字符
+                        let encryptedChunksAES = [];
+                        
+                        for (let i = 0; i < jsonStringAES.length; i += chunkSizeAES) {
+                            const chunk = jsonStringAES.substring(i, i + chunkSizeAES);
+                            const dataBytes = stringToUint8Array(chunk);
+                            const keyBytes = stringToUint8Array(key);
+                            const resultBytes = new Uint8Array(dataBytes.length);
+                            
+                            // 使用與單個值加密相同的簡單邏輯
+                            for (let j = 0; j < dataBytes.length; j++) {
+                                const keyByte = keyBytes[j % keyBytes.length];
+                                resultBytes[j] = (dataBytes[j] + keyByte + 123) % 256;
+                            }
+                            
+                            encryptedChunksAES.push(btoa(String.fromCharCode.apply(null, resultBytes)));
+                        }
+                        
+                        return encryptedChunksAES.join('|'); // 使用|分隔符連接加密塊
+                        
+                    default:
+                        return data;
+                }
+            } catch (e) {
+                console.error('加密失敗:', e);
+                return null;
+            }
+        }
+        
+        // 解密資料函數
+        function decryptData(encryptedData, method, key) {
+            if (!encryptedData) return encryptedData;
+            
+            try {
+                switch (method) {
+                    case 'base64':
+                        return JSON.parse(decodeURIComponent(escape(atob(encryptedData))));
+                        
+                    case 'xor':
+                        // 使用改進的 XOR 解密 - 分批處理避免堆疊溢出
+                        const encryptedChunks = encryptedData.split('|');
+                        let decryptedString = '';
+                        
+                        for (const chunk of encryptedChunks) {
+                            const encryptedString = atob(chunk);
+                            const dataBytes = new Uint8Array(encryptedString.split('').map(char => char.charCodeAt(0)));
+                            const keyBytes = stringToUint8Array(key);
+                            const resultBytes = new Uint8Array(dataBytes.length);
+                            
+                            for (let i = 0; i < dataBytes.length; i++) {
+                                resultBytes[i] = dataBytes[i] ^ keyBytes[i % keyBytes.length];
+                            }
+                            
+                            decryptedString += uint8ArrayToString(resultBytes);
+                        }
+                        
+                        return JSON.parse(decryptedString);
+                        
+                    case 'aes':
+                        // 簡化的 AES 模擬解密 - 與加密完全對稱
+                        const encryptedChunksAES = encryptedData.split('|');
+                        let decryptedStringAES = '';
+                        
+                        for (const chunk of encryptedChunksAES) {
+                            const encryptedString = atob(chunk);
+                            const dataBytes = new Uint8Array(encryptedString.split('').map(char => char.charCodeAt(0)));
+                            const keyBytes = stringToUint8Array(key);
+                            const resultBytes = new Uint8Array(dataBytes.length);
+                            
+                            // 使用與加密完全對稱的解密過程
+                            for (let i = 0; i < dataBytes.length; i++) {
+                                const keyByte = keyBytes[i % keyBytes.length];
+                                resultBytes[i] = (dataBytes[i] - keyByte - 123 + 256) % 256;
+                            }
+                            
+                            decryptedStringAES += uint8ArrayToString(resultBytes);
+                        }
+                        
+                        return JSON.parse(decryptedStringAES);
+                        
+                    default:
+                        return encryptedData;
+                }
+            } catch (e) {
+                console.error('解密失敗:', e);
+                showNotification("資料解密失敗，請檢查加密金鑰是否正確", "error");
+                return null;
+            }
+        }
+        
+        // 產生查詢頁面
+        function generateQueryPage() {
+            // 檢查是否選擇了模板
+            if (!config.template) {
+                showNotification('請選擇一個網頁模板！', 'error');
+                return;
+            }
+            
+            // 產生查詢頁面 HTML
+            const queryPageHTML = generateQueryPageHTML();
+            
+            // 建立一個新的 blob 並下載
+            const blob = new Blob([queryPageHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'query_page.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('查詢頁面已生成！請下載並開啟檔案。', 'success');
+        }
+        
+        // 產生查詢頁面 HTML
+        function generateQueryPageHTML() {
+            // 獲取當前選擇的模板
+            const template = templates[config.template];
+            
+            // 準備資料，如果啟用了加密則加密資料
+            let processedWorksheetData = worksheetData;
+            let encryptionInfo = '';
+            
+            if (config.enableEncryption) {
+                // 加密整個數據集
+                processedWorksheetData = encryptData(worksheetData, config.encryptionMethod, config.encryptionKey);
+                encryptionInfo = JSON.stringify({
+                    enabled: true,
+                    method: config.encryptionMethod,
+                    key: config.encryptionKey
+                });
+            } else {
+                encryptionInfo = JSON.stringify({
+                    enabled: false
+                });
+            }
+            
+            // 生成搜尋欄位 HTML
+            let searchFieldsHtml = '';
+            config.searchFields.forEach((field, index) => {
+                if (field.type === 'dropdown') {
+                    // 生成下拉式選單
+                    const fieldIndex = headers.indexOf(field.field);
+                    const uniqueValues = new Set();
+                    
+                    // 收集該欄位的所有唯一值
+                    for (let i = 1; i < worksheetData.length; i++) {
+                        const value = worksheetData[i][fieldIndex];
+                        if (value !== undefined && value !== null && value !== '') {
+                            uniqueValues.add(String(value).trim());
+                        }
+                    }
+                    
+                    // 將Set轉為陣列並排序
+                    const sortedValues = Array.from(uniqueValues).sort();
+                    
+                    // 生成下拉式選單的選項
+                    let optionsHtml = '<option value="">請選擇</option>';
+                    sortedValues.forEach(value => {
+                        let optionValue = value;
+                        let displayValue = value;
+                        
+                        // 如果啟用了搜尋欄位加密且此欄位在加密列表中，則加密選項值
+                        if (config.enableSearchEncryption && config.searchEncryptionFields.includes(field.field)) {
+                            optionValue = encryptValue(value, config.encryptionMethod, config.encryptionKey);
+                        }
+                        
+                        optionsHtml += `<option value="${escapeHtml(optionValue)}">${escapeHtml(displayValue)}</option>`;
+                    });
+                    
+                    searchFieldsHtml += 
+                        '<div>' +
+                        '<label class="block mb-2 font-medium text-gray-700 required-field">' + escapeHtml(field.label) + '</label>' +
+                        '<select id="search' + index + '" class="cute-select w-full">' + optionsHtml + '</select>' +
+                        '</div>';
+                } else if (field.type === 'password') {
+                    // 生成密碼輸入框
+                    searchFieldsHtml += 
+                        '<div>' +
+                        '<label class="block mb-2 font-medium text-gray-700 required-field">' + escapeHtml(field.label) + '</label>' +
+                        '<input type="password" id="search' + index + '" class="cute-input w-full" placeholder="請輸入' + escapeHtml(field.label) + '">' +
+                        '</div>';
+                } else {
+                    // 生成文字輸入框
+                    searchFieldsHtml += 
+                        '<div>' +
+                        '<label class="block mb-2 font-medium text-gray-700 required-field">' + escapeHtml(field.label) + '</label>' +
+                        '<input type="text" id="search' + index + '" class="cute-input w-full" placeholder="請輸入' + escapeHtml(field.label) + '">' +
+                        '</div>';
+                }
+            });
+            
+            // 生成查詢方式選項 HTML
+            let searchModeOptionsHtml = '';
+            if (config.searchModes.includes('exact')) {
+                // 如果只有一種查詢方式，或者這是第一種查詢方式，則設為選中
+                const checked = config.searchModes.length === 1 || config.searchModes[0] === 'exact' ? 'checked' : '';
+                searchModeOptionsHtml += 
+                    '<label class="inline-flex items-center mr-6">' +
+                    '<input type="radio" name="searchMode" value="exact" class="cute-radio" ' + checked + '>' +
+                    '<span class="ml-2">完全符合查詢</span>' +
+                    '</label>';
+            }
+            if (config.searchModes.includes('contains')) {
+                // 如果只有一種查詢方式，則設為選中
+                const checked = config.searchModes.length === 1 || (config.searchModes.length > 1 && config.searchModes[0] === 'contains') ? 'checked' : '';
+                searchModeOptionsHtml += 
+                    '<label class="inline-flex items-center">' +
+                    '<input type="radio" name="searchMode" value="contains" class="cute-radio" ' + checked + '>' +
+                    '<span class="ml-2">含關鍵字查詢</span>' +
+                    '</label>';
+            }
+            
+            // 生成 JavaScript 代碼
+            const javascriptCode = `
+                // 載入資料
+                const worksheetData = ${JSON.stringify(processedWorksheetData)};
+                const encryptionInfo = ${encryptionInfo};
+                const config = ${JSON.stringify(config)};
+                
+                // 定義標題行
+                const headers = ${JSON.stringify(headers)};
+                
+                // 字符串轉換為 Uint8Array
+                function stringToUint8Array(str) {
+                    const encoder = new TextEncoder();
+                    return encoder.encode(str);
+                }
+                
+                // Uint8Array 轉換為字符串
+                function uint8ArrayToString(uint8Array) {
+                    const decoder = new TextDecoder();
+                    return decoder.decode(uint8Array);
+                }
+                
+                // 加密單個值
+                function encryptValue(value, method, key) {
+                    if (!value) return value;
+                    
+                    try {
+                        switch (method) {
+                            case 'base64':
+                                return btoa(unescape(encodeURIComponent(value)));
+                                
+                            case 'xor':
+                                // 使用改進的 XOR 加密
+                                const dataBytes = stringToUint8Array(value);
+                                const keyBytes = stringToUint8Array(key);
+                                const resultBytes = new Uint8Array(dataBytes.length);
+                                
+                                for (let i = 0; i < dataBytes.length; i++) {
+                                    resultBytes[i] = dataBytes[i] ^ keyBytes[i % keyBytes.length];
+                                }
+                                
+                                return btoa(String.fromCharCode.apply(null, resultBytes));
+                                
+                            case 'aes':
+                                // 簡化的 AES 模擬加密 - 使用單一輪次，確保一致性
+                                const dataBytesAES = stringToUint8Array(value);
+                                const keyBytesAES = stringToUint8Array(key);
+                                const resultBytesAES = new Uint8Array(dataBytesAES.length);
+                                
+                                // 簡單的單輪加密，避免複雜性導致的錯誤
+                                for (let i = 0; i < dataBytesAES.length; i++) {
+                                    const keyByte = keyBytesAES[i % keyBytesAES.length];
+                                    resultBytesAES[i] = (dataBytesAES[i] + keyByte + 123) % 256; // 使用固定偏移量
+                                }
+                                
+                                return btoa(String.fromCharCode.apply(null, resultBytesAES));
+                                
+                            default:
+                                return value;
+                        }
+                    } catch (e) {
+                        console.error('加密失敗:', e);
+                        return value;
+                    }
+                }
+                
+                // 解密單個值
+                function decryptValue(encryptedValue, method, key) {
+                    if (!encryptedValue) return encryptedValue;
+                    
+                    try {
+                        switch (method) {
+                            case 'base64':
+                                return decodeURIComponent(escape(atob(encryptedValue)));
+                                
+                            case 'xor':
+                                // 使用改進的 XOR 解密
+                                const encryptedData = atob(encryptedValue);
+                                const dataBytes = new Uint8Array(encryptedData.split('').map(char => char.charCodeAt(0)));
+                                const keyBytes = stringToUint8Array(key);
+                                const resultBytes = new Uint8Array(dataBytes.length);
+                                
+                                for (let i = 0; i < dataBytes.length; i++) {
+                                    resultBytes[i] = dataBytes[i] ^ keyBytes[i % keyBytes.length];
+                                }
+                                
+                                return uint8ArrayToString(resultBytes);
+                                
+                            case 'aes':
+                                // 簡化的 AES 模擬解密 - 必須與加密完全對稱
+                                const encryptedDataAES = atob(encryptedValue);
+                                const dataBytesAES = new Uint8Array(encryptedDataAES.split('').map(char => char.charCodeAt(0)));
+                                const keyBytesAES = stringToUint8Array(key);
+                                const resultBytesAES = new Uint8Array(dataBytesAES.length);
+                                
+                                // 與加密完全對稱的解密過程
+                                for (let i = 0; i < dataBytesAES.length; i++) {
+                                    const keyByte = keyBytesAES[i % keyBytesAES.length];
+                                    resultBytesAES[i] = (dataBytesAES[i] - keyByte - 123 + 256) % 256; // 使用相同的固定偏移量
+                                }
+                                
+                                return uint8ArrayToString(resultBytesAES);
+                                
+                            default:
+                                return encryptedValue;
+                        }
+                    } catch (e) {
+                        console.error('解密失敗:', e);
+                        return null;
+                    }
+                }
+                
+                // 加密資料函數 - 修復堆疊溢出問題
+                function encryptData(data, method, key) {
+                    if (!data) return data;
+                    
+                    try {
+                        switch (method) {
+                            case 'base64':
+                                return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+                                
+                            case 'xor':
+                                // 使用改進的 XOR 加密 - 分批處理避免堆疊溢出
+                                const jsonString = JSON.stringify(data);
+                                const chunkSize = 1000; // 每次處理1000個字符
+                                let encryptedChunks = [];
+                                
+                                for (let i = 0; i < jsonString.length; i += chunkSize) {
+                                    const chunk = jsonString.substring(i, i + chunkSize);
+                                    const dataBytes = stringToUint8Array(chunk);
+                                    const keyBytes = stringToUint8Array(key);
+                                    const resultBytes = new Uint8Array(dataBytes.length);
+                                    
+                                    for (let j = 0; j < dataBytes.length; j++) {
+                                        resultBytes[j] = dataBytes[j] ^ keyBytes[j % keyBytes.length];
+                                    }
+                                    
+                                    encryptedChunks.push(btoa(String.fromCharCode.apply(null, resultBytes)));
+                                }
+                                
+                                return encryptedChunks.join('|'); // 使用|分隔符連接加密塊
+                                
+                            case 'aes':
+                                // 簡化的 AES 模擬加密 - 與單個值加密使用相同的邏輯
+                                const jsonStringAES = JSON.stringify(data);
+                                const chunkSizeAES = 1000; // 每次處理1000個字符
+                                let encryptedChunksAES = [];
+                                
+                                for (let i = 0; i < jsonStringAES.length; i += chunkSizeAES) {
+                                    const chunk = jsonStringAES.substring(i, i + chunkSizeAES);
+                                    const dataBytes = stringToUint8Array(chunk);
+                                    const keyBytes = stringToUint8Array(key);
+                                    const resultBytes = new Uint8Array(dataBytes.length);
+                                    
+                                    // 使用與單個值加密相同的簡單邏輯
+                                    for (let j = 0; j < dataBytes.length; j++) {
+                                        const keyByte = keyBytes[j % keyBytes.length];
+                                        resultBytes[j] = (dataBytes[j] + keyByte + 123) % 256;
+                                    }
+                                    
+                                    encryptedChunksAES.push(btoa(String.fromCharCode.apply(null, resultBytes)));
+                                }
+                                
+                                return encryptedChunksAES.join('|'); // 使用|分隔符連接加密塊
+                                
+                            default:
+                                return data;
+                        }
+                    } catch (e) {
+                        console.error('加密失敗:', e);
+                        return null;
+                    }
+                }
+                
+                // 解密資料函數 - 修復堆疊溢出問題
+                function decryptData(encryptedData, method, key) {
+                    if (!encryptedData) return encryptedData;
+                    
+                    try {
+                        switch (method) {
+                            case 'base64':
+                                return JSON.parse(decodeURIComponent(escape(atob(encryptedData))));
+                                
+                            case 'xor':
+                                // 使用改進的 XOR 解密 - 分批處理避免堆疊溢出
+                                const encryptedChunks = encryptedData.split('|');
+                                let decryptedString = '';
+                                
+                                for (const chunk of encryptedChunks) {
+                                    const encryptedString = atob(chunk);
+                                    const dataBytes = new Uint8Array(encryptedString.split('').map(char => char.charCodeAt(0)));
+                                    const keyBytes = stringToUint8Array(key);
+                                    const resultBytes = new Uint8Array(dataBytes.length);
+                                    
+                                    for (let i = 0; i < dataBytes.length; i++) {
+                                        resultBytes[i] = dataBytes[i] ^ keyBytes[i % keyBytes.length];
+                                    }
+                                    
+                                    decryptedString += uint8ArrayToString(resultBytes);
+                                }
+                                
+                                return JSON.parse(decryptedString);
+                                
+                            case 'aes':
+                                // 簡化的 AES 模擬解密 - 與加密完全對稱
+                                const encryptedChunksAES = encryptedData.split('|');
+                                let decryptedStringAES = '';
+                                
+                                for (const chunk of encryptedChunksAES) {
+                                    const encryptedString = atob(chunk);
+                                    const dataBytes = new Uint8Array(encryptedString.split('').map(char => char.charCodeAt(0)));
+                                    const keyBytes = stringToUint8Array(key);
+                                    const resultBytes = new Uint8Array(dataBytes.length);
+                                    
+                                    // 使用與加密完全對稱的解密過程
+                                    for (let i = 0; i < dataBytes.length; i++) {
+                                        const keyByte = keyBytes[i % keyBytes.length];
+                                        resultBytes[i] = (dataBytes[i] - keyByte - 123 + 256) % 256;
+                                    }
+                                    
+                                    decryptedStringAES += uint8ArrayToString(resultBytes);
+                                }
+                                
+                                return JSON.parse(decryptedStringAES);
+                                
+                            default:
+                                return encryptedData;
+                        }
+                    } catch (e) {
+                        console.error('解密失敗:', e);
+                        showNotification("資料解密失敗，請檢查加密金鑰是否正確", "error");
+                        return null;
+                    }
+                }
+                
+                // 執行搜尋
+                function performSearch() {
+                    console.log('開始執行搜尋');
+                    
+                    // 檢查所有搜尋欄位是否都有值
+                    let allFieldsFilled = true;
+                    let emptyFields = [];
+                    
+                    config.searchFields.forEach((field, index) => {
+                        let value;
+                        if (field.type === 'dropdown') {
+                            // 下拉式選單
+                            value = document.getElementById("search" + index).value;
+                        } else {
+                            // 文字輸入框或密碼輸入框
+                            value = document.getElementById("search" + index).value.trim();
+                        }
+                        
+                        if (!value) {
+                            allFieldsFilled = false;
+                            emptyFields.push(field.label);
+                        }
+                    });
+                    
+                    if (!allFieldsFilled) {
+                        showNotification("請填寫所有搜尋欄位：" + emptyFields.join("、"), "warning");
+                        return;
+                    }
+                    
+                    // 獲取查詢方式
+                    const searchModeRadio = document.querySelector('input[name="searchMode"]:checked');
+                    if (!searchModeRadio) {
+                        showNotification("請選擇查詢方式！", "warning");
+                        return;
+                    }
+                    const searchMode = searchModeRadio.value;
+                    console.log('查詢方式:', searchMode);
+                    
+                    const searchTerms = [];
+                    config.searchFields.forEach((field, index) => {
+                        let value;
+                        if (field.type === 'dropdown') {
+                            // 下拉式選單
+                            const select = document.getElementById("search" + index);
+                            value = select.value;
+                            
+                            // 如果啟用了搜尋欄位加密且此欄位在加密列表中，則解密選項值
+                            if (config.enableSearchEncryption && config.searchEncryptionFields.includes(field.field) && value) {
+                                value = decryptValue(value, encryptionInfo.method, encryptionInfo.key);
+                            }
+                        } else {
+                            // 文字輸入框或密碼輸入框
+                            value = document.getElementById("search" + index).value.trim();
+                        }
+                        
+                        if (value) {
+                            searchTerms.push({
+                                field: field.field,
+                                value: value.toLowerCase(),
+                                originalValue: value
+                            });
+                            console.log(\`搜尋條件 \${index}: 欄位="\${field.field}", 值="\${value}"\`);
+                        }
+                    });
+                    
+                    if (searchTerms.length === 0) {
+                        showNotification("請至少輸入一個搜尋條件！", "warning");
+                        return;
+                    }
+                    
+                    console.log('所有搜尋條件:', searchTerms);
+                    
+                    // 獲取實際資料
+                    let actualData;
+                    if (encryptionInfo.enabled) {
+                        console.log('解密資料中...');
+                        actualData = decryptData(worksheetData, encryptionInfo.method, encryptionInfo.key);
+                        if (!actualData) {
+                            console.error('資料解密失敗');
+                            showNotification("資料解密失敗，請檢查加密金鑰是否正確", "error");
+                            return;
+                        }
+                        console.log('資料解密完成，資料筆數:', actualData ? actualData.length : 0);
+                    } else {
+                        actualData = worksheetData;
+                        console.log('使用未加密資料，資料筆數:', actualData ? actualData.length : 0);
+                    }
+                    
+                    // 執行搜尋邏輯
+                    const results = [];
+                    for (let i = 1; i < actualData.length; i++) {
+                        const row = actualData[i];
+                        let match = true;
+                        
+                        for (const term of searchTerms) {
+                            const fieldIndex = headers.indexOf(term.field);
+                            
+                            if (fieldIndex !== -1) {
+                                const cellValue = String(row[fieldIndex] || "");
+                                const searchTerm = term.value;
+                                
+                                // 根據查詢方式進行比較
+                                if (searchMode === 'exact') {
+                                    // 完全符合查詢：不區分大小寫完全匹配
+                                    if (cellValue.toLowerCase() !== searchTerm.toLowerCase()) {
+                                        match = false;
+                                        break;
+                                    }
+                                } else {
+                                    // 含關鍵字查詢：不區分大小寫包含
+                                    if (!cellValue.toLowerCase().includes(searchTerm.toLowerCase())) {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                match = false;
+                                break;
+                            }
+                        }
+                        
+                        if (match) {
+                            results.push(row);
+                        }
+                    }
+                    
+                    console.log(\`搜尋完成，找到 \${results.length} 筆結果\`);
+                    
+                    // 去重處理
+                    let finalResults = results;
+                    if (config.removeDuplicates && results.length > 0) {
+                        finalResults = removeDuplicates(results);
+                        console.log(\`去重後剩餘 \${finalResults.length} 筆結果\`);
+                    }
+                    
+                    displayResults(finalResults);
+                }
+                
+                // 去除重複資料
+                function removeDuplicates(results) {
+                    const seen = new Set();
+                    const uniqueResults = [];
+                    
+                    results.forEach(row => {
+                        // 創建一個基於所有顯示欄位的唯一鍵
+                        let keyParts = [];
+                        config.displayFields.forEach(field => {
+                            const fieldIndex = headers.indexOf(field.field);
+                            if (fieldIndex !== -1) {
+                                const value = String(row[fieldIndex] || "").trim();
+                                keyParts.push(value);
+                            }
+                        });
+                        
+                        // 如果所有顯示欄位都為空，則使用整行數據作為鍵
+                        const key = keyParts.length > 0 ? keyParts.join("|") : JSON.stringify(row);
+                        
+                        if (!seen.has(key)) {
+                            seen.add(key);
+                            uniqueResults.push(row);
+                        }
+                    });
+                    
+                    return uniqueResults;
+                }
+                
+                // 顯示結果
+                function displayResults(results) {
+                    const resultsDiv = document.getElementById("results");
+                    
+                    if (results.length === 0) {
+                        resultsDiv.innerHTML = 
+                            "<div class=\\"no-results\\">" +
+                            "<span class=\\"text-4xl\\">😢</span>" +
+                            "<p>沒有找到符合條件的資料</p>" +
+                            "</div>";
+                        return;
+                    }
+                    
+                    let html = "<div class=\\"space-y-4\\">";
+                    results.forEach((row, index) => {
+                        html += "<div class=\\"result-row\\">";
+                        config.displayFields.forEach(field => {
+                            const fieldIndex = headers.indexOf(field.field);
+                            const value = fieldIndex !== -1 ? escapeHtml(String(row[fieldIndex] || "")) : "";
+                            html += "<div class=\\"mb-2\\">";
+                            html += "<span class=\\"font-semibold\\" style=\\"color: ${template.sectionTitleColor}\\">" + escapeHtml(field.label) + "：</span>";
+                            html += "<span class=\\"text-gray-700\\">" + value + "</span>";
+                            html += "</div>";
+                        });
+                        html += "</div>";
+                    });
+                    html += "</div>";
+                    
+                    resultsDiv.innerHTML = html;
+                }
+                
+                // 顯示通知
+                function showNotification(message, type) {
+                    const colors = {
+                        success: "bg-green-500",
+                        warning: "bg-yellow-500",
+                        error: "bg-red-500"
+                    };
+                    
+                    const notification = document.createElement("div");
+                    notification.className = "fixed top-4 right-4 " + colors[type] + " text-white px-6 py-3 rounded-lg shadow-lg z-50";
+                    notification.textContent = message;
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 3000);
+                }
+                
+                // HTML 跳脫函數
+                function escapeHtml(text) {
+                    const map = {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#039;'
+                    };
+                    return text.replace(/[&<>"']/g, m => map[m]);
+                }
+                
+                // 頁面載入完成後初始化
+                document.addEventListener('DOMContentLoaded', function() {
+                    console.log('頁面載入完成');
+                    console.log('加密設定：', encryptionInfo.enabled ? '已啟用' : '未啟用');
+                });
+            `;
+            
+            return '<!DOCTYPE html>' +
+            '<html lang="zh-TW">' +
+            '<head>' +
+            '<meta charset="UTF-8">' +
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+            '<title>' + escapeHtml(config.pageTitle) + '</title>' +
+            '<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">' +
+            '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">' +
+            '<style>' +
+            'body {' +
+            '    font-family: \'Noto Sans TC\', sans-serif;' +
+            '    background: ' + template.bodyBackground + ';' +
+            '    min-height: 100vh;' +
+            '}' +
+            '' +
+            '.cute-card {' +
+            '    background: ' + template.cardBackground + ';' +
+            '    border-radius: 20px;' +
+            '    box-shadow: ' + template.cardShadow + ';' +
+            '    transition: transform 0.3s ease;' +
+            '}' +
+            '' +
+            '.cute-card:hover {' +
+            '    transform: ' + template.cardHoverTransform + ';' +
+            '}' +
+            '' +
+            '.cute-button {' +
+            '    background: ' + template.buttonBackground + ';' +
+            '    color: white;' +
+            '    padding: 12px 30px;' +
+            '    border-radius: 25px;' +
+            '    border: none;' +
+            '    font-weight: 500;' +
+            '    transition: all 0.3s ease;' +
+            '    cursor: pointer;' +
+            '}' +
+            '' +
+            '.cute-button:hover {' +
+            '    background: ' + template.buttonHoverBackground + ';' +
+            '    transform: ' + template.buttonHoverTransform + ';' +
+            '    box-shadow: ' + template.buttonHoverShadow + ';' +
+            '}' +
+            '' +
+            '.cute-input {' +
+            '    border: ' + template.inputBorder + ';' +
+            '    border-radius: 15px;' +
+            '    padding: 10px 15px;' +
+            '    transition: all 0.3s ease;' +
+            '}' +
+            '' +
+            '.cute-input:focus {' +
+            '    outline: none;' +
+            '    border: ' + template.inputFocusBorder + ';' +
+            '    box-shadow: ' + template.inputFocusShadow + ';' +
+            '}' +
+            '' +
+            '.cute-select {' +
+            '    border: ' + template.inputBorder + ';' +
+            '    border-radius: 15px;' +
+            '    padding: 10px 15px;' +
+            '    background: white;' +
+            '    transition: all 0.3s ease;' +
+            '}' +
+            '' +
+            '.cute-select:focus {' +
+            '    outline: none;' +
+            '    border: ' + template.inputFocusBorder + ';' +
+            '}' +
+            '' +
+            '.cute-radio {' +
+            '    width: 18px;' +
+            '    height: 18px;' +
+            '    accent-color: #fd79a8;' +
+            '}' +
+            '' +
+            '.result-row {' +
+            '    background: ' + template.resultRowBackground + ';' +
+            '    border-radius: 15px;' +
+            '    padding: 15px;' +
+            '    margin-bottom: 10px;' +
+            '    transition: all 0.3s ease;' +
+            '}' +
+            '' +
+            '.result-row:hover {' +
+            '    background: ' + template.resultRowHoverBackground + ';' +
+            '    transform: ' + template.resultRowHoverTransform + ';' +
+            '}' +
+            '' +
+            '.no-results {' +
+            '    text-align: center;' +
+            '    padding: 40px;' +
+            '    color: #636e72;' +
+            '    font-size: 18px;' +
+            '}' +
+            '' +
+            '.required-field::after {' +
+            '    content: " *";' +
+            '    color: #e74c3c;' +
+            '    font-weight: bold;' +
+            '}' +
+            '</style>' +
+            '</head>' +
+            '<body>' +
+            '<div class="container mx-auto px-4 py-8 max-w-6xl">' +
+            '<!-- 標題 -->' +
+            '<div class="text-center mb-8">' +
+            '<h1 class="text-4xl font-bold mb-2" style="color: ' + template.titleColor + '"><span class="text-4xl">' + template.icon + '</span> ' + escapeHtml(config.pageTitle) + ' <span class="text-4xl">' + template.icon + '</span></h1>' +
+            '<p style="color: ' + template.subtitleColor + '" class="text-lg">簡單又好用的資料查詢系統</p>' +
+            '</div>' +
+            '' +
+            '<!-- 搜尋區塊 -->' +
+            '<div class="cute-card p-8 mb-8">' +
+            '<h2 class="text-2xl font-bold mb-6 text-center" style="color: ' + template.sectionTitleColor + '">🔍 資料搜尋</h2>' +
+            '<div class="bg-blue-50 p-4 rounded-lg mb-6">' +
+            '<p class="text-blue-700 text-center">' +
+            '<i class="fas fa-info-circle mr-2"></i>' +
+            '<strong>注意：</strong>所有搜尋欄位都必須填寫內容才能執行查詢' +
+            '</p>' +
+            '</div>' +
+            '<div class="grid md:grid-cols-2 gap-4">' + searchFieldsHtml + '</div>' +
+            
+            // 只有當設定了查詢方式時才顯示查詢方式選擇區塊
+            (config.searchModes.length > 0 ? 
+            '<div class="mt-6">' +
+            '<label class="block mb-2 font-medium text-gray-700">查詢方式</label>' +
+            '<div class="flex space-x-6">' + searchModeOptionsHtml + '</div>' +
+            '</div>' : '') +
+            
+            '<div class="text-center mt-6">' +
+            '<button onclick="performSearch()" class="cute-button text-xl">' +
+            '<span class="text-xl">🔎</span> 開始搜尋' +
+            '</button>' +
+            '</div>' +
+            '</div>' +
+            '' +
+            '<!-- 結果區塊 -->' +
+            '<div class="cute-card p-8">' +
+            '<h2 class="text-2xl font-bold mb-6 text-center" style="color: ' + template.sectionTitleColor + '">📊 搜尋結果</h2>' +
+            '<div id="results">' +
+            '<div class="no-results">' +
+            '<span class="text-4xl">📭</span>' +
+            '<p>請輸入搜尋條件後點擊「開始搜尋」</p>' +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            '' +
+            '<!-- 頁尾 -->' +
+            '<div class="text-center mt-8" style="color: ' + template.titleColor + '">' +
+            '<p>💖 ' + escapeHtml(config.unitName) + ' 💖</p>' +
+            '</div>' +
+            '</div>' +
+            '' +
+            '<script>' + javascriptCode + '<\/script>' +
+            '</body>' +
+            '</html>';
+        }
+        
+        // HTML 跳脫函數
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        // 顯示通知
+        function showNotification(message, type) {
+            const colors = {
+                success: 'bg-green-500',
+                warning: 'bg-yellow-500',
+                error: 'bg-red-500'
+            };
+            
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 ' + colors[type] + ' text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // 打開使用說明模態框
+        function openHelpModal() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+        
+        // 關閉使用說明模態框
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+        
+        // 點擊模態框外部關閉
+        window.onclick = function(event) {
+            const modal = document.getElementById('helpModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

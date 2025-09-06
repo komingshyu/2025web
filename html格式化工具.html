@@ -1,0 +1,257 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML格式化工具 🛠️✨</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.11/beautify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.11/beautify-css.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.11/beautify-html.js"></script>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            color: #333;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #ff69b4;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            border: 2px solid #ff69b4;
+            border-radius: 10px;
+            resize: vertical;
+            background-color: #fff;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        button {
+            padding: 12px 25px;
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        button:hover {
+            background-color: #ff1493;
+            transform: scale(1.05);
+        }
+        pre {
+            background-color: #fff;
+            padding: 15px;
+            border: 2px solid #ff69b4;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .error {
+            color: #ff0000;
+            text-align: center;
+            font-weight: bold;
+        }
+        .emoji {
+            font-size: 1.5em;
+        }
+        .success {
+            color: #28a745;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>HTML格式化工具 <span class="emoji">🛠️✨</span></h1>
+    <div class="container">
+        <textarea id="inputHtml" placeholder="輸入您的HTML代碼... 💻"></textarea>
+        <div class="button-group">
+            <button onclick="formatHtml()">格式化 ✨</button>
+            <button onclick="copyFormatted()">格式化文件複製 📋</button>
+            <button onclick="clearData()">清空資料 🗑️</button>
+        </div>
+        <pre id="outputHtml"></pre>
+        <p id="errorMessage" class="error"></p>
+        <p id="successMessage" class="success"></p>
+    </div>
+
+    <script>
+        function formatHtml() {
+            const input = document.getElementById('inputHtml').value;
+            const output = document.getElementById('outputHtml');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            try {
+                // 預處理 <script> 和 <style> 內容
+                const processedInput = preprocessInput(input);
+                // 使用 js-beautify 的 html_beautify 格式化 HTML
+                const options = {
+                    indent_size: 2,
+                    wrap_line_length: 80,
+                    preserve_newlines: true,
+                    max_preserve_newlines: 2,
+                    indent_inner_html: true,
+                    indent_scripts: 'normal',
+                    unformatted: [] // 確保不忽略任何標籤
+                };
+                const formatted = html_beautify(processedInput, options);
+                output.textContent = formatted;
+                errorMessage.textContent = '';
+                successMessage.textContent = '';
+            } catch (error) {
+                output.textContent = '';
+                errorMessage.textContent = '錯誤：無效的HTML代碼 😔';
+                successMessage.textContent = '';
+            }
+        }
+
+        function preprocessInput(html) {
+            // 使用 DOMParser 解析 HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const parsererror = doc.querySelector('parsererror');
+            if (parsererror) {
+                throw new Error('Invalid HTML');
+            }
+
+            // 處理 <script> 和 <style> 標籤內的內容
+            const scripts = doc.querySelectorAll('script');
+            const styles = doc.querySelectorAll('style');
+            
+            scripts.forEach(script => {
+                const jsCode = script.textContent.trim();
+                if (jsCode) {
+                    // 使用 js_beautify 格式化 JavaScript
+                    const jsOptions = {
+                        indent_size: 2,
+                        brace_style: 'collapse,preserve-inline',
+                        space_before_conditional: true
+                    };
+                    script.textContent = '\n' + js_beautify(jsCode, jsOptions) + '\n';
+                }
+            });
+
+            styles.forEach(style => {
+                const cssCode = style.textContent.trim();
+                if (cssCode) {
+                    // 使用 css_beautify 格式化 CSS
+                    const cssOptions = {
+                        indent_size: 2
+                    };
+                    style.textContent = '\n' + css_beautify(cssCode, cssOptions) + '\n';
+                }
+            });
+
+            // 將處理後的 DOM 轉回字符串
+            return doc.documentElement.outerHTML;
+        }
+
+        function copyFormatted() {
+            const output = document.getElementById('outputHtml').textContent;
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+
+            if (!output) {
+                errorMessage.textContent = '錯誤：無格式化內容可複製 😔';
+                successMessage.textContent = '';
+                return;
+            }
+
+            navigator.clipboard.writeText(output).then(() => {
+                successMessage.textContent = '已複製到剪貼板！🎉';
+                errorMessage.textContent = '';
+                // 3秒後清除成功訊息
+                setTimeout(() => {
+                    successMessage.textContent = '';
+                }, 3000);
+            }).catch(() => {
+                errorMessage.textContent = '複製失敗，請重試 😔';
+                successMessage.textContent = '';
+            });
+        }
+
+        function clearData() {
+            const input = document.getElementById('inputHtml');
+            const output = document.getElementById('outputHtml');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            input.value = '';
+            output.textContent = '';
+            errorMessage.textContent = '';
+            successMessage.textContent = '已清空所有資料！🗑️';
+            // 3秒後清除成功訊息
+            setTimeout(() => {
+                successMessage.textContent = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

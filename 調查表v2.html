@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>畢業生生涯進路調查表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for XLSX export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff; /* 可愛風格的淺藍色背景 */
+            color: #374151;
+        }
+        .container {
+            max-width: 1280px;
+        }
+        .cute-button {
+            transition: all 0.2s ease-in-out;
+            background-image: linear-gradient(to right, #93c5fd, #a5b4fc);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: none;
+        }
+        .cute-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .action-icon {
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+        .action-icon:hover {
+            transform: scale(1.1);
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+        }
+        .editing-mode-bg {
+            background-color: #d1fae5; /* 淺綠色背景 */
+            border-color: #10b981;
+            transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+    <div class="container mx-auto grid grid-rows-[auto_1fr] gap-6 bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-200 min-h-[calc(100vh-2rem)]">
+        
+        <!-- 上方：資料輸入區 -->
+        <div id="input-frame" class="bg-purple-50 p-6 rounded-2xl shadow-inner border border-purple-200 transition-colors duration-300">
+            <div class="flex items-center justify-center mb-4 text-gray-800">
+                <!-- 畢業帽 SVG 圖示 -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" class="h-8 w-8 mr-3 text-purple-600">
+                    <path fill="currentColor" d="M333.6 5.8C327.4 2.3 320.6 0 313.7 0H167.3c-6.9 0-13.7 2.3-19.9 5.8L7.4 83.3C2.8 86.6 0 92.1 0 97.9V452.1c0 5.8 2.8 11.3 7.4 14.6l140.2 77.5c6.2 3.4 13 5.8 19.9 5.8H408c7.1 0 14-2.4 20.2-5.9l140.2-77.5c4.6-2.5 7.4-8.1 7.4-13.9V97.9c0-5.8-2.8-11.3-7.4-14.6L333.6 5.8zm-99.3 64.9L301 113.2l66.7-36.8L234.3 70.7zm66.7-36.8L167.3 32.8l-82 45.3L225 120.2l75.3-41.5zm102.3 84.7c-5.7-3.4-12.2-5.3-19.1-5.3h-19.1V288c0 17.7-14.3 32-32 32h-64c-17.7 0-32-14.3-32-32V122.9H167.3c-6.9 0-13.7 2.3-19.9 5.8L40.2 163.7l116.1 64.1c6.2 3.4 13 5.8 19.9 5.8h19.1V352c0 17.7 14.3 32 32 32h64c17.7 0 32-14.3 32-32V233.7h19.1c6.9 0 13.7-2.3 19.9-5.8l116.1-64.1L402.3 123.6zM224 352v-64h64v64h-64z"/>
+                </svg>
+                <h1 class="text-3xl font-bold text-center">畢業生生涯進路調查表</h1>
+            </div>
+            
+            <div class="mb-6 space-y-4">
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="class-name" class="block text-sm font-medium text-gray-700">班級</label>
+                        <input type="text" id="class-name" name="class-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500" placeholder="例如：三年1班">
+                    </div>
+                    <div>
+                        <label for="total-students" class="block text-sm font-medium text-gray-700">全班共幾人</label>
+                        <input type="number" id="total-students" name="total-students" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="homeroom-teacher" class="block text-sm font-medium text-gray-700">導師</label>
+                        <input type="text" id="homeroom-teacher" name="homeroom-teacher" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500" placeholder="例如：陳老師">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-6 border-purple-300">
+
+            <form id="student-form" class="space-y-4">
+                <input type="hidden" id="student-id-to-edit" value="">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">學生資料輸入</h2>
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div>
+                        <label for="student-id" class="block text-sm font-medium text-gray-700">座號 <span class="text-red-500">*</span></label>
+                        <input type="text" id="student-id" name="student-id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="student-name" class="block text-sm font-medium text-gray-700">姓名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="student-name" name="student-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="career-path" class="block text-sm font-medium text-gray-700">升學就業 <span class="text-red-500">*</span></label>
+                        <select id="career-path" name="career-path" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">請選擇</option>
+                            <option value="1">1. 升學</option>
+                            <option value="2">2. 就業</option>
+                            <option value="3">3. 未升學未就業 (重考請在說明欄註明)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="education-system" class="block text-sm font-medium text-gray-700">學制別</label>
+                        <select id="education-system" name="education-system" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">請選擇</option>
+                            <option value="1">1. 普通型高中</option>
+                            <option value="2">2. 綜合型高中</option>
+                            <option value="3">3. 技術型高中 (舊稱高職)</option>
+                            <option value="4">4. 技高進修部 (夜間上課)</option>
+                            <option value="5">5. 技高實用技能班</option>
+                            <option value="6">6. 技高建教合作班</option>
+                            <option value="7">7. 技高綜合職能班 (特教)</option>
+                            <option value="8">8. 五專</option>
+                            <option value="9">9. 軍事學校</option>
+                            <option value="10">10. 赴國外就學</option>
+                            <option value="11">11. 其他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="col-span-2">
+                        <label for="school-name" class="block text-sm font-medium text-gray-700">就讀學校校名 (簡稱即可)</label>
+                        <input type="text" id="school-name" name="school-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="department-name" class="block text-sm font-medium text-gray-700">技術型高中科別 (普通型高中免填)</label>
+                        <select id="department-name" name="department-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">請先選擇群別</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="group-code" class="block text-sm font-medium text-gray-700">群別代碼</label>
+                        <select id="group-code" name="group-code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">請選擇</option>
+                            <optgroup label="工業類">
+                                <option value="1">1. 機械群</option>
+                                <option value="2">2. 動力機械群</option>
+                                <option value="3">3. 電機與電子群</option>
+                                <option value="4">4. 化工群</option>
+                                <option value="5">5. 土木建築群</option>
+                            </optgroup>
+                            <optgroup label="商業類">
+                                <option value="6">6. 商業管理群</option>
+                                <option value="7">7. 外語群</option>
+                            </optgroup>
+                            <optgroup label="農業類">
+                                <option value="8">8. 農業群</option>
+                                <option value="9">9. 食品群</option>
+                            </optgroup>
+                            <optgroup label="家事類">
+                                <option value="10">10. 家政群</option>
+                                <option value="11">11. 餐旅群</option>
+                            </optgroup>
+                            <optgroup label="海事水產類">
+                                <option value="12">12. 水產群</option>
+                                <option value="13">13. 海事群</option>
+                            </optgroup>
+                            <optgroup label="藝術與設計類">
+                                <option value="14">14. 設計群</option>
+                                <option value="15">15. 藝術群</option>
+                            </optgroup>
+                            <optgroup label="醫護類">
+                            <option value="16">16. 醫護類</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="other-notes" class="block text-sm font-medium text-gray-700">其他說明</label>
+                        <input type="text" id="other-notes" name="other-notes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- 操作按鈕 -->
+                <div class="mt-6 flex flex-wrap justify-center gap-4">
+                    <button type="submit" id="add-edit-button" class="flex items-center px-6 py-3 text-base font-medium rounded-full text-white cute-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M11 3a1 1 0 100 2h6a1 1 0 100-2h-6zM9 7a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1zM9 11a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1zM9 15a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" />
+                            <path fill-rule="evenodd" d="M4 3a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1V3zM4 7a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1V7zM4 11a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1zM4 15a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1z" clip-rule="evenodd" />
+                        </svg>
+                        <span>新增學生</span>
+                    </button>
+                    <button type="button" id="cancel-edit-button" class="hidden flex items-center px-6 py-3 text-base font-medium rounded-full text-white cute-button bg-gray-400 hover:bg-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        <span>取消編輯</span>
+                    </button>
+                    <button type="button" id="show-instructions-button" class="flex items-center px-6 py-3 text-base font-medium rounded-full text-white cute-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                        </svg>
+                        <span>使用說明</span>
+                    </button>
+                    <button type="button" id="export-xlsx-button" class="flex items-center px-6 py-3 text-base font-medium rounded-full text-white cute-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L11.586 2.586A2 2 0 0010.172 2H6zm2.707 9.293a1 1 0 00-1.414 1.414L9.586 15l-2.293 2.293a1 1 0 001.414 1.414L11 16.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15l2.293-2.293a1 1 0 00-1.414-1.414L11 13.586l-2.293-2.293z" clip-rule="evenodd" />
+                            <path d="M10 3a1 1 0 011 1v3h3a1 1 0 010 2h-4a1 1 0 01-1-1V4a1 1 0 011-1z" />
+                        </svg>
+                        <span>匯出 XLSX</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <p class="text-right text-sm text-gray-500 mb-2">網頁設計: koming by 2025</p>
+        <!-- 下方：學生資料表格 -->
+        <div class="table-frame bg-white p-6 rounded-2xl shadow-inner border border-gray-200 overflow-x-auto">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">已建立的學生資料</h2>
+            <table class="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden border border-gray-200">
+                <thead class="bg-indigo-100/50">
+                    <tr>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">座號</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">升學就業</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">學制別</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">就讀學校</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">技術型高中科別</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">群別</th>
+                        <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">其他說明</th>
+                        <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Data rows will be inserted here by JavaScript -->
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-gray-500">目前沒有資料，請新增學生。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Message box -->
+    <div id="message-box" class="fixed bottom-4 right-4 p-4 rounded-lg text-white font-medium shadow-lg transition-transform duration-300 transform translate-y-20 z-50"></div>
+    
+    <!-- Instructions Modal -->
+    <div id="instructions-modal-overlay" class="modal-overlay">
+        <div id="instructions-modal-content" class="modal-content">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800 text-center">使用說明</h3>
+            <ul class="list-decimal list-inside space-y-3 text-gray-700">
+                <li>**填寫基本資訊:** 在最上方的區塊，填寫「班級」、「全班人數」和「導師」等資訊。這些資訊會被匯出到 XLSX 檔案中。</li>
+                <li>**新增學生資料:**
+                    <ul class="list-disc list-inside ml-4 space-y-1">
+                        <li>在「學生資料輸入」區塊，依序填寫學生的「座號」、「姓名」以及相關的升學就業與學制資訊。</li>
+                        <li>填寫完成後，點擊 **[新增學生]** 按鈕，資料就會被新增至下方的表格中。</li>
+                    </ul>
+                </li>
+                <li>**編輯與刪除資料:**
+                    <ul class="list-disc list-inside ml-4 space-y-1">
+                        <li>在下方表格中，每筆資料的最右邊都有「編輯」與「刪除」按鈕。</li>
+                        <li>點擊 **編輯按鈕** (鉛筆圖示)，該筆資料會被載入至上方的輸入欄位，您可以修改後點擊 **[更新學生]** 按鈕來儲存變更。</li>
+                        <li>點擊 **刪除按鈕** (垃圾桶圖示)，會跳出確認視窗，避免誤刪。</li>
+                    </ul>
+                </li>
+                <li>**匯出 XLSX 檔案:**
+                    <ul class="list-disc list-inside ml-4 space-y-1">
+                        <li>點擊 **[匯出 XLSX]** 按鈕，系統會自動將所有已輸入的學生資料匯出成一個 Excel 檔案。</li>
+                        <li>匯出的檔案名稱會包含班級名稱，方便您辨識。</li>
+                    </ul>
+                </li>
+            </ul>
+            <button id="close-instructions-modal-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal-overlay" class="modal-overlay">
+        <div class="modal-content text-center">
+            <h3 class="text-2xl font-bold mb-4 text-red-600">確定要刪除嗎？</h3>
+            <p class="text-gray-700 mb-6">這項操作無法復原。您確定要刪除這筆學生資料嗎？</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-delete-button" class="cute-button bg-gray-300 text-gray-800 hover:bg-gray-400 px-6 py-2 rounded-full font-medium">取消</button>
+                <button id="confirm-delete-button" class="cute-button bg-red-500 text-white hover:bg-red-600 px-6 py-2 rounded-full font-medium">確認刪除</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputFrame = document.getElementById('input-frame');
+            const studentForm = document.getElementById('student-form');
+            const studentTableBody = document.getElementById('student-table-body');
+            const exportXlsxBtn = document.getElementById('export-xlsx-button');
+            const addEditButton = document.getElementById('add-edit-button');
+            const studentIdToEditInput = document.getElementById('student-id-to-edit');
+            const cancelEditButton = document.getElementById('cancel-edit-button');
+            
+            // 班級資訊
+            const classNameInput = document.getElementById('class-name');
+            const totalStudentsInput = document.getElementById('total-students');
+            const homeroomTeacherInput = document.getElementById('homeroom-teacher');
+
+            // 學生資料輸入欄位
+            const studentIdInput = document.getElementById('student-id');
+            const studentNameInput = document.getElementById('student-name');
+            const careerPathSelect = document.getElementById('career-path');
+            const educationSystemSelect = document.getElementById('education-system');
+            const schoolNameInput = document.getElementById('school-name');
+            const departmentNameSelect = document.getElementById('department-name');
+            const groupCodeSelect = document.getElementById('group-code');
+            const otherNotesInput = document.getElementById('other-notes');
+            const formInputs = [studentIdInput, studentNameInput, careerPathSelect, educationSystemSelect, schoolNameInput, departmentNameSelect, groupCodeSelect, otherNotesInput];
+            
+            // 訊息提示框
+            const messageBox = document.getElementById('message-box');
+
+            // 使用說明彈窗
+            const showInstructionsBtn = document.getElementById('show-instructions-button');
+            const closeInstructionsModalBtn = document.getElementById('close-instructions-modal-button');
+            const instructionsModalOverlay = document.getElementById('instructions-modal-overlay');
+
+            // 刪除確認彈窗
+            const deleteModalOverlay = document.getElementById('delete-modal-overlay');
+            const confirmDeleteButton = document.getElementById('confirm-delete-button');
+            const cancelDeleteButton = document.getElementById('cancel-delete-button');
+            let studentIdToDelete = null; // 用於儲存要刪除的學生ID
+
+            // 群別與科別對應表，根據PDF內容整理
+            const groupToDepartmentMap = {
+                '1': ['機械科', '鑄造科', '板金科', '機械木模科', '配管科', '模具科', '機電科', '製圖科', '生物產業機電科', '電腦機械製圖科'],
+                '2': ['汽車科', '重機科', '飛機修護科', '動力機械科', '農業機械科', '軌道車輛科'],
+                '3': ['資訊科', '電子科', '控制科', '電機科', '冷凍空調科', '航空電子科', '電子通信科', '電機空調科'],
+                '4': ['化工科', '紡織科', '染整科', '環境檢驗科'],
+                '5': ['建築科', '土木科', '消防工程科', '空間測繪科'],
+                '6': ['商業經營科', '國際貿易科', '會計事務科', '資料處理科', '電子商務科', '流通管理科', '農產行銷科', '航運管理科', '水產經營科', '不動產事務科', '電競經營科'],
+                '7': ['應用英語科', '應用日語科'],
+                '8': ['農場經營科', '園藝科', '森林科', '野生動物保育科', '造園科', '畜產保健科'],
+                '9': ['食品加工科', '食品科', '水產食品科', '烘焙科'],
+                '10': ['家政科', '服裝科', '幼兒保育科', '美容科', '時尚模特兒科', '流行服飾科', '時尚造型科', '照顧服務科'],
+                '11': ['觀光事業科', '餐飲管理科'],
+                '12': ['漁業科', '水產養殖科'],
+                '13': ['輪機科', '航海科'],
+                '14': ['家具木工科', '美工科', '陶瓷工程科', '室內空間設計科', '圖文傳播科', '金屬工藝科', '廣告設計科', '多媒體設計科', '室內設計科', '多媒體應用科', '美術工藝科'],
+                '15': ['戲劇科', '音樂科', '舞蹈科', '美術科', '影劇科', '西樂科', '國樂科', '電影電視科', '表演藝術科', '多媒體動畫科', '時尚工藝科', '劇場藝術科', '原住民藝能科'],
+                '16': ['醫護類相關科系']
+            };
+            
+            // 升學就業對應表 (用於顯示在畫面上)
+            const careerPathMap = {
+                '1': '1. 升學',
+                '2': '2. 就業',
+                '3': '3. 未升學未就業'
+            };
+            
+            // 學制別對應表 (用於顯示在畫面上)
+            const educationSystemMap = {
+                '1': '1. 普通型高中',
+                '2': '2. 綜合型高中',
+                '3': '3. 技術型高中',
+                '4': '4. 技高進修部',
+                '5': '5. 技高實用技能班',
+                '6': '6. 技高建教合作班',
+                '7': '7. 技高綜合職能班',
+                '8': '8. 五專',
+                '9': '9. 軍事學校',
+                '10': '10. 赴國外就學',
+                '11': '11. 其他'
+            };
+
+            // 群別代碼對應表 (用於顯示在畫面上)
+            const groupCodeMap = {
+                '1': '1. 機械群', '2': '2. 動力機械群', '3': '3. 電機與電子群', '4': '4. 化工群',
+                '5': '5. 土木建築群', '6': '6. 商業管理群', '7': '7. 外語群', '8': '8. 農業群',
+                '9': '9. 食品群', '10': '10. 家政群', '11': '11. 餐旅群', '12': '12. 水產群',
+                '13': '13. 海事群', '14': '14. 設計群', '15': '15. 藝術群', '16': '16. 醫護類'
+            };
+
+            let studentData = [];
+
+            // 顯示訊息提示
+            const showMessage = (message, type) => {
+                messageBox.textContent = message;
+                messageBox.className = 'fixed bottom-4 right-4 p-4 rounded-lg text-white font-medium shadow-lg transition-transform duration-300 z-50';
+                if (type === 'success') {
+                    messageBox.classList.add('bg-green-500', 'translate-y-0');
+                } else if (type === 'error') {
+                    messageBox.classList.add('bg-red-500', 'translate-y-0');
+                }
+                setTimeout(() => {
+                    messageBox.classList.remove('translate-y-0');
+                    messageBox.classList.add('translate-y-20');
+                }, 3000);
+            };
+
+            // 從 localStorage 載入資料
+            const loadData = () => {
+                const storedData = localStorage.getItem('graduateSurveyData');
+                if (storedData) {
+                    studentData = JSON.parse(storedData);
+                    renderTable();
+                } else {
+                    renderEmptyTable();
+                }
+            };
+            
+            // 將資料儲存到 localStorage
+            const saveData = () => {
+                localStorage.setItem('graduateSurveyData', JSON.stringify(studentData));
+                renderTable();
+            };
+
+            // 渲染表格
+            const renderTable = () => {
+                studentTableBody.innerHTML = '';
+                if (studentData.length === 0) {
+                    renderEmptyTable();
+                    return;
+                }
+
+                studentData.forEach(student => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${student.studentId}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${student.studentName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${careerPathMap[student.careerPath] || ''}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${educationSystemMap[student.educationSystem] || ''}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${student.schoolName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${student.departmentName}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${groupCodeMap[student.groupCode] || ''}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${student.otherNotes}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="editStudent('${student.id}')" class="text-blue-600 hover:text-blue-900 mr-2 action-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                            </button>
+                            <button onclick="showDeleteModal('${student.id}')" class="text-red-600 hover:text-red-900 action-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-2 0v6a1 1 0 102 0V7z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </td>
+                    `;
+                    studentTableBody.appendChild(row);
+                });
+            };
+
+            // 渲染空表格訊息
+            const renderEmptyTable = () => {
+                studentTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-gray-500">目前沒有資料，請新增學生。</td>
+                    </tr>
+                `;
+            };
+
+            // 處理群別代碼選擇變更的函式
+            const handleGroupCodeChange = () => {
+                const selectedGroupCode = groupCodeSelect.value;
+                departmentNameSelect.innerHTML = '<option value="">請先選擇群別</option>';
+
+                if (selectedGroupCode && groupToDepartmentMap[selectedGroupCode]) {
+                    const departments = groupToDepartmentMap[selectedGroupCode];
+                    departmentNameSelect.innerHTML = '<option value="">請選擇科別</option>';
+                    departments.forEach(department => {
+                        const option = document.createElement('option');
+                        option.value = department;
+                        option.textContent = department;
+                        departmentNameSelect.appendChild(option);
+                    });
+                }
+            };
+            
+            // 重設表單和 UI 狀態
+            const resetForm = () => {
+                studentForm.reset();
+                studentIdToEditInput.value = '';
+                addEditButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M11 3a1 1 0 100 2h6a1 1 0 100-2h-6zM9 7a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1zM9 11a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1zM9 15a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" />
+                        <path fill-rule="evenodd" d="M4 3a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1V3zM4 7a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1V7zM4 11a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1zM4 15a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H5a1 1 0 01-1-1v-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>新增學生</span>
+                `;
+                addEditButton.classList.remove('bg-green-500', 'hover:bg-green-600');
+                addEditButton.classList.add('cute-button');
+                cancelEditButton.classList.add('hidden');
+                inputFrame.classList.remove('editing-mode-bg');
+
+                // 移除所有輸入欄位的編輯模式樣式
+                formInputs.forEach(input => {
+                    input.classList.remove('editing-mode-bg');
+                });
+            };
+
+            // 編輯學生資料
+            window.editStudent = (id) => {
+                const student = studentData.find(s => s.id === id);
+                if (!student) return;
+
+                // 將資料載入表單
+                studentIdInput.value = student.studentId;
+                studentNameInput.value = student.studentName;
+                careerPathSelect.value = student.careerPath;
+                educationSystemSelect.value = student.educationSystem;
+                schoolNameInput.value = student.schoolName;
+                groupCodeSelect.value = student.groupCode;
+                // 觸發群別變更，以載入正確的科別選項
+                handleGroupCodeChange(); 
+                departmentNameSelect.value = student.departmentName;
+                otherNotesInput.value = student.otherNotes;
+
+                studentIdToEditInput.value = id;
+                
+                // 改變按鈕和背景
+                addEditButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <span>更新學生</span>
+                `;
+                addEditButton.classList.remove('cute-button');
+                addEditButton.classList.add('bg-green-500', 'hover:bg-green-600');
+                cancelEditButton.classList.remove('hidden');
+                inputFrame.classList.add('editing-mode-bg');
+
+                // 為所有輸入欄位加上編輯模式樣式
+                formInputs.forEach(input => {
+                    input.classList.add('editing-mode-bg');
+                });
+            };
+
+            // 顯示刪除確認彈窗
+            window.showDeleteModal = (id) => {
+                studentIdToDelete = id;
+                deleteModalOverlay.style.display = 'flex';
+            };
+
+            // 實際刪除學生資料
+            const performDelete = () => {
+                if (studentIdToDelete) {
+                    studentData = studentData.filter(student => student.id !== studentIdToDelete);
+                    saveData();
+                    showMessage('學生資料已刪除。', 'success');
+                    studentIdToDelete = null; // 清空待刪除ID
+                }
+                deleteModalOverlay.style.display = 'none';
+            };
+
+            // 表單提交事件處理
+            studentForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                // 取得表單資料
+                const newStudent = {
+                    studentId: studentIdInput.value.trim(),
+                    studentName: studentNameInput.value.trim(),
+                    careerPath: careerPathSelect.value.trim(),
+                    educationSystem: educationSystemSelect.value.trim(),
+                    schoolName: schoolNameInput.value.trim(),
+                    departmentName: departmentNameSelect.value.trim(),
+                    groupCode: groupCodeSelect.value.trim(),
+                    otherNotes: otherNotesInput.value.trim()
+                };
+
+                // 檢查必填欄位
+                if (!newStudent.studentId || !newStudent.studentName || !newStudent.careerPath) {
+                    showMessage('座號、姓名和升學就業為必填項目！', 'error');
+                    return;
+                }
+
+                const idToEdit = studentIdToEditInput.value;
+                if (idToEdit) {
+                    // 更新現有資料
+                    const index = studentData.findIndex(s => s.id === idToEdit);
+                    if (index !== -1) {
+                        studentData[index] = { ...newStudent, id: idToEdit };
+                        showMessage('學生資料已更新。', 'success');
+                    }
+                } else {
+                    // 新增資料
+                    // 檢查是否已存在相同的座號
+                    const isDuplicate = studentData.some(s => s.studentId === newStudent.studentId);
+                    if (isDuplicate) {
+                        showMessage('已存在相同的座號，請勿重複新增。', 'error');
+                        return;
+                    }
+                    studentData.push({ ...newStudent, id: crypto.randomUUID() });
+                    showMessage('學生資料已新增。', 'success');
+                }
+                
+                saveData();
+                resetForm(); // 重設表單狀態
+            });
+            
+            // 匯出 XLSX 檔案
+            exportXlsxBtn.addEventListener('click', () => {
+                if (studentData.length === 0) {
+                    showMessage('沒有資料可以匯出。', 'error');
+                    return;
+                }
+                
+                const className = classNameInput.value || '未填寫';
+                const totalStudents = totalStudentsInput.value || '未填寫';
+                const homeroomTeacher = homeroomTeacherInput.value || '未填寫';
+                
+                // 準備 Excel 標頭和資訊
+                const exportHeader = [
+                    ['畢業生生涯進路調查表'],
+                    [`班級: ${className} 全班共幾人: ${totalStudents} 導師: ${homeroomTeacher}`],
+                    ['座號', '姓名', '升學就業代碼', '學制別代碼', '就讀學校校名', '技術型高中科別', '群別代碼', '其他說明']
+                ];
+                
+                // 準備 Excel 資料 (使用代碼)
+                const exportData = studentData.map(student => [
+                    student.studentId,
+                    student.studentName,
+                    student.careerPath,
+                    student.educationSystem,
+                    student.schoolName,
+                    student.departmentName,
+                    student.groupCode,
+                    student.otherNotes
+                ]);
+                
+                // 合併標頭和資料
+                const data = [...exportHeader, ...exportData];
+                
+                // 創建工作表
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                
+                // 合併第一列和第二列的儲存格
+                ws['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // 標題合併
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }  // 班級資訊合併
+                ];
+                
+                // 設定第一列標題樣式
+                if (ws['A1']) {
+                    ws['A1'].s = {
+                        font: { sz: 16, bold: true },
+                        alignment: { horizontal: 'center', vertical: 'center' }
+                    };
+                }
+                
+                // 設定第二列班級資訊樣式
+                if (ws['A2']) {
+                    ws['A2'].s = {
+                        alignment: { horizontal: 'center', vertical: 'center' }
+                    };
+                }
+                
+                // 加上表格框線
+                const borderStyle = { style: "thin" };
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                for (let R = 2; R <= range.e.r; ++R) {
+                    for (let C = range.s.c; C <= range.e.c; ++C) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+                        if (!ws[cellAddress]) ws[cellAddress] = {};
+                        if (!ws[cellAddress].s) ws[cellAddress].s = {};
+                        ws[cellAddress].s.border = { 
+                            top: borderStyle, 
+                            bottom: borderStyle, 
+                            left: borderStyle, 
+                            right: borderStyle 
+                        };
+                    }
+                }
+                
+                // 設定欄位寬度
+                ws['!cols'] = [
+                    { wch: 8 },  // 座號
+                    { wch: 12 }, // 姓名
+                    { wch: 15 }, // 升學就業代碼
+                    { wch: 15 }, // 學制別代碼
+                    { wch: 25 }, // 就讀學校校名
+                    { wch: 20 }, // 技術型高中科別
+                    { wch: 15 }, // 群別代碼
+                    { wch: 30 }  // 其他說明
+                ];
+                
+                // 創建工作簿
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "畢業生進路調查");
+                
+                // 匯出檔案
+                XLSX.writeFile(wb, `畢業生進路調查表_${className}.xlsx`);
+                
+                showMessage('資料已成功匯出為 XLSX 格式。', 'success');
+            });
+
+            // 顯示使用說明彈窗
+            showInstructionsBtn.addEventListener('click', () => {
+                instructionsModalOverlay.style.display = 'flex';
+            });
+
+            // 關閉使用說明彈窗
+            closeInstructionsModalBtn.addEventListener('click', () => {
+                instructionsModalOverlay.style.display = 'none';
+            });
+            // 點擊 overlay 區域也可以關閉
+            instructionsModalOverlay.addEventListener('click', (event) => {
+                if (event.target === instructionsModalOverlay) {
+                    instructionsModalOverlay.style.display = 'none';
+                }
+            });
+
+            // 刪除確認彈窗事件監聽
+            confirmDeleteButton.addEventListener('click', performDelete);
+            cancelDeleteButton.addEventListener('click', () => {
+                deleteModalOverlay.style.display = 'none';
+                studentIdToDelete = null;
+            });
+            deleteModalOverlay.addEventListener('click', (event) => {
+                if (event.target === deleteModalOverlay) {
+                    deleteModalOverlay.style.display = 'none';
+                    studentIdToDelete = null;
+                }
+            });
+
+            // 取消編輯按鈕事件監聽
+            cancelEditButton.addEventListener('click', () => {
+                resetForm();
+            });
+
+            // 初始化
+            groupCodeSelect.addEventListener('change', handleGroupCodeChange);
+            loadData();
+        });
+    </script>
+</body>
+</html>
