@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>可愛多頁白板（物件即時換色）</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <style>
+    html, body {
+      height: 100%; margin: 0; padding: 0; overflow: hidden;
+      background: #ffeaf4; font-family: 'Noto Sans TC', 'Comic Sans MS', Arial, sans-serif;
+    }
+    #container {
+      width: 100vw; height: 100vh; position: relative;
+    }
+    #canvas-area {
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #fff9fc; border-radius: 24px;
+      box-shadow: 0 0 24px #ffb6d5;
+      z-index: 1;
+    }
+    #toolbar-toggle {
+      position: fixed; right: 20px; top: 20px; z-index: 30;
+      background: #ffb6d5; border-radius: 50%; border: 2px solid #fff;
+      box-shadow: 0 2px 8px #ffb6d5;
+      width: 40px; height: 40px; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; transition: background 0.2s;
+    }
+    #toolbar-toggle:hover { background: #ff69b4; }
+    #toolbar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      background: #fff; border-radius: 12px 12px 0 0; border: 2px solid #ffb6d5;
+      box-shadow: 0 -2px 12px #ffb6d5;
+      padding: 6px 12px 4px 12px; min-width: 260px; display: none;
+      flex-direction: column; gap: 4px; align-items: flex-start; justify-content: flex-start;
+      font-size: 12px;
+      max-width: 1920px;
+      margin: 0 auto;
+    }
+    #toolbar.show { display: flex; }
+    #toolbar button, #toolbar input[type="color"], #toolbar input[type="range"], #toolbar label, #toolbar select {
+      margin: 0 2px 2px 0; font-size: 11px; padding: 4px 8px;
+      border-radius: 8px; border: 2px solid #ffb6d5; background: #fff0f6;
+      cursor: pointer; outline: none; color: #d12a6a;
+      transition: background 0.2s, color 0.2s;
+    }
+    #toolbar button.active, #toolbar button:hover { background: #ffb6d5; color: #fff;}
+    #toolbar input[type="color"] { padding: 1px; width: 24px; height: 24px; border: none; }
+    #toolbar input[type="file"] { display: none; }
+    #toolbar input[type="text"] { width: 60px; font-size: 11px; }
+    #toolbar input[type="range"] { width: 60px; }
+    #toolbar .row { 
+      display: flex; 
+      align-items: center; 
+      gap: 2px; 
+      margin-bottom: 0; 
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+    #toolbar label { 
+      background: none; 
+      border: none; 
+      padding: 0; 
+      color: #d12a6a;
+      font-size: 11px;
+    }
+    #page-selector {
+      position: fixed; left: 20px; top: 20px; z-index: 22;
+      background: #fff0f6; border: 2px solid #ffb6d5; border-radius: 12px;
+      padding: 4px 8px; display: flex; gap: 4px; align-items: center;
+      box-shadow: 0 2px 8px #ffb6d5;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    #page-selector.hidden {
+      transform: translateX(-120%);
+      opacity: 0;
+    }
+    #page-selector-toggle {
+      position: fixed; left: 20px; top: 20px; z-index: 21;
+      background: #ffb6d5; border-radius: 50%; border: 2px solid #fff;
+      box-shadow: 0 2px 8px #ffb6d5;
+      width: 40px; height: 40px; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; transition: background 0.2s;
+    }
+    #page-selector-toggle:hover { background: #ff69b4; }
+    #page-selector select {
+      background: #fff; color: #d12a6a; border-radius: 8px; border: 2px solid #ffb6d5;
+      font-size: 12px; padding: 2px 6px; cursor: pointer;
+    }
+    #page-selector button {
+      background: #ffb6d5; color: #fff; border-radius: 8px; border: 2px solid #fff;
+      font-size: 12px; padding: 2px 6px; cursor: pointer;
+    }
+    .note { 
+      position: absolute; 
+      left: 36px; 
+      top: 100px; 
+      color: #d12a6a; 
+      font-size: 15px; 
+      z-index: 12; 
+      background: #fff0f6; 
+      padding: 6px 12px; 
+      border-radius: 14px;
+      transition: opacity 0.5s;
+    }
+    #modal {
+      position: fixed; left:0; top:0; width:100vw; height:100vh; display:none;
+      align-items: center; justify-content: center; z-index: 999;
+      background: rgba(255, 234, 244, 0.8);
+    }
+    #modal-content {
+      background: #fff; border-radius: 18px; border: 2px solid #ffb6d5;
+      box-shadow: 0 2px 16px #ffb6d5; padding: 32px 28px; max-width: 420px;
+      font-size: 16px; color: #d12a6a; text-align: left;
+      position: relative;
+    }
+    #modal-content button {
+      position: absolute; right: 18px; top: 18px; background: #ffb6d5; color: #fff;
+      border-radius: 50%; border: 2px solid #fff; width: 32px; height: 32px; font-size: 18px; cursor: pointer;
+    }
+    #urlModal {
+      position: fixed; left:0; top:0; width:100vw; height:100vh; display:none;
+      align-items: center; justify-content: center; z-index: 1000;
+      background: rgba(255, 234, 244, 0.8);
+    }
+    #urlModal-content {
+      background: #fff; border-radius: 18px; border: 2px solid #ffb6d5;
+      box-shadow: 0 2px 16px #ffb6d5; padding: 24px; max-width: 400px;
+      font-size: 16px; color: #d12a6a; text-align: left;
+      position: relative;
+    }
+    #urlModal-content button {
+      background: #ffb6d5; color: #fff; border-radius: 10px; border: 2px solid #fff;
+      font-size: 14px; padding: 6px 12px; cursor: pointer; margin: 8px 4px;
+    }
+    #urlModal-content input {
+      width: 100%; padding: 8px; margin: 10px 0; border-radius: 8px;
+      border: 2px solid #ffb6d5; font-size: 14px; color: #d12a6a;
+    }
+    #urlModal-content .close-btn {
+      position: absolute; right: 12px; top: 12px; background: #ffb6d5; color: #fff;
+      border-radius: 50%; border: 2px solid #fff; width: 28px; height: 28px; font-size: 16px; cursor: pointer;
+    }
+    #urlModal-content .tab-container {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    #urlModal-content .tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      background: #fff0f6;
+      border: 2px solid #ffb6d5;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      margin-right: 2px;
+    }
+    #urlModal-content .tab.active {
+      background: #ffb6d5;
+      color: #fff;
+    }
+    #urlModal-content .tab-content {
+      display: none;
+    }
+    #urlModal-content .tab-content.active {
+      display: block;
+    }
+    .media-container {
+      position: absolute;
+      border: 2px solid #ffb6d5;
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 100;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .media-container.fullscreen {
+      position: fixed;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2000;
+      border-radius: 0;
+    }
+    .media-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      pointer-events: none;
+    }
+    .media-container.active iframe {
+      pointer-events: auto;
+    }
+    .media-container .pdf-viewer {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      pointer-events: none;
+    }
+    .media-container.active .pdf-viewer {
+      pointer-events: auto;
+    }
+    .media-container.fullscreen .pdf-viewer {
+      height: calc(100% - 40px);
+    }
+    .media-container .pdf-canvas {
+      display: block;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+    }
+    .media-container .pdf-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 182, 213, 0.8);
+      padding: 5px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      z-index: 102;
+    }
+    .media-container.fullscreen .pdf-controls {
+      background: rgba(255, 182, 213, 0.95);
+    }
+    .media-container .pdf-controls button {
+      background: #fff;
+      color: #d12a6a;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .media-container .resize-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #ffb6d5;
+      border: 1px solid #fff;
+      border-radius: 50%;
+      z-index: 101;
+    }
+    .media-container.fullscreen .resize-handle {
+      display: none;
+    }
+    .media-container .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+    .media-container .resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+    .media-container .resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+    .media-container .resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+    .media-container .close-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 20px;
+      height: 20px;
+      background: #ffb6d5;
+      color: #fff;
+      border-radius: 50%;
+      border: 1px solid #fff;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 101;
+    }
+    .media-container .drag-handle {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: 20px;
+      height: 20px;
+      background: #ffb6d5;
+      color: #fff;
+      border-radius: 50%;
+      border: 1px solid #fff;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: move;
+      z-index: 101;
+    }
+    .media-container .fullscreen-btn {
+      position: absolute;
+      top: 5px;
+      right: 30px;
+      width: 20px;
+      height: 20px;
+      background: #ffb6d5;
+      color: #fff;
+      border-radius: 50%;
+      border: 1px solid #fff;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 101;
+    }
+    .media-container.fullscreen .fullscreen-btn {
+      right: 30px;
+    }
+    .media-container .activation-indicator {
+      position: absolute;
+      top: 5px;
+      left: 30px;
+      width: 10px;
+      height: 10px;
+      background: #ff69b4;
+      border-radius: 50%;
+      border: 1px solid #fff;
+      z-index: 101;
+      display: none;
+    }
+    .media-container.active .activation-indicator {
+      display: block;
+    }
+    .media-container.fullscreen-exit-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      background: #ffb6d5;
+      color: #fff;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2001;
+    }
+    .pdf-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #d12a6a;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+<div id="container">
+  <div id="canvas-area">
+    <canvas id="whiteboard"></canvas>
+  </div>
+  <div id="page-selector-toggle" title="顯示/隱藏頁面選擇器">📋</div>
+  <div id="page-selector">
+    <select id="pageSelect"></select>
+    <button id="addPageBtn">➕</button>
+    <button id="deletePageBtn">✕</button>
+  </div>
+  <div id="toolbar-toggle" title="顯示/隱藏工具">🍬</div>
+  <div id="toolbar">
+    <div class="row">
+      <button id="selectBtn">🔲 選取</button>
+      <button id="penBtn">🖍 筆刷</button>
+      <button id="rectBtn">▭ 矩形</button>
+      <button id="circleBtn">⚪ 圓形</button>
+      <button id="lineBtn">／ 線段</button>
+      <button id="textBtn">📝 文字</button>
+      <button id="eraserBtn">🧹 橡皮擦</button>
+      <input type="file" id="imgInput" accept="image/*">
+      <button id="imgBtn">🌈 插入圖片</button>
+      <button id="youtubeBtn">📺 插入YouTube</button>
+      <button id="websiteBtn">🌐 網站嵌入</button>
+      <input type="file" id="pdfInput" accept=".pdf">
+      <button id="pdfBtn">📄 插入PDF</button>
+      <button id="clearBtn">🧺 全部清除</button>
+      <button id="saveBtn">💾 儲存圖片</button>
+      <button id="exportBtn">📤 匯出資料</button>
+      <button id="importBtn">📥 匯入資料</button>
+      <input type="file" id="importInput" accept=".json">
+      
+    </div>
+    <div class="row">
+      <button id="helpBtn">❔ 說明</button>
+      <label>顏色</label>
+      <input type="color" id="colorPicker" value="#d12a6a" title="畫筆顏色">
+      <label for="lineWidth">粗細</label>
+      <input type="range" id="lineWidth" min="1" max="18" value="4">
+      <label>文字屬性</label>
+      <select id="textSize">
+        <option value="20">20px</option>
+        <option value="28">28px</option>
+        <option value="36">36px</option>
+        <option value="48">48px</option>
+      </select>
+      <input type="color" id="textColor" value="#d12a6a" title="文字顏色">
+      <input type="text" id="textInput" placeholder="輸入文字">
+      <label>物件變更顏色:</label>
+      <input type="color" id="objColorPicker" value="#d12a6a" title="選取物件後可直接變色">
+       <label>形狀樣式:</label>
+      <select id="shapeStyle">
+        <option value="filled">實心</option>
+        <option value="outline">空心</option>
+      </select>
+      <button id="bringForwardBtn">⬆️ 上移</button>
+      <button id="sendBackwardsBtn">⬇️ 下移</button>
+      <button id="bringToFrontBtn">🔝 置頂</button>
+      <button id="sendToBackBtn">🔻 置底</button>
+      <label>網頁設計: koming 2025</label>
+    </div>
+   
+  </div>
+  <div class="note" id="note">🍭 點擊右上角展開工具列，每個物件都可移動、刪除、複製、縮放、旋轉。支援多頁管理、物件換色、可愛糖果風！</div>
+  <div id="modal">
+    <div id="modal-content">
+      <button onclick="document.getElementById('modal').style.display='none'">✕</button>
+      <b>使用說明</b><br><br>
+      1. 下方工具列可選擇繪圖、形狀、文字、圖片、橡皮擦等功能<br>
+      2. 畫面左上方可新增/切換/刪除白板頁面<br>
+      3. 物件皆可移動、縮放、旋轉、複製（Ctrl+C/V）、刪除（Delete鍵/橡皮擦）<br>
+      4. 選取物件後可用右側色彩選擇器直接變更顏色<br>
+      5. 畫布可儲存成圖片<br>
+      6. 支援白板資料匯出/匯入功能，可備份和還原所有頁面內容<br>
+      7. 工具列可愛糖果風，點擊右上角展開/收合
+    </div>
+  </div>
+  <div id="urlModal">
+    <div id="urlModal-content">
+      <button class="close-btn" onclick="document.getElementById('urlModal').style.display='none'">✕</button>
+      <h3 id="urlModalTitle">輸入URL</h3>
+      <div class="tab-container">
+        <div class="tab active" data-tab="url">URL</div>
+        <div class="tab" data-tab="upload">上傳</div>
+      </div>
+      <div class="tab-content active" id="url-tab">
+        <input type="text" id="urlInput" placeholder="請輸入URL">
+      </div>
+      <div class="tab-content" id="upload-tab">
+        <input type="file" id="fileInput" accept="image/*,.pdf">
+      </div>
+      <div>
+        <button id="urlModalCancel">取消</button>
+        <button id="urlModalConfirm">確認</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // 設置PDF.js worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  
+  // 3秒後隱藏提示文字
+  setTimeout(() => {
+    document.getElementById('note').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('note').style.display = 'none';
+    }, 500);
+  }, 3000);
+  
+  // 工具列展開/收合
+  const toolbar = document.getElementById('toolbar');
+  document.getElementById('toolbar-toggle').onclick = () => {
+    toolbar.classList.toggle('show');
+  };
+  
+  // 頁面選擇器展開/收合
+  const pageSelector = document.getElementById('page-selector');
+  document.getElementById('page-selector-toggle').onclick = () => {
+    pageSelector.classList.toggle('hidden');
+  };
+  
+  // 畫布全螢幕初始化
+  function resizeCanvas() {
+    const canvasElem = document.getElementById('whiteboard');
+    canvasElem.width = window.innerWidth;
+    canvasElem.height = window.innerHeight;
+    if (window.fabricCanvas) {
+      window.fabricCanvas.setWidth(window.innerWidth);
+      window.fabricCanvas.setHeight(window.innerHeight);
+    }
+  }
+  window.addEventListener('resize', resizeCanvas);
+  
+  // 多頁管理
+  let pages = [];
+  let currentPage = 0;
+  let mediaContainers = [];
+  
+  // 從localStorage加載保存的數據
+  function loadFromLocalStorage() {
+    try {
+      const savedData = localStorage.getItem('whiteboardData');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        pages = data.pages || [JSON.stringify({objects:[], background:'#fff9fc'})];
+        
+        // 處理mediaContainers的加載，兼容舊版本
+        if (Array.isArray(data.mediaContainers)) {
+          // 新版本：數組結構
+          mediaContainers = data.mediaContainers;
+        } else if (data.mediaContainers && typeof data.mediaContainers === 'object') {
+          // 舊版本：對象結構，轉換為數組
+          mediaContainers = [];
+          for (let i = 0; i < pages.length; i++) {
+            if (data.mediaContainers[i] !== undefined) {
+              mediaContainers.push(data.mediaContainers[i]);
+            } else {
+              mediaContainers.push([]);
+            }
+          }
+        } else {
+          // 沒有mediaContainers數據，初始化為空數組
+          mediaContainers = pages.map(() => []);
+        }
+        
+        currentPage = data.currentPage || 0;
+        console.log("從localStorage加載數據成功:", data);
+        return true;
+      }
+    } catch (e) {
+      console.error('加載本地存儲數據失敗:', e);
+    }
+    
+    // 如果沒有保存的數據，使用默認值
+    pages = [JSON.stringify({objects:[], background:'#fff9fc'})];
+    mediaContainers = [[]];
+    currentPage = 0;
+    console.log("使用默認數據");
+    return false;
+  }
+  
+  // 保存數據到localStorage
+  function saveToLocalStorage() {
+    try {
+      const data = {
+        pages: pages,
+        mediaContainers: mediaContainers,
+        currentPage: currentPage
+      };
+      localStorage.setItem('whiteboardData', JSON.stringify(data));
+      console.log("保存到localStorage成功:", data);
+    } catch (e) {
+      console.error('保存到本地存儲失敗:', e);
+    }
+  }
+  
+  // 匯出白板資料
+  function exportWhiteboardData() {
+    try {
+      // 確保當前頁面已保存
+      saveCurrentPage();
+      saveCurrentPageMediaInfo();
+      
+      // 獲取完整的白板數據
+      const data = {
+        pages: pages,
+        mediaContainers: mediaContainers,
+        currentPage: currentPage,
+        exportDate: new Date().toISOString(),
+        version: "1.0"
+      };
+      
+      // 創建JSON字符串
+      const dataStr = JSON.stringify(data, null, 2);
+      
+      // 創建Blob對象
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      
+      // 創建下載鏈接
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // 生成檔案名（包含日期時間）
+      const now = new Date();
+      const dateStr = now.getFullYear() + 
+                     String(now.getMonth() + 1).padStart(2, '0') + 
+                     String(now.getDate()).padStart(2, '0') + '_' +
+                     String(now.getHours()).padStart(2, '0') + 
+                     String(now.getMinutes()).padStart(2, '0');
+      
+      a.download = `whiteboard_backup_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      console.log("白板資料匯出成功");
+      alert('白板資料匯出成功！');
+    } catch (e) {
+      console.error('匯出失敗:', e);
+      alert('匯出失敗，請重試');
+    }
+  }
+  
+  // 匯入白板資料
+  function importWhiteboardData(file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      try {
+        // 解析JSON數據
+        const data = JSON.parse(event.target.result);
+        
+        // 驗證數據格式
+        if (!data.pages || !Array.isArray(data.pages)) {
+          throw new Error('無效的數據格式');
+        }
+        
+        // 確認是否要替換現有資料
+        if (confirm('確定要匯入新資料並替換現有白板內容？此操作無法復原。')) {
+          // 更新全局變量
+          pages = data.pages;
+          mediaContainers = data.mediaContainers || pages.map(() => []);
+          currentPage = data.currentPage || 0;
+          
+          // 保存到localStorage
+          saveToLocalStorage();
+          
+          // 重新加載頁面以應用新數據
+          location.reload();
+        }
+      } catch (e) {
+        console.error('匯入失敗:', e);
+        alert('匯入失敗，請確認檔案格式正確');
+      }
+    };
+    reader.readAsText(file);
+  }
+  
+  function updatePageSelector() {
+    const select = document.getElementById('pageSelect');
+    select.innerHTML = '';
+    for(let i=0;i<pages.length;i++) {
+      const option = document.createElement('option');
+      option.textContent = '頁面 '+(i+1);
+      option.value = i;
+      if(i===currentPage) option.selected = true;
+      select.appendChild(option);
+    }
+  }
+  
+  // 只保存媒體容器信息，不觸發完整的保存過程
+  function saveCurrentPageMediaInfo() {
+    // 保存當前頁面的媒體容器信息
+    const currentPageMedia = [];
+    document.querySelectorAll('.media-container').forEach(container => {
+      if (container.style.display !== 'none') { // 只保存可見的容器
+        const mediaInfo = {
+          id: container.mediaId,
+          type: container.mediaType,
+          url: container.mediaUrl || '',
+          position: {
+            left: container.style.left,
+            top: container.style.top
+          },
+          size: {
+            width: container.style.width,
+            height: container.style.height
+          },
+          filename: container.filename || '',
+          // 保存PDF的當前頁面和縮放狀態
+          pdfPageNum: container.pdfPageNum || 1,
+          pdfScale: container.pdfScale || 1.0
+        };
+        
+        // 對於PDF，我們只存儲引用ID，不存儲實際數據
+        if (container.mediaType === 'pdf') {
+          mediaInfo.pdfId = container.mediaId; // 使用mediaId作為鍵
+          // PDF數據不保存到IndexedDB，切換頁面時會清除
+        }
+        
+        currentPageMedia.push(mediaInfo);
+        console.log("保存媒體容器信息:", mediaInfo);
+      }
+    });
+    
+    // 確保mediaContainers數組長度足夠
+    while (mediaContainers.length <= currentPage) {
+      mediaContainers.push([]);
+    }
+    
+    // 保存當前頁面的媒體容器信息
+    mediaContainers[currentPage] = currentPageMedia;
+    
+    // 保存到localStorage
+    saveToLocalStorage();
+  }
+  
+  // 只保存畫布數據，不包括媒體容器
+  function saveCurrentPage() {
+    // 保存畫布狀態，不包括媒體容器
+    pages[currentPage] = JSON.stringify(canvas.toJSON());
+    
+    // 保存到localStorage
+    saveToLocalStorage();
+  }
+  
+  function switchPage(idx) {
+    console.log("切換頁面從", currentPage, "到", idx);
+    
+    // 先保存當前頁面的媒體容器信息
+    saveCurrentPageMediaInfo();
+    
+    // 移除所有媒體容器和對應的佔位符
+    document.querySelectorAll('.media-container').forEach(container => {
+      console.log("移除媒體容器:", container.mediaId);
+      removeMediaContainerAndPlaceholder(container.mediaId);
+    });
+    
+    // 保存當前頁面（此時畫布上已沒有佔位符）
+    saveCurrentPage();
+    
+    currentPage = idx;
+    canvas.loadFromJSON(JSON.parse(pages[idx]), () => {
+      canvas.renderAll();
+      console.log("畫布加載完成，頁面:", idx);
+    });
+    
+    // 重新創建當前頁面的媒體容器
+    console.log("開始加載頁面媒體，頁面:", idx, "媒體容器信息:", mediaContainers[idx]);
+    loadPageMedia(idx);
+    updatePageSelector();
+  }
+  
+  function loadPageMedia(pageIndex) {
+    console.log("加載頁面媒體:", pageIndex);
+    
+    // 確保mediaContainers數組長度足夠
+    while (mediaContainers.length <= pageIndex) {
+      mediaContainers.push([]);
+    }
+    
+    // 如果當前頁面有媒體容器信息，則重新創建它們
+    if (mediaContainers[pageIndex] && mediaContainers[pageIndex].length > 0) {
+      console.log("找到媒體容器信息:", mediaContainers[pageIndex]);
+      
+      mediaContainers[pageIndex].forEach((mediaInfo, index) => {
+        console.log("創建媒體容器:", index, mediaInfo);
+        
+        if (mediaInfo.type === 'youtube') {
+          createYouTubeContainer(mediaInfo.url, mediaInfo.position, mediaInfo.size, mediaInfo.id);
+        } else if (mediaInfo.type === 'website') {
+          createWebsiteContainer(mediaInfo.url, mediaInfo.position, mediaInfo.size, mediaInfo.id);
+        } else if (mediaInfo.type === 'pdf') {
+          // PDF不保存數據，只創建一個提示容器
+          createPDFPlaceholderContainer(
+            mediaInfo.filename, 
+            mediaInfo.position, 
+            mediaInfo.size, 
+            mediaInfo.id
+          );
+        }
+      });
+    } else {
+      console.log("頁面", pageIndex, "沒有媒體容器信息");
+    }
+  }
+  
+  function addPage() {
+    saveCurrentPage();
+    saveCurrentPageMediaInfo();
+    pages.push(JSON.stringify({objects:[], background:'#fff9fc'}));
+    mediaContainers.push([]); // 新頁面對應一個空數組
+    currentPage = pages.length-1;
+    canvas.clear();
+    canvas.backgroundColor = '#fff9fc';
+    
+    // 移除所有媒體容器
+    document.querySelectorAll('.media-container').forEach(container => {
+      removeMediaContainerAndPlaceholder(container.mediaId);
+    });
+    
+    updatePageSelector();
+    saveToLocalStorage();
+  }
+  
+  function deletePage() {
+    if(pages.length<=1) {
+      alert('至少需要保留一頁');
+      return;
+    }
+    if(confirm('確定刪除本頁？')) {
+      // 移除所有媒體容器和對應的佔位符
+      document.querySelectorAll('.media-container').forEach(container => {
+        removeMediaContainerAndPlaceholder(container.mediaId);
+      });
+      
+      pages.splice(currentPage,1);
+      mediaContainers.splice(currentPage,1); // 正確使用splice刪除數組元素
+      if(currentPage>=pages.length) currentPage=pages.length-1;
+      canvas.loadFromJSON(JSON.parse(pages[currentPage]), () => {
+        canvas.renderAll();
+      });
+      
+      // 重新創建當前頁面的媒體容器
+      loadPageMedia(currentPage);
+      updatePageSelector();
+      saveToLocalStorage();
+    }
+  }
+  
+  document.getElementById('pageSelect').onchange = (e) => {
+    switchPage(Number(e.target.value));
+  };
+  document.getElementById('addPageBtn').onclick = addPage;
+  document.getElementById('deletePageBtn').onclick = deletePage;
+  
+  // 初始化 Fabric.js 畫布
+  const canvas = new fabric.Canvas('whiteboard', {
+    backgroundColor: '#fff9fc',
+    selection: true,
+    preserveObjectStacking: true
+  });
+  window.fabricCanvas = canvas;
+  resizeCanvas();
+  
+  // 從localStorage加載數據
+  const hasSavedData = loadFromLocalStorage();
+  
+  // 如果有保存的數據，則加載當前頁面
+  if (hasSavedData) {
+    console.log("有保存的數據，加載當前頁面:", currentPage);
+    canvas.loadFromJSON(JSON.parse(pages[currentPage]), () => {
+      canvas.renderAll();
+      console.log("畫布加載完成，現在加載媒體容器");
+      // 確保在畫布加載完成後再加載媒體容器
+      setTimeout(() => {
+        loadPageMedia(currentPage);
+      }, 100);
+    });
+  } else {
+    // 沒有保存的數據，使用默認值
+    console.log("沒有保存的數據，使用默認值");
+    pages = [JSON.stringify({objects:[], background:'#fff9fc'})];
+    mediaContainers = [[]];
+    currentPage = 0;
+  }
+  
+  updatePageSelector();
+  
+  // 工具狀態
+  let currentTool = 'select';
+  let drawingMode = false;
+  function setTool(t) {
+    currentTool = t;
+    document.querySelectorAll('#toolbar button').forEach(b => b.classList.remove('active'));
+    document.getElementById('selectBtn').classList.toggle('active', t==='select');
+    document.getElementById('penBtn').classList.toggle('active', t==='pen');
+    document.getElementById('rectBtn').classList.toggle('active', t==='rect');
+    document.getElementById('circleBtn').classList.toggle('active', t==='circle');
+    document.getElementById('lineBtn').classList.toggle('active', t==='line');
+    document.getElementById('textBtn').classList.toggle('active', t==='text');
+    document.getElementById('eraserBtn').classList.toggle('active', t==='eraser');
+    document.getElementById('imgBtn').classList.toggle('active', t==='img');
+    document.getElementById('youtubeBtn').classList.toggle('active', t==='youtube');
+    document.getElementById('websiteBtn').classList.toggle('active', t==='website');
+    document.getElementById('pdfBtn').classList.toggle('active', t==='pdf');
+    document.getElementById('exportBtn').classList.toggle('active', t==='export');
+    document.getElementById('importBtn').classList.toggle('active', t==='import');
+    updateToolMode();
+  }
+  document.getElementById('selectBtn').onclick = () => setTool('select');
+  document.getElementById('penBtn').onclick = () => setTool('pen');
+  document.getElementById('rectBtn').onclick = () => setTool('rect');
+  document.getElementById('circleBtn').onclick = () => setTool('circle');
+  document.getElementById('lineBtn').onclick = () => setTool('line');
+  document.getElementById('textBtn').onclick = () => setTool('text');
+  document.getElementById('eraserBtn').onclick = () => setTool('eraser');
+  document.getElementById('imgBtn').onclick = () => setTool('img');
+  document.getElementById('youtubeBtn').onclick = () => setTool('youtube');
+  document.getElementById('websiteBtn').onclick = () => setTool('website');
+  document.getElementById('pdfBtn').onclick = () => setTool('pdf');
+  document.getElementById('exportBtn').onclick = () => exportWhiteboardData();
+  document.getElementById('importBtn').onclick = () => document.getElementById('importInput').click();
+  document.getElementById('importInput').onchange = function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      importWhiteboardData(file);
+    }
+  };
+  document.getElementById('helpBtn').onclick = () => {
+    document.getElementById('modal').style.display = 'flex';
+  };
+  
+  // 階層調整按鈕事件
+  document.getElementById('bringForwardBtn').onclick = () => {
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      canvas.bringForward(activeObject);
+      canvas.requestRenderAll();
+      saveCurrentPage();
+    }
+  };
+  
+  document.getElementById('sendBackwardsBtn').onclick = () => {
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      canvas.sendBackwards(activeObject);
+      canvas.requestRenderAll();
+      saveCurrentPage();
+    }
+  };
+  
+  document.getElementById('bringToFrontBtn').onclick = () => {
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      canvas.bringToFront(activeObject);
+      canvas.requestRenderAll();
+      saveCurrentPage();
+    }
+  };
+  
+  document.getElementById('sendToBackBtn').onclick = () => {
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+      canvas.sendToBack(activeObject);
+      canvas.requestRenderAll();
+      saveCurrentPage();
+    }
+  };
+  
+  // 自定義文件選擇按鈕
+  document.getElementById('imgBtn').onclick = () => {
+    document.getElementById('imgInput').click();
+  };
+  
+  // 插入圖片處理
+  document.getElementById('imgInput').onchange = function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        fabric.Image.fromURL(event.target.result, function(img) {
+          img.set({
+            left: 100,
+            top: 100,
+            scaleX: 0.4,
+            scaleY: 0.4,
+            borderColor: "#ffb6d5",
+            cornerStyle: 'circle',
+            cornerColor: '#ffb6d5'
+          });
+          canvas.add(img);
+          canvas.setActiveObject(img);
+          canvas.requestRenderAll();
+          saveCurrentPage();
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  // PDF文件選擇按鈕
+  document.getElementById('pdfBtn').onclick = () => {
+    document.getElementById('pdfInput').click();
+  };
+  
+  // 插入PDF處理
+  document.getElementById('pdfInput').onchange = function(e) {
+    const file = e.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        // 確保ArrayBuffer不會被分離，創建一個新的副本
+        const originalArrayBuffer = event.target.result;
+        const arrayBufferCopy = originalArrayBuffer.slice(0);
+        const typedarray = new Uint8Array(arrayBufferCopy);
+        insertPDF(typedarray, file.name);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+  
+  // YouTube和網站嵌入模態框處理
+  const urlModal = document.getElementById('urlModal');
+  const urlModalTitle = document.getElementById('urlModalTitle');
+  const urlInput = document.getElementById('urlInput');
+  const fileInput = document.getElementById('fileInput');
+  let urlModalCallback = null;
+  
+  // 標籤切換處理
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      // 移除所有標籤的active類
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      // 添加active類到當前標籤
+      this.classList.add('active');
+      
+      // 隱藏所有標籤內容
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      // 顯示對應的標籤內容
+      const tabId = this.getAttribute('data-tab');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
+    });
+  });
+  
+  document.getElementById('youtubeBtn').onclick = () => {
+    urlModalTitle.textContent = '插入YouTube視頻';
+    urlInput.placeholder = '請輸入YouTube視頻URL';
+    urlInput.value = '';
+    fileInput.value = '';
+    urlModal.style.display = 'flex';
+    urlModalCallback = insertYouTube;
+    
+    // 顯示URL標籤，隱藏上傳標籤
+    document.querySelector('[data-tab="url"]').click();
+  };
+  
+  document.getElementById('websiteBtn').onclick = () => {
+    urlModalTitle.textContent = '嵌入網站';
+    urlInput.placeholder = '請輸入網站URL';
+    urlInput.value = '';
+    fileInput.value = '';
+    urlModal.style.display = 'flex';
+    urlModalCallback = insertWebsite;
+    
+    // 顯示URL標籤，隱藏上傳標籤
+    document.querySelector('[data-tab="url"]').click();
+  };
+  
+  document.getElementById('urlModalCancel').onclick = () => {
+    urlModal.style.display = 'none';
+    urlModalCallback = null;
+  };
+  
+  document.getElementById('urlModalConfirm').onclick = () => {
+    if (urlModalCallback) {
+      const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+      if (activeTab === 'url') {
+        urlModalCallback(urlInput.value);
+      } else if (activeTab === 'upload') {
+        const file = fileInput.files[0];
+        if (file) {
+          if (file.type.startsWith('image/')) {
+            // 處理圖片上傳
+            const reader = new FileReader();
+            reader.onload = function(event) {
+              fabric.Image.fromURL(event.target.result, function(img) {
+                img.set({
+                  left: 100,
+                  top: 100,
+                  scaleX: 0.4,
+                  scaleY: 0.4,
+                  borderColor: "#ffb6d5",
+                  cornerStyle: 'circle',
+                  cornerColor: '#ffb6d5'
+                });
+                canvas.add(img);
+                canvas.setActiveObject(img);
+                canvas.requestRenderAll();
+                saveCurrentPage();
+              });
+            };
+            reader.readAsDataURL(file);
+          } else if (file.type === 'application/pdf') {
+            // 處理PDF上傳
+            const reader = new FileReader();
+            reader.onload = function(event) {
+              // 確保ArrayBuffer不會被分離，創建一個新的副本
+              const originalArrayBuffer = event.target.result;
+              const arrayBufferCopy = originalArrayBuffer.slice(0);
+              const typedarray = new Uint8Array(arrayBufferCopy);
+              insertPDF(typedarray, file.name);
+            };
+            reader.readAsArrayBuffer(file);
+          }
+        }
+      }
+    }
+    urlModal.style.display = 'none';
+    urlModalCallback = null;
+  };
+  
+  // 插入YouTube視頻
+  function insertYouTube(url) {
+    // 提取YouTube視頻ID
+    const videoId = extractYouTubeId(url);
+    if (!videoId) {
+      alert('無效的YouTube URL');
+      return;
+    }
+    
+    console.log("插入YouTube視頻:", url, "視頻ID:", videoId);
+    createYouTubeContainer(url, {left: '100px', top: '100px'}, {width: '400px', height: '225px'});
+  }
+  
+  // 創建YouTube容器
+  function createYouTubeContainer(url, position, size, mediaId) {
+    // 提取YouTube視頻ID
+    const videoId = extractYouTubeId(url);
+    if (!videoId) {
+      alert('無效的YouTube URL');
+      return;
+    }
+    
+    console.log("創建YouTube容器:", url, position, size, mediaId);
+    
+    // 創建媒體容器
+    const container = document.createElement('div');
+    container.className = 'media-container';
+    container.style.left = position.left;
+    container.style.top = position.top;
+    container.style.width = size.width;
+    container.style.height = size.height;
+    
+    // 設置媒體屬性
+    container.mediaId = mediaId || `youtube-${Date.now()}`;
+    container.mediaType = 'youtube';
+    container.mediaUrl = url;
+    
+    console.log("YouTube容器屬性:", {
+      id: container.mediaId,
+      type: container.mediaType,
+      url: container.mediaUrl
+    });
+    
+    // 創建iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+    iframe.frameBorder = '0';
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.allowFullscreen = true;
+    
+    console.log("創建YouTube iframe:", iframe.src);
+    
+    // 添加關閉按鈕
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); // 防止事件冒泡
+      console.log("關閉YouTube容器:", container.mediaId);
+      removeMediaContainerAndPlaceholder(container.mediaId);
+    });
+    
+    // 添加拖動手柄
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '⋮⋮';
+    
+    // 添加激活指示器
+    const indicator = document.createElement('div');
+    indicator.className = 'activation-indicator';
+    
+    // 添加調整大小手柄
+    const handles = ['nw', 'ne', 'sw', 'se'];
+    handles.forEach(position => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle ${position}`;
+      container.appendChild(handle);
+      
+      // 添加拖動調整大小功能
+      makeResizable(container, handle, position);
+    });
+    
+    // 添加拖動移動功能
+    makeDraggable(container, dragHandle);
+    
+    // 添加點擊激活/停用事件
+    container.addEventListener('click', function(e) {
+      // 如果點擊的是控制元素，不切換激活狀態
+      if (e.target === closeBtn || e.target === dragHandle || 
+          e.target.classList.contains('resize-handle') ||
+          e.target.classList.contains('fullscreen-btn')) {
+        return;
+      }
+      container.classList.toggle('active');
+    });
+    
+    container.appendChild(iframe);
+    container.appendChild(closeBtn);
+    container.appendChild(dragHandle);
+    container.appendChild(indicator);
+    document.getElementById('container').appendChild(container);
+    
+    console.log("YouTube容器已添加到DOM");
+    
+    // 在畫布上添加一個佔位符矩形
+    const rect = new fabric.Rect({
+      left: parseInt(position.left),
+      top: parseInt(position.top),
+      width: parseInt(size.width),
+      height: parseInt(size.height),
+      fill: 'transparent',
+      stroke: 'transparent',
+      selectable: false,
+      evented: false,
+      mediaId: container.mediaId,
+      isMediaPlaceholder: true
+    });
+    
+    canvas.add(rect);
+    canvas.requestRenderAll();
+    
+    // 同步佔位符和容器位置
+    syncMediaWithPlaceholder(rect, container);
+    
+    // 保存當前頁面的媒體容器信息
+    saveCurrentPageMediaInfo();
+    
+    console.log("YouTube容器創建完成");
+  }
+  
+  // 插入網站
+  function insertWebsite(url) {
+    if (!url) {
+      alert('請輸入有效的URL');
+      return;
+    }
+    
+    // 確保URL包含協議
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    console.log("插入網站:", url);
+    createWebsiteContainer(url, {left: '100px', top: '100px'}, {width: '600px', height: '400px'});
+  }
+  
+  // 創建網站容器
+  function createWebsiteContainer(url, position, size, mediaId) {
+    if (!url) {
+      alert('請輸入有效的URL');
+      return;
+    }
+    
+    // 確保URL包含協議
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    console.log("創建網站容器:", url, position, size, mediaId);
+    
+    // 創建媒體容器
+    const container = document.createElement('div');
+    container.className = 'media-container';
+    container.style.left = position.left;
+    container.style.top = position.top;
+    container.style.width = size.width;
+    container.style.height = size.height;
+    
+    // 設置媒體屬性
+    container.mediaId = mediaId || `website-${Date.now()}`;
+    container.mediaType = 'website';
+    container.mediaUrl = url;
+    
+    console.log("網站容器屬性:", {
+      id: container.mediaId,
+      type: container.mediaType,
+      url: container.mediaUrl
+    });
+    
+    // 創建iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = url;
+    iframe.frameBorder = '0';
+    iframe.style.overflow = 'auto';
+    
+    console.log("創建網站iframe:", iframe.src);
+    
+    // 添加關閉按鈕
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); // 防止事件冒泡
+      console.log("關閉網站容器:", container.mediaId);
+      removeMediaContainerAndPlaceholder(container.mediaId);
+    });
+    
+    // 添加拖動手柄
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '⋮⋮';
+    
+    // 添加激活指示器
+    const indicator = document.createElement('div');
+    indicator.className = 'activation-indicator';
+    
+    // 添加全螢幕按鈕
+    const fullscreenBtn = document.createElement('div');
+    fullscreenBtn.className = 'fullscreen-btn';
+    fullscreenBtn.innerHTML = '⛶';
+    fullscreenBtn.title = '全螢幕';
+    fullscreenBtn.onclick = function() {
+      toggleFullscreen(container);
+    };
+    
+    // 添加調整大小手柄
+    const handles = ['nw', 'ne', 'sw', 'se'];
+    handles.forEach(position => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle ${position}`;
+      container.appendChild(handle);
+      
+      // 添加拖動調整大小功能
+      makeResizable(container, handle, position);
+    });
+    
+    // 添加拖動移動功能
+    makeDraggable(container, dragHandle);
+    
+    // 添加點擊激活/停用事件
+    container.addEventListener('click', function(e) {
+      // 如果點擊的是控制元素，不切換激活狀態
+      if (e.target === closeBtn || e.target === dragHandle || 
+          e.target.classList.contains('resize-handle') ||
+          e.target.classList.contains('fullscreen-btn')) {
+        return;
+      }
+      container.classList.toggle('active');
+    });
+    
+    container.appendChild(iframe);
+    container.appendChild(closeBtn);
+    container.appendChild(dragHandle);
+    container.appendChild(indicator);
+    container.appendChild(fullscreenBtn);
+    document.getElementById('container').appendChild(container);
+    
+    console.log("網站容器已添加到DOM");
+    
+    // 在畫布上添加一個佔位符矩形
+    const rect = new fabric.Rect({
+      left: parseInt(position.left),
+      top: parseInt(position.top),
+      width: parseInt(size.width),
+      height: parseInt(size.height),
+      fill: 'transparent',
+      stroke: 'transparent',
+      selectable: false,
+      evented: false,
+      mediaId: container.mediaId,
+      isMediaPlaceholder: true
+    });
+    
+    canvas.add(rect);
+    canvas.requestRenderAll();
+    
+    // 同步佔位符和容器位置
+    syncMediaWithPlaceholder(rect, container);
+    
+    // 保存當前頁面的媒體容器信息
+    saveCurrentPageMediaInfo();
+    
+    console.log("網站容器創建完成");
+  }
+  
+  // 插入PDF
+  function insertPDF(typedarray, filename) {
+    console.log("插入PDF:", filename);
+    createPDFContainer(typedarray, filename, {left: '100px', top: '100px'}, {width: '600px', height: '400px'});
+  }
+  
+  // 創建PDF佔位符容器（用於頁面切換時顯示）
+  function createPDFPlaceholderContainer(filename, position, size, mediaId) {
+    console.log("創建PDF佔位符容器:", filename, position, size, mediaId);
+    
+    // 創建媒體容器
+    const container = document.createElement('div');
+    container.className = 'media-container';
+    container.style.left = position.left;
+    container.style.top = position.top;
+    container.style.width = size.width;
+    container.style.height = size.height;
+    
+    // 設置媒體屬性
+    container.mediaId = mediaId || `pdf-${Date.now()}`;
+    container.mediaType = 'pdf';
+    container.filename = filename;
+    
+    // 創建提示文字
+    const placeholderDiv = document.createElement('div');
+    placeholderDiv.className = 'pdf-loading';
+    placeholderDiv.textContent = `PDF: ${filename || '未命名'}\n(切換頁面已清除)`;
+    placeholderDiv.style.whiteSpace = 'pre-line';
+    placeholderDiv.style.textAlign = 'center';
+    placeholderDiv.style.padding = '20px';
+    
+    // 添加關閉按鈕
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); // 防止事件冒泡
+      console.log("關閉PDF容器:", container.mediaId);
+      removeMediaContainerAndPlaceholder(container.mediaId);
+    });
+    
+    // 添加拖動手柄
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '⋮⋮';
+    
+    // 添加激活指示器
+    const indicator = document.createElement('div');
+    indicator.className = 'activation-indicator';
+    
+    // 添加調整大小手柄
+    const handles = ['nw', 'ne', 'sw', 'se'];
+    handles.forEach(position => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle ${position}`;
+      container.appendChild(handle);
+      
+      // 添加拖動調整大小功能
+      makeResizable(container, handle, position);
+    });
+    
+    // 添加拖動移動功能
+    makeDraggable(container, dragHandle);
+    
+    // 添加點擊激活/停用事件
+    container.addEventListener('click', function(e) {
+      // 如果點擊的是控制元素，不切換激活狀態
+      if (e.target === closeBtn || e.target === dragHandle || 
+          e.target.classList.contains('resize-handle')) {
+        return;
+      }
+      container.classList.toggle('active');
+    });
+    
+    container.appendChild(placeholderDiv);
+    container.appendChild(closeBtn);
+    container.appendChild(dragHandle);
+    container.appendChild(indicator);
+    document.getElementById('container').appendChild(container);
+    
+    console.log("PDF佔位符容器已添加到DOM");
+    
+    // 在畫布上添加一個佔位符矩形
+    const rect = new fabric.Rect({
+      left: parseInt(position.left),
+      top: parseInt(position.top),
+      width: parseInt(size.width),
+      height: parseInt(size.height),
+      fill: 'transparent',
+      stroke: 'transparent',
+      selectable: false,
+      evented: false,
+      mediaId: container.mediaId,
+      isMediaPlaceholder: true
+    });
+    
+    canvas.add(rect);
+    canvas.requestRenderAll();
+    
+    // 同步佔位符和容器位置
+    syncMediaWithPlaceholder(rect, container);
+    
+    console.log("PDF佔位符容器創建完成");
+  }
+  
+  // 創建PDF容器
+  function createPDFContainer(typedarray, filename, position, size, mediaId, pdfPageNum, pdfScale) {
+    console.log("創建PDF容器:", filename, position, size, mediaId);
+    
+    // 創建媒體容器
+    const container = document.createElement('div');
+    container.className = 'media-container';
+    container.style.left = position.left;
+    container.style.top = position.top;
+    container.style.width = size.width;
+    container.style.height = size.height;
+    
+    // 設置媒體屬性
+    container.mediaId = mediaId || `pdf-${Date.now()}`;
+    container.mediaType = 'pdf';
+    container.pdfData = typedarray; // 保存原始PDF數據
+    container.filename = filename;
+    
+    console.log("PDF容器屬性:", {
+      id: container.mediaId,
+      type: container.mediaType,
+      filename: container.filename
+    });
+    
+    // 創建PDF查看器
+    const pdfViewer = document.createElement('div');
+    pdfViewer.className = 'pdf-viewer';
+    
+    // 創建PDF畫布
+    const pdfCanvas = document.createElement('canvas');
+    pdfCanvas.className = 'pdf-canvas';
+    pdfViewer.appendChild(pdfCanvas);
+    
+    // 創建PDF控制按鈕
+    const pdfControls = document.createElement('div');
+    pdfControls.className = 'pdf-controls';
+    
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '上一頁';
+    prevBtn.onclick = function() {
+      if (container.pdfPageNum > 1) {
+        container.pdfPageNum--;
+        renderPDFPage(container.pdfDocument, container.pdfPageNum, pdfCanvas);
+        saveCurrentPageMediaInfo();
+      }
+    };
+    
+    const pageLabel = document.createElement('span');
+    pageLabel.textContent = '頁面: 1/1';
+    
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '下一頁';
+    nextBtn.onclick = function() {
+      if (container.pdfPageNum < container.pdfDocument.numPages) {
+        container.pdfPageNum++;
+        renderPDFPage(container.pdfDocument, container.pdfPageNum, pdfCanvas);
+        saveCurrentPageMediaInfo();
+      }
+    };
+    
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.textContent = '放大';
+    zoomInBtn.onclick = function() {
+      container.pdfScale *= 1.2;
+      renderPDFPage(container.pdfDocument, container.pdfPageNum, pdfCanvas);
+      saveCurrentPageMediaInfo();
+    };
+    
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.textContent = '縮小';
+    zoomOutBtn.onclick = function() {
+      container.pdfScale /= 1.2;
+      renderPDFPage(container.pdfDocument, container.pdfPageNum, pdfCanvas);
+      saveCurrentPageMediaInfo();
+    };
+    
+    const fullscreenBtn = document.createElement('button');
+    fullscreenBtn.textContent = '全螢幕';
+    fullscreenBtn.onclick = function() {
+      toggleFullscreen(container);
+    };
+    
+    pdfControls.appendChild(prevBtn);
+    pdfControls.appendChild(pageLabel);
+    pdfControls.appendChild(nextBtn);
+    pdfControls.appendChild(zoomInBtn);
+    pdfControls.appendChild(zoomOutBtn);
+    pdfControls.appendChild(fullscreenBtn);
+    
+    // 添加關閉按鈕
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '✕';
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation(); // 防止事件冒泡
+      console.log("關閉PDF容器:", container.mediaId);
+      removeMediaContainerAndPlaceholder(container.mediaId);
+    });
+    
+    // 添加拖動手柄
+    const dragHandle = document.createElement('div');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '⋮⋮';
+    
+    // 添加激活指示器
+    const indicator = document.createElement('div');
+    indicator.className = 'activation-indicator';
+    
+    // 添加調整大小手柄
+    const handles = ['nw', 'ne', 'sw', 'se'];
+    handles.forEach(position => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle ${position}`;
+      container.appendChild(handle);
+      
+      // 添加拖動調整大小功能
+      makeResizable(container, handle, position);
+    });
+    
+    // 添加拖動移動功能
+    makeDraggable(container, dragHandle);
+    
+    // 添加點擊激活/停用事件
+    container.addEventListener('click', function(e) {
+      // 如果點擊的是控制元素，不切換激活狀態
+      if (e.target === closeBtn || e.target === dragHandle || 
+          e.target.classList.contains('resize-handle') ||
+          e.target.tagName === 'BUTTON') {
+        return;
+      }
+      container.classList.toggle('active');
+    });
+    
+    container.appendChild(pdfViewer);
+    container.appendChild(pdfControls);
+    container.appendChild(closeBtn);
+    container.appendChild(dragHandle);
+    container.appendChild(indicator);
+    document.getElementById('container').appendChild(container);
+    
+    console.log("PDF容器已添加到DOM");
+    
+    // 設置PDF初始值
+    container.pdfScale = pdfScale || 1.0;
+    container.pdfPageNum = pdfPageNum || 1;
+    container.pdfPageLabel = pageLabel;
+    
+    // 加載PDF文檔
+    pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+      container.pdfDocument = pdf;
+      container.pdfPageLabel.textContent = `頁面: ${container.pdfPageNum}/${pdf.numPages}`;
+      renderPDFPage(pdf, container.pdfPageNum, pdfCanvas);
+      console.log("PDF文檔加載完成:", filename);
+    }).catch(function(error) {
+      console.error('PDF加載錯誤:', error);
+      alert('PDF加載失敗，請確保文件格式正確');
+    });
+    
+    // 在畫布上添加一個佔位符矩形
+    const rect = new fabric.Rect({
+      left: parseInt(position.left),
+      top: parseInt(position.top),
+      width: parseInt(size.width),
+      height: parseInt(size.height),
+      fill: 'transparent',
+      stroke: 'transparent',
+      selectable: false,
+      evented: false,
+      mediaId: container.mediaId,
+      isMediaPlaceholder: true
+    });
+    
+    canvas.add(rect);
+    canvas.requestRenderAll();
+    
+    // 同步佔位符和容器位置
+    syncMediaWithPlaceholder(rect, container);
+    
+    // 保存當前頁面的媒體容器信息
+    saveCurrentPageMediaInfo();
+    
+    console.log("PDF容器創建完成");
+  }
+  
+  // 刪除媒體容器和對應的佔位符
+  function removeMediaContainerAndPlaceholder(mediaId) {
+    // 找到並移除媒體容器
+    const containers = document.querySelectorAll('.media-container');
+    containers.forEach(container => {
+      if (container.mediaId === mediaId) {
+        container.remove();
+      }
+    });
+    
+    // 找到並移除對應的佔位符
+    const objects = canvas.getObjects();
+    for (const obj of objects) {
+      if (obj.mediaId === mediaId && obj.isMediaPlaceholder) {
+        canvas.remove(obj);
+        break;
+      }
+    }
+    
+    canvas.requestRenderAll();
+    // 保存當前頁面的媒體容器信息
+    saveCurrentPageMediaInfo();
+  }
+  
+  // 渲染PDF頁面
+  function renderPDFPage(pdf, pageNum, canvas) {
+    pdf.getPage(pageNum).then(function(page) {
+      const viewport = page.getViewport({ scale: canvas.parentElement.parentElement.pdfScale });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      const renderContext = {
+        canvasContext: canvas.getContext('2d'),
+        viewport: viewport
+      };
+      
+      page.render(renderContext);
+      
+      // 更新頁面標籤
+      canvas.parentElement.parentElement.pdfPageLabel.textContent = `頁面: ${pageNum}/${pdf.numPages}`;
+    });
+  }
+  
+  // 切換全螢幕功能
+  function toggleFullscreen(container) {
+    if (container.classList.contains('fullscreen')) {
+      // 退出全螢幕
+      exitFullscreen(container);
+    } else {
+      // 進入全螢幕
+      enterFullscreen(container);
+    }
+  }
+  
+  // 進入全螢幕
+  function enterFullscreen(container) {
+    // 保存原始位置和大小
+    container.originalStyle = {
+      left: container.style.left,
+      top: container.style.top,
+      width: container.style.width,
+      height: container.style.height
+    };
+    
+    // 添加全螢幕類
+    container.classList.add('fullscreen');
+    
+    // 強制設置全螢幕樣式
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100vw';
+    container.style.height = '100vh';
+    container.style.borderRadius = '0';
+    
+    // 自動激活媒體容器
+    container.classList.add('active');
+    
+    // 創建全螢幕退出按鈕
+    const exitBtn = document.createElement('div');
+    exitBtn.className = 'fullscreen-exit-btn';
+    exitBtn.innerHTML = '✕';
+    exitBtn.title = '退出全螢幕';
+    exitBtn.onclick = function() {
+      exitFullscreen(container);
+    };
+    document.body.appendChild(exitBtn);
+    
+    // 保存退出按鈕引用
+    container.fullscreenExitBtn = exitBtn;
+    
+    // 強制重排，確保樣式立即應用
+    container.offsetHeight;
+  }
+  
+  // 退出全螢幕
+  function exitFullscreen(container) {
+    // 移除全螢幕類
+    container.classList.remove('fullscreen');
+    
+    // 恢復原始位置和大小
+    if (container.originalStyle) {
+      container.style.position = 'absolute';
+      container.style.left = container.originalStyle.left;
+      container.style.top = container.originalStyle.top;
+      container.style.width = container.originalStyle.width;
+      container.style.height = container.originalStyle.height;
+      container.style.borderRadius = '8px';
+    }
+    
+    // 移除全螢幕退出按鈕
+    if (container.fullscreenExitBtn) {
+      container.fullscreenExitBtn.remove();
+      container.fullscreenExitBtn = null;
+    }
+    
+    // 強制重排，確保樣式立即應用
+    container.offsetHeight;
+    
+    // 更新佔位符
+    updatePlaceholderPosition(container);
+    updatePlaceholderSize(container);
+    
+    // 保存當前頁面的媒體容器信息
+    saveCurrentPageMediaInfo();
+  }
+  
+  // 提取YouTube視頻ID
+  function extractYouTubeId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  }
+  
+  // 使元素可拖動
+  function makeDraggable(element, handle) {
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+    let wasActive = false;
+    
+    handle.addEventListener('mousedown', startDragging);
+    
+    function startDragging(e) {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      initialLeft = element.offsetLeft;
+      initialTop = element.offsetTop;
+      
+      // 記錄當前激活狀態
+      wasActive = element.classList.contains('active');
+      
+      // 臨時禁用iframe事件，防止干擾拖動
+      if (wasActive) {
+        element.classList.remove('active');
+      }
+      
+      // 防止事件冒泡和選擇文本
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // 添加全局事件監聽器
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', stopDragging);
+      
+      // 提高z-index確保在最上層
+      element.style.zIndex = 1000;
+    }
+    
+    function drag(e) {
+      if (!isDragging) return;
+      
+      // 計算新的位置
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+      
+      // 限制在視窗內
+      const maxLeft = window.innerWidth - element.offsetWidth;
+      const maxTop = window.innerHeight - element.offsetHeight;
+      
+      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+      newTop = Math.max(0, Math.min(newTop, maxTop));
+      
+      // 設置元素的新位置
+      element.style.left = newLeft + 'px';
+      element.style.top = newTop + 'px';
+      
+      // 更新對應的佔位符位置
+      updatePlaceholderPosition(element);
+    }
+    
+    function stopDragging() {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      
+      // 移除全局事件監聽器
+      document.removeEventListener('mousemove', drag);
+      document.removeEventListener('mouseup', stopDragging);
+      
+      // 恢復z-index
+      element.style.zIndex = 100;
+      
+      // 恢復之前的激活狀態
+      if (wasActive) {
+        element.classList.add('active');
+      }
+      
+      // 保存當前頁面的媒體容器信息
+      saveCurrentPageMediaInfo();
+    }
+  }
+  
+  // 使元素可調整大小
+  function makeResizable(element, handle, position) {
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight, startLeft, startTop;
+    let wasActive = false;
+    
+    handle.addEventListener('mousedown', startResizing);
+    
+    function startResizing(e) {
+      isResizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = element.offsetWidth;
+      startHeight = element.offsetHeight;
+      startLeft = element.offsetLeft;
+      startTop = element.offsetTop;
+      
+      // 記錄當前激活狀態
+      wasActive = element.classList.contains('active');
+      
+      // 臨時禁用iframe事件，防止干擾調整大小
+      if (wasActive) {
+        element.classList.remove('active');
+      }
+      
+      // 防止事件冒泡和選擇文本
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // 添加全局事件監聽器
+      document.addEventListener('mousemove', resize);
+      document.addEventListener('mouseup', stopResizing);
+      
+      // 提高z-index確保在最上層
+      element.style.zIndex = 1000;
+    }
+    
+    function resize(e) {
+      if (!isResizing) return;
+      
+      // 計算新的尺寸和位置
+      let newWidth, newHeight, newLeft, newTop;
+      
+      if (position.includes('e')) {
+        newWidth = startWidth + e.clientX - startX;
+      } else if (position.includes('w')) {
+        newWidth = startWidth - e.clientX + startX;
+        newLeft = startLeft + e.clientX - startX;
+      } else {
+        newWidth = startWidth;
+      }
+      
+      if (position.includes('s')) {
+        newHeight = startHeight + e.clientY - startY;
+      } else if (position.includes('n')) {
+        newHeight = startHeight - e.clientY + startY;
+        newTop = startTop + e.clientY - startY;
+      } else {
+        newHeight = startHeight;
+      }
+      
+      // 設置最小尺寸
+      newWidth = Math.max(100, newWidth);
+      newHeight = Math.max(60, newHeight);
+      
+      // 限制在視窗內
+      if (newLeft !== undefined) {
+        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - newWidth));
+      }
+      if (newTop !== undefined) {
+        newTop = Math.max(0, Math.min(newTop, window.innerHeight - newHeight));
+      }
+      
+      // 設置元素的新尺寸和位置
+      if (newWidth) element.style.width = newWidth + 'px';
+      if (newHeight) element.style.height = newHeight + 'px';
+      if (newLeft !== undefined) element.style.left = newLeft + 'px';
+      if (newTop !== undefined) element.style.top = newTop + 'px';
+      
+      // 更新對應的佔位符大小和位置
+      updatePlaceholderSize(element);
+    }
+    
+    function stopResizing() {
+      if (!isResizing) return;
+      
+      isResizing = false;
+      
+      // 移除全局事件監聽器
+      document.removeEventListener('mousemove', resize);
+      document.removeEventListener('mouseup', stopResizing);
+      
+      // 恢復z-index
+      element.style.zIndex = 100;
+      
+      // 恢復之前的激活狀態
+      if (wasActive) {
+        element.classList.add('active');
+      }
+      
+      // 保存當前頁面的媒體容器信息
+      saveCurrentPageMediaInfo();
+    }
+  }
+  
+  // 同步媒體容器和佔位符位置
+  function syncMediaWithPlaceholder(rect, container) {
+    // 保存媒體ID到容器
+    container.mediaId = rect.mediaId;
+    
+    // 監聽容器變化
+    const observer = new MutationObserver(() => {
+      updatePlaceholderPosition(container);
+      updatePlaceholderSize(container);
+    });
+    
+    observer.observe(container, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+    
+    // 保存觀察器引用，以便在需要時斷開連接
+    container.observer = observer;
+  }
+  
+  // 更新佔位符位置
+  function updatePlaceholderPosition(container) {
+    const mediaId = container.mediaId;
+    if (!mediaId) return;
+    
+    const objects = canvas.getObjects();
+    for (const obj of objects) {
+      if (obj.mediaId === mediaId && obj.isMediaPlaceholder) {
+        obj.set({
+          left: parseInt(container.style.left),
+          top: parseInt(container.style.top)
+        });
+        canvas.requestRenderAll();
+        break;
+      }
+    }
+  }
+  
+  // 更新佔位符大小
+  function updatePlaceholderSize(container) {
+    const mediaId = container.mediaId;
+    if (!mediaId) return;
+    
+    const objects = canvas.getObjects();
+    for (const obj of objects) {
+      if (obj.mediaId === mediaId && obj.isMediaPlaceholder) {
+        obj.set({
+          width: parseInt(container.style.width),
+          height: parseInt(container.style.height)
+        });
+        canvas.requestRenderAll();
+        break;
+      }
+    }
+  }
+  
+  // 顏色、粗細、文字設定
+  let color = document.getElementById('colorPicker').value;
+  let lineWidth = Number(document.getElementById('lineWidth').value);
+  let textSize = Number(document.getElementById('textSize').value);
+  let textColor = document.getElementById('textColor').value;
+  let shapeStyle = document.getElementById('shapeStyle').value;
+  document.getElementById('colorPicker').oninput = (e) => { color = e.target.value; updateToolMode(); };
+  document.getElementById('lineWidth').oninput = (e) => { lineWidth = Number(e.target.value); updateToolMode(); };
+  document.getElementById('textSize').onchange = (e) => { textSize = Number(e.target.value); };
+  document.getElementById('textColor').oninput = (e) => { textColor = e.target.value; };
+  document.getElementById('textInput').oninput = (e) => {};
+  document.getElementById('shapeStyle').onchange = (e) => { shapeStyle = e.target.value; };
+  
+  // 工具模式切換與滑鼠指標
+  function updateToolMode() {
+    canvas.isDrawingMode = (currentTool === 'pen');
+    if (canvas.isDrawingMode) {
+      canvas.freeDrawingBrush.color = color;
+      canvas.freeDrawingBrush.width = lineWidth;
+      canvas.defaultCursor = 'crosshair';
+    } else {
+      canvas.isDrawingMode = false;
+      switch(currentTool) {
+        case 'select': canvas.defaultCursor = 'default'; break;
+        case 'rect': canvas.defaultCursor = 'crosshair'; break;
+        case 'circle': canvas.defaultCursor = 'crosshair'; break;
+        case 'line': canvas.defaultCursor = 'crosshair'; break;
+        case 'text': canvas.defaultCursor = 'text'; break;
+        case 'img': canvas.defaultCursor = 'pointer'; break;
+        case 'youtube': canvas.defaultCursor = 'pointer'; break;
+        case 'website': canvas.defaultCursor = 'pointer'; break;
+        case 'pdf': canvas.defaultCursor = 'pointer'; break;
+        case 'export': canvas.defaultCursor = 'pointer'; break;
+        case 'import': canvas.defaultCursor = 'pointer'; break;
+        case 'eraser': canvas.defaultCursor = 'not-allowed'; break;
+        default: canvas.defaultCursor = 'default';
+      }
+    }
+    canvas.selection = (currentTool === 'select');
+  }
+  
+  // 畫形狀
+  let shapeObj = null;
+  let isDrawingShape = false;
+  let origX, origY;
+  canvas.on('mouse:down', function(opt){
+    const pointer = canvas.getPointer(opt.e);
+    if (currentTool === 'rect') {
+      isDrawingShape = true;
+      origX = pointer.x; origY = pointer.y;
+      const isFilled = shapeStyle === 'filled';
+      shapeObj = new fabric.Rect({
+        left: origX, top: origY, width: 0, height: 0,
+        fill: isFilled ? color : 'transparent',
+        stroke: color, strokeWidth: lineWidth,
+        selectable: true, cornerStyle:'circle', cornerColor:'#ffb6d5'
+      });
+      canvas.add(shapeObj);
+    }
+    if (currentTool === 'circle') {
+      isDrawingShape = true;
+      origX = pointer.x; origY = pointer.y;
+      const isFilled = shapeStyle === 'filled';
+      shapeObj = new fabric.Ellipse({
+        left: origX, top: origY, rx: 0, ry: 0,
+        fill: isFilled ? color : 'transparent',
+        stroke: color, strokeWidth: lineWidth,
+        selectable: true, cornerStyle:'circle', cornerColor:'#ffb6d5'
+      });
+      canvas.add(shapeObj);
+    }
+    if (currentTool === 'line') {
+      isDrawingShape = true;
+      origX = pointer.x; origY = pointer.y;
+      shapeObj = new fabric.Line([origX, origY, origX, origY], {
+        stroke: color, strokeWidth: lineWidth,
+        selectable: true, cornerStyle:'circle', cornerColor:'#ffb6d5'
+      });
+      canvas.add(shapeObj);
+    }
+    if (currentTool === 'text') {
+      const val = document.getElementById('textInput').value || "文字";
+      const textObj = new fabric.Textbox(val, {
+        left: pointer.x, top: pointer.y,
+        fontSize: textSize, fill: textColor,
+        fontFamily: "'Noto Sans TC', 'Comic Sans MS', Arial",
+        borderColor: "#ffb6d5", cornerStyle:'circle', cornerColor:'#ffb6d5',
+        editable: true
+      });
+      canvas.add(textObj);
+      canvas.setActiveObject(textObj);
+    }
+    if (currentTool === 'eraser') {
+      // 橡皮擦：點選物件後刪除
+      const target = canvas.findTarget(opt.e);
+      if (target) {
+        canvas.remove(target);
+        canvas.requestRenderAll();
+      }
+    }
+  });
+  
+  canvas.on('mouse:move', function(opt){
+    if (!isDrawingShape || !shapeObj) return;
+    const pointer = canvas.getPointer(opt.e);
+    if (currentTool === 'rect') {
+      shapeObj.set({
+        width: Math.abs(pointer.x - origX),
+        height: Math.abs(pointer.y - origY),
+        left: pointer.x < origX ? pointer.x : origX,
+        top: pointer.y < origY ? pointer.y : origY
+      });
+      canvas.requestRenderAll();
+    }
+    if (currentTool === 'circle') {
+      shapeObj.set({
+        rx: Math.abs(pointer.x - origX)/2,
+        ry: Math.abs(pointer.y - origY)/2,
+        left: pointer.x < origX ? pointer.x : origX,
+        top: pointer.y < origY ? pointer.y : origY
+      });
+      canvas.requestRenderAll();
+    }
+    if (currentTool === 'line') {
+      shapeObj.set({
+        x2: pointer.x,
+        y2: pointer.y
+      });
+      canvas.requestRenderAll();
+    }
+  });
+  
+  canvas.on('mouse:up', function(opt){
+    if (isDrawingShape && shapeObj) {
+      shapeObj.setCoords();
+      canvas.setActiveObject(shapeObj);
+      shapeObj = null;
+      isDrawingShape = false;
+    }
+    saveCurrentPage();
+  });
+  
+  // 清除
+  document.getElementById('clearBtn').onclick = () => {
+    // 移除當前頁面的所有媒體容器和佔位符
+    document.querySelectorAll('.media-container').forEach(container => {
+      removeMediaContainerAndPlaceholder(container.mediaId);
+    });
+    
+    // 清除當前頁面的媒體容器信息
+    mediaContainers[currentPage] = [];
+    
+    canvas.clear();
+    canvas.backgroundColor = '#fff9fc';
+    saveCurrentPage();
+  };
+  
+  // 儲存
+  document.getElementById('saveBtn').onclick = () => {
+    const dataURL = canvas.toDataURL({
+      format: 'png',
+      quality: 1
+    });
+    const link = document.createElement('a');
+    link.download = 'whiteboard.png';
+    link.href = dataURL;
+    link.click();
+  };
+  
+  // 物件即時換色（色彩選擇器）
+  document.getElementById('objColorPicker').oninput = function(e){
+    const obj = canvas.getActiveObject();
+    if(obj){
+      const newColor = e.target.value;
+      if(obj.type==='rect'||obj.type==='ellipse'||obj.type==='circle'){
+        // 如果是空心形狀，只改變邊框顏色
+        if(obj.fill === 'transparent') {
+          obj.set('stroke', newColor);
+        } else {
+          obj.set('fill', newColor);
+          obj.set('stroke', newColor);
+        }
+      }else if(obj.type==='line'){
+        obj.set('stroke', newColor);
+      }else if(obj.type==='textbox'||obj.type==='text'){
+        obj.set('fill', newColor);
+      }else if(obj.type==='path'){
+        obj.set('stroke', newColor);
+      }
+      canvas.requestRenderAll();
+      saveCurrentPage();
+    }else{
+      alert('請先選取要換色的物件');
+    }
+  };
+  
+  // 預設選取工具
+  setTool('select');
+  
+  // 支援物件複製（Ctrl+C/V）與刪除（Delete鍵）
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Delete' || e.key === 'Backspace'){
+      const obj = canvas.getActiveObject();
+      if(obj) { 
+        canvas.remove(obj); 
+        canvas.discardActiveObject(); 
+        canvas.requestRenderAll(); 
+        saveCurrentPage(); 
+      }
+    }
+    if(e.ctrlKey && e.key === 'c'){
+      const obj = canvas.getActiveObject();
+      if(obj) { canvas._clipboard = obj; }
+    }
+    if(e.ctrlKey && e.key === 'v'){
+      if(canvas._clipboard){
+        canvas._clipboard.clone(function(clonedObj){
+          clonedObj.set({ left: clonedObj.left+30, top: clonedObj.top+30 });
+          canvas.add(clonedObj);
+          canvas.setActiveObject(clonedObj);
+          canvas.requestRenderAll();
+          saveCurrentPage();
+        });
+      }
+    }
+  });
+  
+  // 每次物件操作都即時儲存頁面
+  canvas.on('object:added', saveCurrentPage);
+  canvas.on('object:modified', saveCurrentPage);
+  canvas.on('object:removed', saveCurrentPage);
+</script>
+</body>
+</html>
