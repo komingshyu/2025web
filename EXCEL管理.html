@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 資料管理工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f5f9ff 100%);
+            min-height: 100vh;
+            color: #1565c0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            position: relative;
+        }
+        .header .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #0d47a1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header .subtitle {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: #1976d2;
+            margin-top: 5px;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            position: relative;
+        }
+        .sidebar {
+            width: 250px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            height: fit-content;
+            transition: all 0.3s ease;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            font-weight: 500;
+            color: #42a5f5;
+        }
+        .sidebar-item:hover {
+            background-color: #e3f2fd;
+            transform: translateY(-2px);
+        }
+        .sidebar-item.active {
+            background: #1e88e5;
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);
+        }
+        .sidebar-item .icon {
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        .content-area {
+            flex-grow: 1;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .upload-area {
+            border: 3px dashed #bbdefb;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            position: relative;
+        }
+        .upload-area.dragover {
+            background-color: #e1f5fe;
+            border-color: #2196f3;
+        }
+        .upload-area .upload-icon {
+            font-size: 3rem;
+            color: #42a5f5;
+            margin-bottom: 10px;
+        }
+        .upload-area .upload-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #64b5f6;
+        }
+        .upload-area input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .table-container {
+            margin-top: 20px;
+            overflow-x: auto;
+            position: relative;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            min-width: 800px;
+        }
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1f5fe;
+        }
+        .data-table thead th {
+            background-color: #1e88e5;
+            color: #ffffff;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .data-table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .search-input {
+            width: 300px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #bbdefb;
+            font-size: 1rem;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #ffffff;
+        }
+        .btn-primary {
+            background-color: #1e88e5;
+            box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #1565c0;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #42a5f5;
+            box-shadow: 0 4px 10px rgba(66, 165, 245, 0.3);
+        }
+        .btn-secondary:hover {
+            background-color: #1e88e5;
+            transform: translateY(-2px);
+        }
+        .btn-outline {
+            background-color: transparent;
+            color: #1e88e5;
+            border: 2px solid #1e88e5;
+        }
+        .btn-outline:hover {
+            background-color: #e3f2fd;
+        }
+        .btn-danger {
+            background-color: #ef5350;
+        }
+        .btn-danger:hover {
+            background-color: #c62828;
+            transform: translateY(-2px);
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #1e88e5;
+            cursor: pointer;
+            margin: 0 5px;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+        }
+        .icon-btn:hover {
+            color: #0d47a1;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: #fff;
+            z-index: 1000;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.5s ease-in-out;
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .notification.success { background-color: #4caf50; }
+        .notification.error { background-color: #f44336; }
+        .notification.warning { background-color: #ff9800; }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 500;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+            color: #1565c0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .close-btn {
+            color: #aaaaaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            transition: color 0.2s;
+        }
+        .close-btn:hover, .close-btn:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modal h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: #0d47a1;
+            border-bottom: 2px solid #e3f2fd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .modal p {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .modal .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-body {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .modal-body ul {
+            list-style: none;
+            padding: 0;
+        }
+        .modal-body ul li {
+            padding: 10px;
+            border-bottom: 1px solid #e1f5fe;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-body ul li:last-child {
+            border-bottom: none;
+        }
+        .field-item {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .field-item input[type="text"] {
+            flex-grow: 1;
+            margin-right: 10px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #bbdefb;
+        }
+        .field-item select {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #bbdefb;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            backdrop-filter: blur(3px);
+            display: none;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border-left-color: #1e88e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            color: #1565c0;
+        }
+        @media (max-width: 992px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">處理中...</div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Excel 資料管理工具</h1>
+            <p class="subtitle">支援 .xlsx / .csv 格式檔案</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="sidebar-item" id="uploadFile">
+                    <i class="fas fa-upload icon"></i> 檔案上傳
+                </div>
+                <div class="sidebar-item" id="exportData">
+                    <i class="fas fa-download icon"></i> 匯出資料
+                </div>
+                <div class="sidebar-item" id="editFields">
+                    <i class="fas fa-edit icon"></i> 編輯欄位
+                </div>
+                <div class="sidebar-item" id="addRow">
+                    <i class="fas fa-plus icon"></i> 新增資料列
+                </div>
+                <div class="sidebar-item" id="clearData">
+                    <i class="fas fa-trash-alt icon"></i> 清除資料
+                </div>
+                <div class="sidebar-item" id="toggleDebug">
+                    <i class="fas fa-bug icon"></i> 開啟除錯模式
+                </div>
+            </div>
+            <div class="content-area">
+                <div id="introSection" class="section">
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="fileInput" accept=".xlsx,.csv">
+                        <div class="upload-icon">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <div class="upload-text">
+                            <p>點擊此處或將 Excel (.xlsx) 或 CSV 檔案拖放到此處</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="dataTableSection" class="section" style="display:none;">
+                    <div class="table-controls">
+                        <div>
+                            <select id="sheetSelect" class="search-input" style="width: 200px;"></select>
+                            <button class="btn btn-primary" id="importSheetBtn">匯入工作表</button>
+                        </div>
+                        <input type="text" id="searchInput" class="search-input" placeholder="搜尋...">
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="dataTable">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeExportModal">&times;</span>
+            <h2>匯出資料</h2>
+            <div class="modal-body">
+                <p>選擇要匯出的檔案格式及欄位。</p>
+                <div>
+                    <input type="radio" id="exportCsvRadio" name="exportFormat" value="csv" checked>
+                    <label for="exportCsvRadio">CSV</label>
+                    <input type="radio" id="exportXlsxRadio" name="exportFormat" value="xlsx">
+                    <label for="exportXlsxRadio">Excel (.xlsx)</label>
+                </div>
+                <div style="margin-top: 15px;">
+                    <p>選擇要匯出的欄位：</p>
+                    <div id="exportFieldsList"></div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="confirmExport">匯出</button>
+                <button class="btn btn-secondary" id="cancelExport">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editFieldsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeEditFieldsModal">&times;</span>
+            <h2>編輯欄位</h2>
+            <div class="modal-body" id="editFieldsList">
+                <!-- Field items will be dynamically inserted here -->
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="addFieldBtn">新增欄位</button>
+                <button class="btn btn-primary" id="saveFieldsBtn">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addRecordModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeAddRecordModal">&times;</span>
+            <h2>新增資料列</h2>
+            <div class="modal-body" id="addRecordFields">
+                <!-- Form fields will be dynamically inserted here -->
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="saveRecordBtn">儲存</button>
+                <button class="btn btn-secondary" id="cancelAddRecordBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        let workbook = null;
+        let sheetNames = [];
+        let currentSheet = null;
+        let tableData = { columns: [], values: [] };
+        let isDebugMode = false;
+
+        const showLoading = (text = '處理中...') => {
+            document.getElementById('loadingText').innerText = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        };
+
+        const hideLoading = () => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        };
+
+        const showNotification = (message, type) => {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        };
+
+        const log = (message, ...args) => {
+            if (isDebugMode) {
+                console.log(message, ...args);
+            }
+        };
+
+        const showError = (message, error) => {
+            console.error(message, error);
+            showNotification(message, 'error');
+        };
+
+        const handleFileUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            log('開始上傳檔案:', file.name);
+            showLoading('正在讀取檔案...');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, { type: 'array' });
+                    sheetNames = workbook.SheetNames;
+                    
+                    const sheetSelect = document.getElementById('sheetSelect');
+                    sheetSelect.innerHTML = '';
+                    sheetNames.forEach(name => {
+                        const option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        sheetSelect.appendChild(option);
+                    });
+
+                    showNotification('檔案上傳成功!', 'success');
+                    document.getElementById('introSection').style.display = 'none';
+                    document.getElementById('dataTableSection').style.display = 'block';
+
+                    if (sheetNames.length > 0) {
+                        importSheet(sheetNames[0]);
+                    }
+
+                } catch (error) {
+                    showError('檔案解析失敗，請檢查檔案格式是否正確。', error);
+                } finally {
+                    hideLoading();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        const importSheet = (sheetName) => {
+            if (!workbook || !sheetName) return;
+            currentSheet = sheetName;
+            showLoading(`正在匯入工作表：${sheetName}`);
+            try {
+                const sheet = workbook.Sheets[sheetName];
+                const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
+                if (data && data.length > 0) {
+                    tableData.columns = data[0];
+                    tableData.values = data.slice(1);
+                    renderTable();
+                    showNotification(`工作表「${sheetName}」匯入成功!`, 'success');
+                } else {
+                    tableData = { columns: [], values: [] };
+                    renderTable();
+                    showNotification('此工作表沒有資料。', 'warning');
+                }
+            } catch (error) {
+                showError('匯入工作表時發生錯誤', error);
+            } finally {
+                hideLoading();
+            }
+        };
+
+        const renderTable = (data = tableData) => {
+            const tableHead = document.querySelector('#dataTable thead');
+            const tableBody = document.querySelector('#dataTable tbody');
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            if (!data || !data.columns || data.columns.length === 0) {
+                tableHead.innerHTML = '<tr><th>沒有欄位</th></tr>';
+                return;
+            }
+
+            // Render table header
+            const headerRow = document.createElement('tr');
+            data.columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headerRow.appendChild(th);
+            });
+            const actionTh = document.createElement('th');
+            actionTh.textContent = '操作';
+            headerRow.appendChild(actionTh);
+            tableHead.appendChild(headerRow);
+
+            // Render table body
+            data.values.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                tr.dataset.rowIndex = rowIndex;
+                row.forEach((cell, cellIndex) => {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    td.dataset.cellIndex = cellIndex;
+                    td.setAttribute('contenteditable', 'true');
+                    td.addEventListener('input', (e) => {
+                        tableData.values[rowIndex][cellIndex] = e.target.textContent;
+                    });
+                    tr.appendChild(td);
+                });
+
+                const actionTd = document.createElement('td');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'icon-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.title = '刪除此行';
+                deleteBtn.addEventListener('click', () => deleteRow(rowIndex));
+                actionTd.appendChild(deleteBtn);
+                tr.appendChild(actionTd);
+
+                tableBody.appendChild(tr);
+            });
+        };
+
+        const deleteRow = (rowIndex) => {
+            if (confirm('確定要刪除此行資料嗎？')) {
+                tableData.values.splice(rowIndex, 1);
+                renderTable();
+                showNotification('資料列已刪除', 'success');
+            }
+        };
+
+        const addRow = () => {
+            if (!tableData || !tableData.columns || tableData.columns.length === 0) {
+                showNotification('請先匯入資料表或編輯欄位', 'warning');
+                return;
+            }
+
+            const newRow = new Array(tableData.columns.length).fill('');
+            tableData.values.push(newRow);
+            renderTable();
+            showNotification('已新增一列空白資料', 'success');
+            
+            const tableBody = document.querySelector('#dataTable tbody');
+            tableBody.scrollTop = tableBody.scrollHeight;
+        };
+        
+        const openExportModal = () => {
+            if (!tableData.values.length) {
+                showNotification('沒有資料可以匯出', 'warning');
+                return;
+            }
+            const exportFieldsList = document.getElementById('exportFieldsList');
+            exportFieldsList.innerHTML = '';
+            tableData.columns.forEach((col, index) => {
+                const div = document.createElement('div');
+                div.innerHTML = `<input type="checkbox" id="exportCol${index}" checked> <label for="exportCol${index}">${col}</label>`;
+                exportFieldsList.appendChild(div);
+            });
+            document.getElementById('exportModal').style.display = 'flex';
+        };
+
+        const confirmExport = () => {
+            const format = document.querySelector('input[name="exportFormat"]:checked').value;
+            const checkedBoxes = document.querySelectorAll('#exportFieldsList input[type="checkbox"]:checked');
+            const selectedIndices = Array.from(checkedBoxes).map(cb => parseInt(cb.id.replace('exportCol', '')));
+
+            if (selectedIndices.length === 0) {
+                showNotification('請至少選擇一個欄位', 'error');
+                return;
+            }
+
+            const exportedColumns = selectedIndices.map(index => tableData.columns[index]);
+            const exportedValues = tableData.values.map(row => 
+                selectedIndices.map(index => row[index])
+            );
+
+            const exportData = [exportedColumns, ...exportedValues];
+
+            if (format === 'csv') {
+                exportToCsv(exportData);
+            } else if (format === 'xlsx') {
+                exportToXlsx(exportData);
+            }
+            document.getElementById('exportModal').style.display = 'none';
+        };
+
+        const exportToCsv = (data) => {
+            const csvContent = "data:text/csv;charset=utf-8,\ufeff" + data.map(e => e.join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNotification('CSV 檔案已匯出', 'success');
+        };
+
+        const exportToXlsx = (data) => {
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            XLSX.writeFile(wb, "export.xlsx");
+            showNotification('Excel 檔案已匯出', 'success');
+        };
+        
+        const openEditFieldsModal = () => {
+            if (!tableData || !tableData.columns || tableData.columns.length === 0) {
+                showNotification('請先匯入資料表', 'warning');
+                return;
+            }
+            const editFieldsList = document.getElementById('editFieldsList');
+            editFieldsList.innerHTML = '';
+            tableData.columns.forEach((col, index) => {
+                const div = document.createElement('div');
+                div.className = 'field-item';
+                div.innerHTML = `
+                    <input type="text" value="${col}" data-original-name="${col}">
+                    <select>
+                        <option value="TEXT">文字</option>
+                        <option value="INTEGER">整數</option>
+                        <option value="REAL">浮點數</option>
+                    </select>
+                    <button class="icon-btn" onclick="removeField(this.parentNode)"><i class="fas fa-times-circle"></i></button>
+                `;
+                editFieldsList.appendChild(div);
+            });
+            document.getElementById('editFieldsModal').style.display = 'flex';
+        };
+
+        const addField = () => {
+            const editFieldsList = document.getElementById('editFieldsList');
+            const div = document.createElement('div');
+            div.className = 'field-item';
+            div.innerHTML = `
+                <input type="text" placeholder="新欄位名稱" data-original-name="">
+                <select>
+                    <option value="TEXT">文字</option>
+                    <option value="INTEGER">整數</option>
+                    <option value="REAL">浮點數</option>
+                </select>
+                <button class="icon-btn" onclick="removeField(this.parentNode)"><i class="fas fa-times-circle"></i></button>
+            `;
+            editFieldsList.appendChild(div);
+        };
+        
+        const removeField = (element) => {
+            element.remove();
+        };
+
+        const saveFields = () => {
+            const editFieldsList = document.getElementById('editFieldsList');
+            const newColumns = [];
+            const oldColumns = tableData.columns;
+
+            const fieldItems = editFieldsList.querySelectorAll('.field-item');
+            fieldItems.forEach(item => {
+                const input = item.querySelector('input');
+                newColumns.push(input.value);
+            });
+
+            const newTableData = {
+                columns: newColumns,
+                values: tableData.values.map(row => {
+                    const newRow = [];
+                    newColumns.forEach(newCol => {
+                        const oldIndex = oldColumns.indexOf(newCol);
+                        if (oldIndex !== -1) {
+                            newRow.push(row[oldIndex]);
+                        } else {
+                            newRow.push('');
+                        }
+                    });
+                    return newRow;
+                })
+            };
+            tableData = newTableData;
+            renderTable();
+            document.getElementById('editFieldsModal').style.display = 'none';
+            showNotification('欄位已更新', 'success');
+        };
+
+        const clearData = () => {
+            if (confirm('確定要清除所有資料嗎？此操作無法撤銷。')) {
+                tableData = { columns: [], values: [] };
+                renderTable();
+                showNotification('所有資料已清除', 'success');
+            }
+        };
+
+        const toggleDebugMode = () => {
+            isDebugMode = !isDebugMode;
+            showNotification(`除錯模式已${isDebugMode ? '開啟' : '關閉'}`, 'warning');
+            document.getElementById('toggleDebug').innerHTML = `<i class="fas fa-bug icon"></i> ${isDebugMode ? '關閉除錯模式' : '開啟除錯模式'}`;
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadArea = document.querySelector('.upload-area');
+            const fileInput = document.getElementById('fileInput');
+            const searchInput = document.getElementById('searchInput');
+
+            // Event Listeners for Sidebar
+            document.getElementById('uploadFile').addEventListener('click', () => {
+                fileInput.click();
+            });
+            document.getElementById('exportData').addEventListener('click', openExportModal);
+            document.getElementById('editFields').addEventListener('click', openEditFieldsModal);
+            document.getElementById('addRow').addEventListener('click', addRow);
+            document.getElementById('clearData').addEventListener('click', clearData);
+            document.getElementById('toggleDebug').addEventListener('click', toggleDebugMode);
+            document.getElementById('importSheetBtn').addEventListener('click', () => {
+                const selectedSheet = document.getElementById('sheetSelect').value;
+                if (selectedSheet) {
+                    importSheet(selectedSheet);
+                } else {
+                    showNotification('請先選擇一個工作表', 'error');
+                }
+            });
+
+            // Event Listeners for Modals
+            document.getElementById('closeExportModal').addEventListener('click', () => { document.getElementById('exportModal').style.display = 'none'; });
+            document.getElementById('cancelExport').addEventListener('click', () => { document.getElementById('exportModal').style.display = 'none'; });
+            document.getElementById('confirmExport').addEventListener('click', confirmExport);
+
+            document.getElementById('closeEditFieldsModal').addEventListener('click', () => { document.getElementById('editFieldsModal').style.display = 'none'; });
+            document.getElementById('addFieldBtn').addEventListener('click', addField);
+            document.getElementById('saveFieldsBtn').addEventListener('click', saveFields);
+
+            // File upload via input change
+            fileInput.addEventListener('change', handleFileUpload);
+            
+            // Search function
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                if (!tableData || !tableData.values) {
+                    return;
+                }
+                const filteredData = {
+                    columns: tableData.columns,
+                    values: tableData.values.filter(row =>
+                        row.some(cell => String(cell).toLowerCase().includes(searchTerm))
+                    )
+                };
+                renderTable(filteredData);
+            });
+
+            // Drag and drop functionality
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileUpload({ target: { files: files } });
+                } else {
+                    showNotification('請上傳 Excel 或 CSV 檔案', 'error');
+                }
+            });
+        });
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

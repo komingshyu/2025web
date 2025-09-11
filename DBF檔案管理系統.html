@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="BIG5">
+    <meta http-equiv="Content-Type" content="text/html; charset=BIG5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DBF 檔案管理系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'MingLiU', 'PMingLiU', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+            min-height: 100vh;
+            color: #2d5a2d;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #c8e6c8 0%, #b2d8b2 100%);
+            color: #1b5e20;
+            padding: 20px;
+            text-align: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex-direction: column;
+        }
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .upload-area, .actions-area {
+            background-color: #f7fff7;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            border: 2px dashed #b2d8b2;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+        .upload-area.dragover {
+            border-color: #4caf50;
+        }
+        .upload-area label {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #1b5e20;
+            display: block;
+        }
+        .upload-area input[type="file"] {
+            display: none;
+        }
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-upload {
+            background-color: #66bb6a;
+            color: white;
+        }
+        .btn-export {
+            background-color: #42a5f5;
+            color: white;
+        }
+        .btn-action {
+            background-color: #81c784;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #e57373;
+            color: white;
+        }
+        .result-panel {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #c8e6c8;
+            padding: 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .data-table th {
+            background-color: #e8f5e8;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f7fff7;
+        }
+        .data-table tr:hover {
+            background-color: #e0f2e0;
+        }
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .notification {
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+            transform: translateY(-20px);
+            margin-bottom: 10px;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .notification.success {
+            background-color: #4caf50;
+        }
+        .notification.error {
+            background-color: #f44336;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .options-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8f0;
+            border-radius: 8px;
+            border: 1px solid #d4e9d4;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        .options-panel label {
+            font-weight: bold;
+            color: #1b5e20;
+        }
+        .options-panel select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        .edit-input {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .btn {
+                width: 100%;
+                margin-top: 10px;
+            }
+            .btn-export {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="notification-container"></div>
+    <div class="container">
+        <div class="header">
+            <h1>DBF 檔案管理系統</h1>
+            <p>FoxPro 6. 中文版</p>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="upload-area">
+                    <label for="dbfFile">
+                        <i class="fas fa-upload fa-3x"></i>
+                        <p>將 .dbf 檔案拖曳至此處或點擊選擇</p>
+                        <input type="file" id="dbfFile" accept=".dbf" onchange="handleFileUpload(event)">
+                    </label>
+                </div>
+                <div class="options-panel">
+                    <label for="encodingSelect">選擇編碼:</label>
+                    <select id="encodingSelect">
+                        <option value="big5">BIG5 (繁體中文)</option>
+                        <option value="gbk">GBK (簡體中文)</option>
+                        <option value="utf-8">UTF-8</option>
+                        <option value="ascii">ASCII</option>
+                    </select>
+                    <button class="btn btn-action" id="reprocessBtn">重新處理</button>
+                    <button class="btn btn-export" onclick="exportToExcel()">匯出為 Excel</button>
+                </div>
+            </div>
+
+            <div class="result-panel">
+                <p id="fileNameDisplay"></p>
+                <div class="table-container">
+                    <table class="data-table" id="dataTable"></table>
+                </div>
+                <p id="recordCountDisplay"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模態框 -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('exportModal')">&times;</span>
+            <h2>匯出成功！</h2>
+            <p>您的 Excel 檔案已準備就緒。</p>
+            <p><a id="downloadLink" href="#" class="btn btn-upload" download>點此下載檔案</a></p>
+        </div>
+    </div>
+    
+    <script>
+        // 全域變數
+        let dbfData = null;
+
+        // 通知顯示功能
+        function showNotification(message, type = 'success') {
+            const container = document.querySelector('.notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            container.appendChild(notification);
+
+            // 觸發顯示動畫
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+
+            // 5秒後自動移除
+            setTimeout(() => {
+                notification.classList.remove('show');
+                notification.addEventListener('transitionend', () => {
+                    notification.remove();
+                });
+            }, 5000);
+        }
+
+        // 關閉模態框
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // 解析 DBF 檔案的函數
+        async function parseDbf(file, encoding) {
+            try {
+                const buffer = await file.arrayBuffer();
+                const view = new DataView(buffer);
+                const decoder = new TextDecoder(encoding);
+
+                // 解析 DBF 標頭
+                const header = {
+                    version: view.getUint8(0),
+                    recordCount: view.getUint32(4, true),
+                    headerLength: view.getUint16(8, true),
+                    recordLength: view.getUint16(10, true)
+                };
+
+                const fields = [];
+                let fieldOffset = 32;
+                while (view.getUint8(fieldOffset) !== 0x0D) {
+                    const field = {};
+                    const fieldNameBytes = new Uint8Array(buffer, fieldOffset, 11);
+                    field.name = decoder.decode(fieldNameBytes).replace(/\0.*$/g, '').trim();
+                    field.type = String.fromCharCode(view.getUint8(fieldOffset + 11));
+                    field.length = view.getUint8(fieldOffset + 16);
+                    fields.push(field);
+                    fieldOffset += 32;
+                }
+
+                const records = [];
+                const dataOffset = header.headerLength;
+
+                for (let i = 0; i < header.recordCount; i++) {
+                    const record = {};
+                    const recordOffset = dataOffset + (i * header.recordLength);
+                    let currentOffset = recordOffset + 1; // 跳過刪除標記
+
+                    fields.forEach(field => {
+                        const fieldDataBytes = new Uint8Array(buffer, currentOffset, field.length);
+                        let value;
+
+                        if (field.type === 'C') { // 字元欄位
+                            value = decoder.decode(fieldDataBytes).trim();
+                        } else if (field.type === 'N' || field.type === 'F') { // 數字欄位
+                            const textValue = decoder.decode(fieldDataBytes).trim();
+                            value = parseFloat(textValue) || 0;
+                        } else if (field.type === 'D') { // 日期欄位
+                            const textValue = decoder.decode(fieldDataBytes).trim();
+                            // 假設日期格式為 YYYYMMDD
+                            if (textValue.length === 8) {
+                                value = `${textValue.substring(0, 4)}-${textValue.substring(4, 6)}-${textValue.substring(6, 8)}`;
+                            } else {
+                                value = textValue;
+                            }
+                        } else { // 其他未處理的欄位
+                            value = decoder.decode(fieldDataBytes).trim();
+                        }
+                        record[field.name] = value;
+                        currentOffset += field.length;
+                    });
+                    records.push(record);
+                }
+                return { fields, records };
+            } catch (error) {
+                console.error('解析 DBF 檔案時發生錯誤:', error);
+                showNotification(`解析檔案時發生錯誤：${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        // 處理檔案上傳
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            if (file.name.endsWith('.dbf')) {
+                document.getElementById('fileNameDisplay').textContent = `檔案: ${file.name}`;
+                showNotification('正在解析 DBF 檔案，請稍候...');
+
+                const encodingSelect = document.getElementById('encodingSelect');
+                const selectedEncoding = encodingSelect.value;
+                
+                dbfData = await parseDbf(file, selectedEncoding);
+                
+                if (dbfData) {
+                    showNotification('檔案解析成功！');
+                    renderTable(dbfData.fields, dbfData.records);
+                }
+            } else {
+                showNotification('請上傳 .dbf 格式檔案', 'error');
+            }
+        }
+
+        // 渲染資料表格 (新增了編輯/刪除功能)
+        function renderTable(fields, records) {
+            const table = document.getElementById('dataTable');
+            table.innerHTML = '';
+            document.getElementById('recordCountDisplay').textContent = '';
+
+            if (!fields || fields.length === 0) {
+                table.innerHTML = '<thead><tr><th>請上傳 DBF 檔案以顯示資料</th></tr></thead><tbody></tbody>';
+                return;
+            }
+
+            // 渲染表頭
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            fields.forEach(field => {
+                const th = document.createElement('th');
+                th.textContent = field.name;
+                headerRow.appendChild(th);
+            });
+            // 新增操作欄位
+            const thActions = document.createElement('th');
+            thActions.textContent = '操作';
+            headerRow.appendChild(thActions);
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // 渲染資料
+            const tbody = document.createElement('tbody');
+            records.forEach((record, index) => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-index', index);
+                
+                fields.forEach(field => {
+                    const td = document.createElement('td');
+                    td.textContent = record[field.name] || '';
+                    td.setAttribute('data-field', field.name);
+                    row.appendChild(td);
+                });
+
+                // 新增操作按鈕
+                const tdActions = document.createElement('td');
+                tdActions.innerHTML = `
+                    <button class="btn btn-action edit-btn" data-index="${index}">編輯</button>
+                    <button class="btn btn-danger delete-btn" data-index="${index}">刪除</button>
+                `;
+                row.appendChild(tdActions);
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            
+            document.getElementById('recordCountDisplay').textContent = `總筆數: ${records.length}`;
+        }
+        
+        // 啟用編輯模式
+        function enableEditMode(rowIndex) {
+            const row = document.querySelector(`tr[data-index="${rowIndex}"]`);
+            const cells = row.querySelectorAll('td[data-field]');
+            
+            cells.forEach(cell => {
+                const fieldName = cell.getAttribute('data-field');
+                const value = cell.textContent;
+                const fieldType = dbfData.fields.find(f => f.name === fieldName)?.type;
+
+                let inputType = 'text';
+                if (fieldType === 'N' || fieldType === 'F') {
+                    inputType = 'number';
+                } else if (fieldType === 'D') {
+                    inputType = 'date'; // HTML5 日期輸入
+                }
+
+                cell.innerHTML = `<input type="${inputType}" class="edit-input" value="${value}" data-field="${fieldName}">`;
+            });
+
+            // 替換操作按鈕
+            const actionsCell = row.querySelector('td:last-child');
+            actionsCell.innerHTML = `
+                <button class="btn btn-upload save-btn" data-index="${rowIndex}">儲存</button>
+                <button class="btn btn-danger cancel-btn" data-index="${rowIndex}">取消</button>
+            `;
+        }
+
+        // 儲存編輯後的資料
+        function saveChanges(rowIndex) {
+            const row = document.querySelector(`tr[data-index="${rowIndex}"]`);
+            const inputs = row.querySelectorAll('.edit-input');
+            const updatedRecord = {};
+            
+            inputs.forEach(input => {
+                const fieldName = input.getAttribute('data-field');
+                updatedRecord[fieldName] = input.value;
+            });
+            
+            // 更新 dbfData 陣列
+            dbfData.records[rowIndex] = updatedRecord;
+            
+            // 重新渲染表格以顯示新資料
+            renderTable(dbfData.fields, dbfData.records);
+            showNotification('資料已儲存！', 'success');
+        }
+
+        // 刪除資料
+        function deleteRow(rowIndex) {
+            if (confirm(`確定要刪除這筆資料嗎？ (索引: ${rowIndex})`)) {
+                dbfData.records.splice(rowIndex, 1);
+                renderTable(dbfData.fields, dbfData.records);
+                showNotification('資料已刪除！', 'success');
+            }
+        }
+
+        // 匯出為 Excel
+        function exportToExcel() {
+            if (!dbfData) {
+                showNotification('請先上傳檔案', 'error');
+                return;
+            }
+
+            const dataToExport = dbfData.records.map(record => {
+                const newRecord = {};
+                dbfData.fields.forEach(field => {
+                    newRecord[field.name] = record[field.name];
+                });
+                return newRecord;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            const fileName = "exported_data.xlsx";
+            XLSX.writeFile(wb, fileName);
+            showNotification('匯出成功！', 'success');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 重新處理按鈕事件
+            document.getElementById('reprocessBtn').addEventListener('click', function() {
+                const fileInput = document.getElementById('dbfFile');
+                if (fileInput.files.length > 0) {
+                    handleFileUpload({ target: { files: fileInput.files } });
+                } else {
+                    showNotification('請先選擇檔案', 'error');
+                }
+            });
+
+            // 拖曳上傳功能
+            const uploadArea = document.querySelector('.upload-area');
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].name.endsWith('.dbf')) {
+                    document.getElementById('dbfFile').files = files;
+                    handleFileUpload({ target: { files: files } });
+                } else {
+                    showNotification('請上傳 .dbf 格式檔案', 'error');
+                }
+            });
+            
+            renderTable();
+
+            // 使用事件代理處理編輯、儲存、取消和刪除按鈕的點擊
+            document.getElementById('dataTable').addEventListener('click', function(e) {
+                const target = e.target;
+                const rowIndex = target.getAttribute('data-index');
+
+                if (target.classList.contains('edit-btn')) {
+                    enableEditMode(rowIndex);
+                } else if (target.classList.contains('delete-btn')) {
+                    deleteRow(rowIndex);
+                } else if (target.classList.contains('save-btn')) {
+                    saveChanges(rowIndex);
+                } else if (target.classList.contains('cancel-btn')) {
+                    renderTable(dbfData.fields, dbfData.records);
+                }
+            });
+        });
+        
+        // 點擊模態框外部關閉
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

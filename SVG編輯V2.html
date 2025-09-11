@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabric.js SVG 編輯器 - 可愛版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fef7f0;
+        }
+        .tool-button {
+            @apply p-3 rounded-full hover:bg-pink-200 transition-all duration-300 cursor-pointer relative group shadow-md;
+            background-color: #ffffff;
+            color: #ec4899;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .tool-button.active {
+            @apply bg-pink-400 text-white shadow-lg transform scale-110;
+        }
+        .tool-button:hover .tooltip {
+            @apply opacity-100;
+        }
+        .tooltip {
+            @apply absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full opacity-0 transition-opacity whitespace-nowrap;
+            font-family: 'Ma Shan Zheng', cursive;
+        }
+        .layer-item {
+            @apply p-3 border-b border-pink-100 hover:bg-pink-50 cursor-pointer flex items-center justify-between rounded-lg mb-1 transition-all duration-200;
+        }
+        .layer-item.active {
+            @apply bg-pink-100 border-pink-300 shadow-sm;
+        }
+        #canvas-container {
+            background-image: 
+                linear-gradient(45deg, #fce7f3 25%, transparent 25%),
+                linear-gradient(-45deg, #fce7f3 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #fce7f3 75%),
+                linear-gradient(-45deg, transparent 75%, #fce7f3 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(236, 72, 153, 0.1);
+        }
+        .cute-title {
+            font-family: 'Ma Shan Zheng', cursive;
+            color: #ec4899;
+            text-shadow: 2px 2px 0 #f9a8d4;
+        }
+        .cute-panel {
+            background-color: #fff5f7;
+            border-radius: 1rem;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.1);
+            border: 2px solid #fbcfe8;
+        }
+        .cute-button {
+            @apply bg-gradient-to-r from-pink-400 to-purple-400 text-white py-2 px-4 rounded-full hover:from-pink-500 hover:to-purple-500 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+        }
+        .cute-input {
+            @apply border-2 border-pink-200 rounded-full p-2 focus:outline-none focus:border-pink-400 transition-colors duration-300;
+        }
+        .cute-range {
+            @apply w-full accent-pink-500;
+        }
+        .cute-select {
+            @apply border-2 border-pink-200 rounded-full p-2 focus:outline-none focus:border-pink-400 transition-colors duration-300 bg-white;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-pink-50 to-purple-50 h-screen overflow-hidden">
+    <div class="flex flex-col h-full">
+        <!-- 頂部工具欄 -->
+        <header class="cute-panel shadow-lg border-b-2 border-pink-200">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-6">
+                        <h1 class="text-2xl cute-title">可愛 SVG 編輯器</h1>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="loadSVG()" class="cute-button text-sm">
+                                <i class="fas fa-file-import mr-2"></i>載入 SVG
+                            </button>
+                            <button onclick="saveSVG()" class="cute-button text-sm">
+                                <i class="fas fa-file-export mr-2"></i>儲存 SVG
+                            </button>
+                            <button onclick="clearCanvas()" class="cute-button text-sm">
+                                <i class="fas fa-trash mr-2"></i>清空畫布
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="undo()" class="cute-button text-sm" id="undoBtn">
+                            <i class="fas fa-undo mr-2"></i>撤銷
+                        </button>
+                        <button onclick="redo()" class="cute-button text-sm" id="redoBtn">
+                            <i class="fas fa-redo mr-2"></i>重做
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="flex flex-1 overflow-hidden p-4">
+            <!-- 左側工具面板 -->
+            <aside class="w-20 cute-panel p-3 flex flex-col items-center py-4 mr-4">
+                <button onclick="setTool('select')" class="tool-button active" data-tool="select">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <span class="tooltip">選擇工具</span>
+                </button>
+                <button onclick="setTool('rectangle')" class="tool-button" data-tool="rectangle">
+                    <i class="fas fa-square"></i>
+                    <span class="tooltip">矩形</span>
+                </button>
+                <button onclick="setTool('circle')" class="tool-button" data-tool="circle">
+                    <i class="fas fa-circle"></i>
+                    <span class="tooltip">圓形</span>
+                </button>
+                <button onclick="setTool('triangle')" class="tool-button" data-tool="triangle">
+                    <i class="fas fa-play rotate-90"></i>
+                    <span class="tooltip">三角形</span>
+                </button>
+                <button onclick="setTool('line')" class="tool-button" data-tool="line">
+                    <i class="fas fa-minus"></i>
+                    <span class="tooltip">直線</span>
+                </button>
+                <button onclick="setTool('text')" class="tool-button" data-tool="text">
+                    <i class="fas fa-font"></i>
+                    <span class="tooltip">文字</span>
+                </button>
+                <button onclick="setTool('path')" class="tool-button" data-tool="path">
+                    <i class="fas fa-draw-polygon"></i>
+                    <span class="tooltip">自由繪製</span>
+                </button>
+            </aside>
+            <!-- 主要編輯區域 -->
+            <main class="flex-1 flex">
+                <!-- 畫布區域 -->
+                <div class="flex-1 p-2">
+                    <div id="canvas-container" class="w-full h-full rounded-lg shadow-inner overflow-hidden">
+                        <canvas id="canvas"></canvas>
+                    </div>
+                </div>
+                <!-- 右側屬性面板 -->
+                <aside class="w-80 cute-panel p-6 overflow-y-auto ml-4">
+                    <!-- 屬性編輯 -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold mb-4 text-pink-600 cute-title">屬性設定</h3>
+                        <div id="properties-panel" class="space-y-5">
+                            <div class="text-sm text-pink-400 text-center py-4">請選擇一個物件</div>
+                        </div>
+                    </div>
+                    <!-- 層級管理 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-pink-600 cute-title">層級管理</h3>
+                        <div id="layers-panel" class="space-y-2 max-h-64 overflow-y-auto p-2 bg-pink-50 rounded-xl">
+                            <div class="text-sm text-pink-400 text-center py-4">無物件</div>
+                        </div>
+                    </div>
+                </aside>
+            </main>
+        </div>
+    </div>
+    <!-- 隱藏的檔案輸入 -->
+    <input type="file" id="fileInput" accept=".svg" style="display: none;">
+    <script>
+        // 初始化 Fabric.js 畫布
+        const canvas = new fabric.Canvas('canvas', {
+            backgroundColor: 'white',
+            selection: true
+        });
+        // 設定畫布大小
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            canvas.setWidth(container.clientWidth);
+            canvas.setHeight(container.clientHeight);
+            canvas.renderAll();
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        // 全域變數
+        let currentTool = 'select';
+        let isDrawing = false;
+        let startX, startY;
+        let history = [];
+        let historyStep = -1;
+        // 工具設定
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+            
+            // 設定畫布模式
+            if (tool === 'select') {
+                canvas.isDrawingMode = false;
+                canvas.selection = true;
+                canvas.forEachObject(obj => {
+                    obj.selectable = true;
+                });
+            } else if (tool === 'path') {
+                canvas.isDrawingMode = true;
+                canvas.freeDrawingBrush.width = 2;
+                canvas.freeDrawingBrush.color = '#ec4899';
+            } else {
+                canvas.isDrawingMode = false;
+                canvas.selection = false;
+                canvas.forEachObject(obj => {
+                    obj.selectable = false;
+                });
+            }
+        }
+        // 畫布事件
+        canvas.on('mouse:down', function(options) {
+            if (currentTool === 'select' || currentTool === 'path') return;
+            
+            isDrawing = true;
+            const pointer = canvas.getPointer(options.e);
+            startX = pointer.x;
+            startY = pointer.y;
+        });
+        canvas.on('mouse:move', function(options) {
+            if (!isDrawing || currentTool === 'select' || currentTool === 'path') return;
+            
+            const pointer = canvas.getPointer(options.e);
+            
+            // 移除臨時物件
+            const tempObjects = canvas.getObjects().filter(obj => obj.isTemp);
+            tempObjects.forEach(obj => canvas.remove(obj));
+            
+            let shape;
+            switch (currentTool) {
+                case 'rectangle':
+                    shape = new fabric.Rect({
+                        left: Math.min(startX, pointer.x),
+                        top: Math.min(startY, pointer.y),
+                        width: Math.abs(pointer.x - startX),
+                        height: Math.abs(pointer.y - startY),
+                        fill: '#f9a8d4',
+                        stroke: '#ec4899',
+                        strokeWidth: 2,
+                        isTemp: true,
+                        rx: 8,
+                        ry: 8
+                    });
+                    break;
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(pointer.x - startX, 2) + Math.pow(pointer.y - startY, 2)) / 2;
+                    shape = new fabric.Circle({
+                        left: Math.min(startX, pointer.x),
+                        top: Math.min(startY, pointer.y),
+                        radius: radius,
+                        fill: '#c084fc',
+                        stroke: '#a855f7',
+                        strokeWidth: 2,
+                        isTemp: true
+                    });
+                    break;
+                case 'triangle':
+                    shape = new fabric.Triangle({
+                        left: Math.min(startX, pointer.x),
+                        top: Math.min(startY, pointer.y),
+                        width: Math.abs(pointer.x - startX),
+                        height: Math.abs(pointer.y - startY),
+                        fill: '#fbbf24',
+                        stroke: '#f59e0b',
+                        strokeWidth: 2,
+                        isTemp: true
+                    });
+                    break;
+                case 'line':
+                    shape = new fabric.Line([startX, startY, pointer.x, pointer.y], {
+                        stroke: '#f87171',
+                        strokeWidth: 3,
+                        isTemp: true
+                    });
+                    break;
+            }
+            
+            if (shape) {
+                canvas.add(shape);
+                canvas.renderAll();
+            }
+        });
+        canvas.on('mouse:up', function(options) {
+            if (!isDrawing || currentTool === 'select' || currentTool === 'path') return;
+            
+            isDrawing = false;
+            
+            // 移除臨時標記並添加正式物件
+            const tempObjects = canvas.getObjects().filter(obj => obj.isTemp);
+            tempObjects.forEach(obj => {
+                delete obj.isTemp;
+                obj.selectable = true;
+                obj.id = Date.now() + Math.random();
+            });
+            
+            saveHistory();
+            updateLayers();
+        });
+        // 文字工具
+        canvas.on('mouse:down', function(options) {
+            if (currentTool !== 'text') return;
+            
+            const pointer = canvas.getPointer(options.e);
+            const text = new fabric.IText('點擊編輯文字', {
+                left: pointer.x,
+                top: pointer.y,
+                fontFamily: 'Ma Shan Zheng',
+                fontSize: 28,
+                fill: '#ec4899',
+                id: Date.now() + Math.random()
+            });
+            
+            canvas.add(text);
+            canvas.setActiveObject(text);
+            text.enterEditing();
+            text.selectAll();
+            
+            saveHistory();
+            updateLayers();
+        });
+        // 選擇物件事件
+        canvas.on('selection:created', updateProperties);
+        canvas.on('selection:updated', updateProperties);
+        canvas.on('selection:cleared', updateProperties);
+        // 物件修改事件
+        canvas.on('object:modified', function() {
+            saveHistory();
+            updateLayers();
+        });
+        // 更新屬性面板
+        function updateProperties() {
+            const activeObject = canvas.getActiveObject();
+            const panel = document.getElementById('properties-panel');
+            
+            if (!activeObject) {
+                panel.innerHTML = '<div class="text-sm text-pink-400 text-center py-4">請選擇一個物件</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            // 通用屬性
+            html += `
+                <div>
+                    <label class="block text-sm font-medium text-pink-600 mb-2">填色</label>
+                    <input type="color" value="${activeObject.fill || '#000000'}" 
+                           onchange="updateObjectProperty('fill', this.value)"
+                           class="cute-input w-full h-12 rounded-full cursor-pointer">
+                </div>
+            `;
+            
+            if (activeObject.stroke !== undefined) {
+                html += `
+                    <div>
+                        <label class="block text-sm font-medium text-pink-600 mb-2">邊框顏色</label>
+                        <input type="color" value="${activeObject.stroke || '#000000'}" 
+                               onchange="updateObjectProperty('stroke', this.value)"
+                               class="cute-input w-full h-12 rounded-full cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-pink-600 mb-2">邊框寬度</label>
+                        <input type="range" min="0" max="20" value="${activeObject.strokeWidth || 1}" 
+                               onchange="updateObjectProperty('strokeWidth', parseInt(this.value))"
+                               class="cute-range">
+                        <span class="text-xs text-pink-500">${activeObject.strokeWidth || 1}px</span>
+                    </div>
+                `;
+            }
+            
+            if (activeObject.type === 'i-text') {
+                html += `
+                    <div>
+                        <label class="block text-sm font-medium text-pink-600 mb-2">字體大小</label>
+                        <input type="range" min="10" max="100" value="${activeObject.fontSize || 20}" 
+                               onchange="updateObjectProperty('fontSize', parseInt(this.value))"
+                               class="cute-range">
+                        <span class="text-xs text-pink-500">${activeObject.fontSize || 20}px</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-pink-600 mb-2">字體</label>
+                        <select onchange="updateObjectProperty('fontFamily', this.value)" 
+                                class="cute-select w-full">
+                            <option value="Ma Shan Zheng" ${activeObject.fontFamily === 'Ma Shan Zheng' ? 'selected' : ''}>馬善政楷體</option>
+                            <option value="Noto Sans TC" ${activeObject.fontFamily === 'Noto Sans TC' ? 'selected' : ''}>思源黑體</option>
+                            <option value="Arial" ${activeObject.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
+                            <option value="Times New Roman" ${activeObject.fontFamily === 'Times New Roman' ? 'selected' : ''}>Times New Roman</option>
+                        </select>
+                    </div>
+                `;
+            }
+            
+            // 透明度
+            html += `
+                <div>
+                    <label class="block text-sm font-medium text-pink-600 mb-2">透明度</label>
+                    <input type="range" min="0" max="100" value="${(activeObject.opacity || 1) * 100}" 
+                           onchange="updateObjectProperty('opacity', this.value / 100)"
+                           class="cute-range">
+                    <span class="text-xs text-pink-500">${Math.round((activeObject.opacity || 1) * 100)}%</span>
+                </div>
+            `;
+            
+            // 操作按鈕
+            html += `
+                <div class="pt-4 space-y-3">
+                    <button onclick="deleteSelected()" 
+                            class="cute-button w-full">
+                        <i class="fas fa-trash mr-2"></i>刪除物件
+                    </button>
+                    <button onclick="duplicateSelected()" 
+                            class="cute-button w-full">
+                        <i class="fas fa-copy mr-2"></i>複製物件
+                    </button>
+                </div>
+            `;
+            
+            panel.innerHTML = html;
+        }
+        // 更新物件屬性
+        function updateObjectProperty(property, value) {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                activeObject.set(property, value);
+                canvas.renderAll();
+                saveHistory();
+                updateProperties();
+            }
+        }
+        // 刪除選中物件
+        function deleteSelected() {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                canvas.remove(activeObject);
+                saveHistory();
+                updateLayers();
+                updateProperties();
+            }
+        }
+        // 複製選中物件
+        function duplicateSelected() {
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                activeObject.clone(function(cloned) {
+                    cloned.set({
+                        left: cloned.left + 10,
+                        top: cloned.top + 10,
+                        id: Date.now() + Math.random()
+                    });
+                    canvas.add(cloned);
+                    canvas.setActiveObject(cloned);
+                    saveHistory();
+                    updateLayers();
+                });
+            }
+        }
+        // 更新層級面板
+        function updateLayers() {
+            const panel = document.getElementById('layers-panel');
+            const objects = canvas.getObjects();
+            
+            if (objects.length === 0) {
+                panel.innerHTML = '<div class="text-sm text-pink-400 text-center py-4">無物件</div>';
+                return;
+            }
+            
+            let html = '';
+            objects.slice().reverse().forEach((obj, index) => {
+                const isActive = canvas.getActiveObject() === obj;
+                html += `
+                    <div class="layer-item ${isActive ? 'active' : ''}" onclick="selectObject('${obj.id}')">
+                        <div class="flex items-center">
+                            <i class="fas fa-${getIconByType(obj.type)} mr-3 text-pink-500"></i>
+                            <span class="text-sm text-pink-800">${obj.type} ${objects.length - index}</span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="event.stopPropagation(); moveObject('${obj.id}', 'up')" 
+                                    class="p-2 bg-pink-100 hover:bg-pink-200 rounded-full transition-colors duration-200" title="上移">
+                                <i class="fas fa-chevron-up text-xs text-pink-600"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); moveObject('${obj.id}', 'down')" 
+                                    class="p-2 bg-pink-100 hover:bg-pink-200 rounded-full transition-colors duration-200" title="下移">
+                                <i class="fas fa-chevron-down text-xs text-pink-600"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            panel.innerHTML = html;
+        }
+        // 根據類型獲取圖標
+        function getIconByType(type) {
+            const icons = {
+                'rect': 'square',
+                'circle': 'circle',
+                'triangle': 'play',
+                'line': 'minus',
+                'i-text': 'font',
+                'path': 'draw-polygon',
+                'group': 'layer-group'
+            };
+            return icons[type] || 'square';
+        }
+        // 選擇物件
+        function selectObject(id) {
+            const obj = canvas.getObjects().find(o => o.id == id);
+            if (obj) {
+                canvas.setActiveObject(obj);
+                canvas.renderAll();
+                updateProperties();
+                updateLayers();
+            }
+        }
+        // 移動物件層級
+        function moveObject(id, direction) {
+            const obj = canvas.getObjects().find(o => o.id == id);
+            if (!obj) return;
+            
+            const objects = canvas.getObjects();
+            const index = objects.indexOf(obj);
+            
+            if (direction === 'up' && index > 0) {
+                canvas.bringForward(obj);
+            } else if (direction === 'down' && index < objects.length - 1) {
+                canvas.sendBackwards(obj);
+            }
+            
+            saveHistory();
+            updateLayers();
+        }
+        // 歷史記錄功能
+        function saveHistory() {
+            historyStep++;
+            if (historyStep < history.length) {
+                history = history.slice(0, historyStep);
+            }
+            history.push(JSON.stringify(canvas.toJSON()));
+            updateHistoryButtons();
+        }
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                canvas.loadFromJSON(history[historyStep], function() {
+                    canvas.renderAll();
+                    updateLayers();
+                    updateHistoryButtons();
+                });
+            }
+        }
+        function redo() {
+            if (historyStep < history.length - 1) {
+                historyStep++;
+                canvas.loadFromJSON(history[historyStep], function() {
+                    canvas.renderAll();
+                    updateLayers();
+                    updateHistoryButtons();
+                });
+            }
+        }
+        function updateHistoryButtons() {
+            document.getElementById('undoBtn').disabled = historyStep <= 0;
+            document.getElementById('redoBtn').disabled = historyStep >= history.length - 1;
+        }
+        // 檔案操作
+        function loadSVG() {
+            document.getElementById('fileInput').click();
+        }
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    fabric.loadSVGFromString(event.target.result, function(objects, options) {
+                        const group = fabric.util.groupSVGElements(objects, options);
+                        canvas.add(group);
+                        canvas.renderAll();
+                        saveHistory();
+                        updateLayers();
+                    });
+                };
+                reader.readAsText(file);
+            }
+        });
+        function saveSVG() {
+            const svg = canvas.toSVG();
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'export.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        function clearCanvas() {
+            if (confirm('確定要清空畫布嗎？此操作無法撤銷。')) {
+                canvas.clear();
+                canvas.backgroundColor = 'white';
+                canvas.renderAll();
+                saveHistory();
+                updateLayers();
+                updateProperties();
+            }
+        }
+        // 鍵盤快捷鍵
+        document.addEventListener('keydown', function(e) {
+            // 檢查是否正在編輯文字
+            const activeObject = canvas.getActiveObject();
+            const isEditingText = activeObject && activeObject.isEditing && activeObject.type === 'i-text';
+            
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'z':
+                        e.preventDefault();
+                        undo();
+                        break;
+                    case 'y':
+                        e.preventDefault();
+                        redo();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        saveSVG();
+                        break;
+                    case 'o':
+                        e.preventDefault();
+                        loadSVG();
+                        break;
+                }
+            } else if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditingText) {
+                // 只有在非文字編輯模式下才執行刪除操作
+                deleteSelected();
+            }
+        });
+        // 初始化
+        saveHistory();
+        updateHistoryButtons();
+    </script>
+</body>
+</html>

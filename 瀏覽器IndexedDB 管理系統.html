@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB 管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .modal {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        .modal.hidden {
+            transform: scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal flex flex-col h-screen overflow-hidden">
+    <!-- Header -->
+    <header class="bg-white shadow p-4 z-10">
+        <div class="container mx-auto flex justify-between items-center flex-wrap">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2 md:mb-0">瀏覽器IndexedDB 管理系統</h1>
+            <div class="flex items-center space-x-2">
+                <button onclick="refreshDatabases()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 transform hover:scale-105">
+                    <i class="fas fa-sync-alt mr-2"></i>重新整理
+                </button>
+                <button onclick="openCreateDbModal()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 transform hover:scale-105">
+                    <i class="fas fa-database mr-2"></i>新增資料庫
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Storage Info -->
+    <div id="storage-info" class="p-4 bg-white shadow-sm mt-4 rounded-lg mx-4 md:mx-auto max-w-7xl">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-hdd text-gray-500 text-xl"></i>
+                <p class="text-gray-700 font-semibold">已使用空間: <span id="used-space" class="font-bold text-blue-600">0 KB</span></p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-database text-gray-500 text-xl"></i>
+                <p class="text-gray-700 font-semibold">最大可用空間: <span id="quota" class="font-bold text-blue-600">0 KB</span></p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4">
+        <div class="container mx-auto">
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="flex justify-center items-center h-full hidden">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Database List -->
+            <div id="databaseList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Database cards will be injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Create Database Modal -->
+    <div id="createDbModal" class="modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md slide-in">
+            <h2 class="text-xl font-bold mb-4">新增資料庫</h2>
+            <form id="createDbForm" onsubmit="event.preventDefault(); saveNewDatabase();">
+                <div class="mb-4">
+                    <label for="dbName" class="block text-gray-700 font-bold mb-2">資料庫名稱</label>
+                    <input type="text" id="dbName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300" required>
+                </div>
+                <div class="mb-4">
+                    <label for="dbVersion" class="block text-gray-700 font-bold mb-2">版本</label>
+                    <input type="number" id="dbVersion" value="1" min="1" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300" required>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('createDbModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">取消</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Object Store Modal -->
+    <div id="createStoreModal" class="modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md slide-in">
+            <h2 class="text-xl font-bold mb-4">新增物件儲存庫</h2>
+            <form id="createStoreForm" onsubmit="event.preventDefault(); saveNewObjectStore();">
+                <input type="hidden" id="currentDbName">
+                <div class="mb-4">
+                    <label for="storeName" class="block text-gray-700 font-bold mb-2">儲存庫名稱</label>
+                    <input type="text" id="storeName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300" required>
+                </div>
+                <div class="mb-4">
+                    <label for="keyPath" class="block text-gray-700 font-bold mb-2">主鍵路徑 (Key Path)</label>
+                    <input type="text" id="keyPath" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring focus:border-blue-300">
+                </div>
+                <div class="mb-4 flex items-center">
+                    <input type="checkbox" id="autoIncrement" class="mr-2 leading-tight">
+                    <label for="autoIncrement" class="text-gray-700 font-bold">自動遞增 (Auto Increment)</label>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('createStoreModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">取消</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Database Content Modal -->
+    <div id="dbContentModal" class="modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-4/5 overflow-y-auto slide-in">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="dbContentTitle" class="text-xl font-bold text-gray-800"></h2>
+                <button onclick="closeModal('dbContentModal')" class="text-gray-500 hover:text-gray-700 transition duration-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="dbContentStores" class="space-y-4">
+                <!-- Object stores and their contents will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- View/Edit Item Modal -->
+    <div id="viewItemModal" class="modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-4/5 overflow-y-auto slide-in">
+            <h2 id="viewItemTitle" class="text-xl font-bold mb-4">檢視項目</h2>
+            <p id="viewItemKey" class="mb-2 text-sm font-semibold text-gray-700">主鍵: </p>
+            <div id="viewItemContent" class="mb-4">
+                <textarea id="jsonEditor" class="w-full h-80 p-2 border rounded-md font-mono text-sm bg-gray-50 resize-y" readonly></textarea>
+            </div>
+            <div class="flex justify-between items-center space-x-2">
+                <div id="jsonFormatButtons" class="space-x-2 hidden">
+                    <button onclick="formatJSON()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-full text-sm transition duration-300">格式化</button>
+                    <button onclick="minifyJSON()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-full text-sm transition duration-300">壓縮</button>
+                </div>
+                <div class="flex-1"></div>
+                <div class="flex space-x-2">
+                    <button id="editButton" onclick="toggleViewMode('edit')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300">編輯</button>
+                    <button id="saveButton" onclick="saveItem()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 hidden">儲存</button>
+                    <button id="deleteButton" onclick="confirmDeleteItem()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition duration-300">刪除</button>
+                    <button onclick="closeModal('viewItemModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md slide-in">
+            <h2 id="confirmTitle" class="text-xl font-bold mb-4">確認刪除</h2>
+            <p id="confirmMessage" class="mb-4">您確定要刪除這個項目嗎？</p>
+            <div class="flex justify-end space-x-2">
+                <button id="cancelButton" onclick="closeModal('confirmModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">取消</button>
+                <button id="confirmButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition duration-300">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshDatabases();
+            getStorageInfo();
+        });
+
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const databaseList = document.getElementById('databaseList');
+        const createDbModal = document.getElementById('createDbModal');
+        const createStoreModal = document.getElementById('createStoreModal');
+        const dbContentModal = document.getElementById('dbContentModal');
+        const dbContentTitle = document.getElementById('dbContentTitle');
+        const dbContentStores = document.getElementById('dbContentStores');
+        const confirmModal = document.getElementById('confirmModal');
+        const viewItemModal = document.getElementById('viewItemModal');
+        let currentDbName = '';
+        let currentStoreName = '';
+        let currentItemKey = null;
+
+        // 格式化字節為可讀的單位 (KB, MB, GB)
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // 取得儲存空間資訊
+        async function getStorageInfo() {
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const used = estimate.usage || 0;
+                    const quota = estimate.quota || 0;
+                    document.getElementById('used-space').textContent = formatBytes(used);
+                    document.getElementById('quota').textContent = formatBytes(quota);
+                } catch (error) {
+                    console.error("無法取得儲存空間資訊:", error);
+                    document.getElementById('used-space').textContent = 'N/A';
+                    document.getElementById('quota').textContent = 'N/A';
+                }
+            } else {
+                document.getElementById('used-space').textContent = '不支援';
+                document.getElementById('quota').textContent = '不支援';
+            }
+        }
+
+        // 顯示一個訊息，例如錯誤或成功提示
+        function showMessage(message, isError = false) {
+            const container = document.createElement('div');
+            container.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white ${isError ? 'bg-red-500' : 'bg-green-500'} slide-in`;
+            container.textContent = message;
+            document.body.appendChild(container);
+            setTimeout(() => {
+                container.remove();
+            }, 3000);
+        }
+
+        // 顯示或隱藏載入動畫
+        function toggleLoading(show) {
+            if (show) {
+                loadingSpinner.classList.remove('hidden');
+                databaseList.classList.add('hidden');
+            } else {
+                loadingSpinner.classList.add('hidden');
+                databaseList.classList.remove('hidden');
+            }
+        }
+
+        // 取得所有 IndexedDB 資料庫列表 (使用 Promise 確保非同步操作完成)
+        async function getDatabases() {
+            try {
+                const databases = await indexedDB.databases();
+                return databases;
+            } catch (error) {
+                console.error('無法取得資料庫列表:', error);
+                showMessage('無法取得資料庫列表。', true);
+                return [];
+            }
+        }
+
+        // 重新整理資料庫列表
+        async function refreshDatabases() {
+            toggleLoading(true);
+            try {
+                const databases = await getDatabases();
+                databaseList.innerHTML = '';
+                if (databases.length === 0) {
+                    databaseList.innerHTML = '<p class="text-center text-gray-500">沒有找到任何資料庫。</p>';
+                }
+                databases.forEach(db => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-xl shadow-md p-6 glass-effect';
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">${db.name} (v${db.version})</h3>
+                            <div class="flex space-x-2">
+                                <button onclick="openDbContentModal('${db.name}')" class="text-blue-500 hover:text-blue-700 transition duration-300" title="檢視內容">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="confirmDelete('${db.name}')" class="text-red-500 hover:text-red-700 transition duration-300" title="刪除資料庫">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="openCreateStoreModal('${db.name}')" class="mt-4 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 transform hover:scale-105 w-full">
+                            <i class="fas fa-plus mr-2"></i>新增儲存庫
+                        </button>
+                    `;
+                    databaseList.appendChild(card);
+                });
+            } catch (error) {
+                console.error('重新整理資料庫時出錯:', error);
+                showMessage('重新整理資料庫時發生錯誤。', true);
+            } finally {
+                toggleLoading(false);
+                getStorageInfo(); // 重新整理後更新儲存空間資訊
+            }
+        }
+
+        // 開啟新增資料庫的 Modal
+        function openCreateDbModal() {
+            createDbModal.classList.remove('hidden');
+        }
+
+        // 儲存新的資料庫
+        function saveNewDatabase() {
+            const dbName = document.getElementById('dbName').value;
+            const dbVersion = parseInt(document.getElementById('dbVersion').value);
+            if (!dbName || isNaN(dbVersion)) {
+                showMessage('請輸入有效的資料庫名稱和版本。', true);
+                return;
+            }
+
+            const request = indexedDB.open(dbName, dbVersion);
+            request.onupgradeneeded = (event) => {
+                console.log(`資料庫 '${dbName}' 正在建立或升級...`);
+            };
+            request.onerror = (event) => {
+                console.error('建立資料庫時發生錯誤:', event.target.error);
+                showMessage(`建立資料庫時發生錯誤: ${event.target.error.name}`, true);
+                closeModal('createDbModal');
+            };
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                console.log(`資料庫 '${dbName}' 成功建立!`);
+                db.close();
+                showMessage(`資料庫 '${dbName}' 成功建立!`);
+                closeModal('createDbModal');
+                refreshDatabases();
+            };
+        }
+
+        // 開啟新增物件儲存庫的 Modal
+        function openCreateStoreModal(dbName) {
+            currentDbName = dbName;
+            document.getElementById('currentDbName').value = dbName;
+            createStoreModal.classList.remove('hidden');
+        }
+
+        // 儲存新的物件儲存庫
+        function saveNewObjectStore() {
+            const storeName = document.getElementById('storeName').value;
+            const keyPath = document.getElementById('keyPath').value || null;
+            const autoIncrement = document.getElementById('autoIncrement').checked;
+
+            if (!storeName) {
+                showMessage('請輸入有效的物件儲存庫名稱。', true);
+                return;
+            }
+
+            const getDbRequest = indexedDB.open(currentDbName);
+            getDbRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                const newVersion = db.version + 1;
+                db.close();
+
+                const request = indexedDB.open(currentDbName, newVersion);
+                request.onupgradeneeded = (event) => {
+                    const newDb = event.target.result;
+                    if (!newDb.objectStoreNames.contains(storeName)) {
+                        newDb.createObjectStore(storeName, { keyPath: keyPath, autoIncrement: autoIncrement });
+                        console.log(`物件儲存庫 '${storeName}' 成功建立!`);
+                    } else {
+                        console.warn(`物件儲存庫 '${storeName}' 已存在。`);
+                    }
+                };
+                request.onerror = (event) => {
+                    console.error('建立物件儲存庫時發生錯誤:', event.target.error);
+                    showMessage(`建立物件儲存庫時發生錯誤: ${event.target.error.name}`, true);
+                    closeModal('createStoreModal');
+                };
+                request.onsuccess = (event) => {
+                    const newDb = event.target.result;
+                    newDb.close();
+                    showMessage(`物件儲存庫 '${storeName}' 成功建立!`);
+                    closeModal('createStoreModal');
+                    refreshDatabases();
+                };
+            };
+            getDbRequest.onerror = (event) => {
+                console.error('無法開啟資料庫以新增物件儲存庫:', event.target.error);
+                showMessage('無法開啟資料庫以新增物件儲存庫。', true);
+            };
+        }
+
+        // 開啟檢視資料庫內容的 Modal
+        function openDbContentModal(dbName) {
+            currentDbName = dbName;
+            dbContentTitle.textContent = `${dbName} 資料庫內容`;
+            dbContentStores.innerHTML = '<p class="text-center text-gray-500">載入中...</p>';
+            dbContentModal.classList.remove('hidden');
+
+            const request = indexedDB.open(dbName);
+            request.onerror = (event) => {
+                console.error(`無法開啟資料庫 ${dbName}:`, event.target.error);
+                dbContentStores.innerHTML = '<p class="text-center text-red-500">無法載入資料庫內容。</p>';
+            };
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                dbContentStores.innerHTML = '';
+                if (db.objectStoreNames.length === 0) {
+                    dbContentStores.innerHTML = '<p class="text-center text-gray-500">此資料庫沒有物件儲存庫。</p>';
+                } else {
+                    Array.from(db.objectStoreNames).forEach(storeName => {
+                        const storeContainer = document.createElement('div');
+                        storeContainer.className = 'bg-gray-100 p-4 rounded-lg shadow-inner';
+                        storeContainer.innerHTML = `
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-lg font-semibold text-gray-700">${storeName}</h4>
+                                <button onclick="confirmDeleteStore('${dbName}', '${storeName}')" class="text-red-500 hover:text-red-700 transition duration-300" title="刪除此儲存庫">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <ul class="mt-2 space-y-2 text-sm" id="items-${storeName}"></ul>
+                        `;
+                        dbContentStores.appendChild(storeContainer);
+                        listObjectStoreItems(db, storeName);
+                    });
+                }
+                db.close();
+            };
+        }
+        
+        // 列出特定物件儲存庫中的項目
+        function listObjectStoreItems(db, storeName) {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const itemsList = document.getElementById(`items-${storeName}`);
+            itemsList.innerHTML = '<p class="text-gray-500">載入項目中...</p>';
+
+            const request = store.openCursor();
+            const items = [];
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    items.push({ key: cursor.key, value: cursor.value });
+                    cursor.continue();
+                } else {
+                    itemsList.innerHTML = '';
+                    if (items.length === 0) {
+                        itemsList.innerHTML = '<p class="text-gray-500">此儲存庫沒有項目。</p>';
+                    } else {
+                        items.forEach(item => {
+                            const li = document.createElement('li');
+                            li.className = 'bg-white p-2 rounded-md shadow-sm border border-gray-200 flex justify-between items-center';
+                            li.innerHTML = `
+                                <div>
+                                    <span class="font-bold text-blue-600">Key:</span> ${item.key}
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="viewItem('${db.name}', '${storeName}', '${item.key}')" class="text-gray-500 hover:text-blue-700 transition duration-300" title="檢視/編輯">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="confirmDeleteItem('${db.name}', '${storeName}', '${item.key}')" class="text-red-500 hover:text-red-700 transition duration-300" title="刪除">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            `;
+                            itemsList.appendChild(li);
+                        });
+                    }
+                }
+            };
+            request.onerror = (event) => {
+                console.error(`讀取 '${storeName}' 的項目時發生錯誤:`, event.target.error);
+                itemsList.innerHTML = '<p class="text-red-500">讀取項目失敗。</p>';
+            };
+        }
+
+        // 檢視/編輯項目
+        function viewItem(dbName, storeName, key) {
+            currentDbName = dbName;
+            currentStoreName = storeName;
+            currentItemKey = key;
+            
+            const request = indexedDB.open(dbName);
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const getRequest = store.get(key);
+                
+                getRequest.onsuccess = (e) => {
+                    const itemValue = e.target.result;
+                    document.getElementById('viewItemTitle').textContent = `檢視項目 - ${storeName}`;
+                    document.getElementById('viewItemKey').textContent = `主鍵: ${key}`;
+                    
+                    const jsonTextarea = document.getElementById('jsonEditor');
+                    jsonTextarea.value = JSON.stringify(itemValue, null, 2);
+                    jsonTextarea.classList.add('bg-gray-50');
+                    jsonTextarea.readOnly = true;
+
+                    document.getElementById('editButton').classList.remove('hidden');
+                    document.getElementById('saveButton').classList.add('hidden');
+                    document.getElementById('jsonFormatButtons').classList.add('hidden');
+                    
+                    viewItemModal.classList.remove('hidden');
+                    db.close();
+                };
+                
+                getRequest.onerror = (e) => {
+                    console.error("無法取得項目:", e.target.error);
+                    showMessage("無法取得項目。", true);
+                    db.close();
+                };
+            };
+            request.onerror = (event) => {
+                console.error("無法開啟資料庫:", event.target.error);
+                showMessage("無法開啟資料庫。", true);
+            };
+        }
+
+        // 切換檢視/編輯模式
+        function toggleViewMode(mode) {
+            const jsonTextarea = document.getElementById('jsonEditor');
+            const editButton = document.getElementById('editButton');
+            const saveButton = document.getElementById('saveButton');
+            const formatButtons = document.getElementById('jsonFormatButtons');
+            
+            if (mode === 'edit') {
+                jsonTextarea.readOnly = false;
+                jsonTextarea.classList.remove('bg-gray-50');
+                editButton.classList.add('hidden');
+                saveButton.classList.remove('hidden');
+                formatButtons.classList.remove('hidden');
+                jsonTextarea.focus();
+            } else {
+                jsonTextarea.readOnly = true;
+                jsonTextarea.classList.add('bg-gray-50');
+                editButton.classList.remove('hidden');
+                saveButton.classList.add('hidden');
+                formatButtons.classList.add('hidden');
+            }
+        }
+
+        // 格式化 JSON
+        function formatJSON() {
+            const jsonTextarea = document.getElementById('jsonEditor');
+            try {
+                const obj = JSON.parse(jsonTextarea.value);
+                jsonTextarea.value = JSON.stringify(obj, null, 2);
+            } catch (e) {
+                showMessage('JSON 格式錯誤，無法格式化。', true);
+            }
+        }
+
+        // 壓縮 JSON
+        function minifyJSON() {
+            const jsonTextarea = document.getElementById('jsonEditor');
+            try {
+                const obj = JSON.parse(jsonTextarea.value);
+                jsonTextarea.value = JSON.stringify(obj);
+            } catch (e) {
+                showMessage('JSON 格式錯誤，無法壓縮。', true);
+            }
+        }
+
+        // 儲存編輯後的項目
+        function saveItem() {
+            const jsonTextarea = document.getElementById('jsonEditor');
+            let newItemValue;
+            try {
+                newItemValue = JSON.parse(jsonTextarea.value);
+            } catch (e) {
+                showMessage('JSON 格式錯誤，無法儲存。', true);
+                return;
+            }
+
+            const request = indexedDB.open(currentDbName);
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                const transaction = db.transaction([currentStoreName], 'readwrite');
+                const store = transaction.objectStore(currentStoreName);
+                
+                const putRequest = store.put(newItemValue, currentItemKey);
+                
+                putRequest.onsuccess = () => {
+                    showMessage('項目成功儲存!');
+                    closeModal('viewItemModal');
+                    openDbContentModal(currentDbName); // Refresh the list
+                    db.close();
+                };
+                
+                putRequest.onerror = (e) => {
+                    console.error("儲存項目時發生錯誤:", e.target.error);
+                    showMessage(`儲存項目時發生錯誤: ${e.target.error.name}`, true);
+                    db.close();
+                };
+            };
+            request.onerror = (event) => {
+                console.error("無法開啟資料庫:", event.target.error);
+                showMessage("無法開啟資料庫。", true);
+            };
+        }
+        
+        // 確認刪除單一項目
+        function confirmDeleteItem(dbName = currentDbName, storeName = currentStoreName, key = currentItemKey) {
+            const title = document.getElementById('confirmTitle');
+            const message = document.getElementById('confirmMessage');
+            const confirmBtn = document.getElementById('confirmButton');
+
+            title.textContent = '確認刪除項目';
+            message.textContent = `您確定要刪除物件儲存庫 '${storeName}' 中的此項目嗎？此操作不可逆轉。`;
+            confirmBtn.onclick = () => executeDeleteItem(dbName, storeName, key);
+            
+            confirmModal.classList.remove('hidden');
+        }
+
+        // 執行刪除單一項目
+        function executeDeleteItem(dbName, storeName, key) {
+            const request = indexedDB.open(dbName);
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const deleteRequest = store.delete(key);
+                
+                deleteRequest.onsuccess = () => {
+                    showMessage('項目成功刪除!');
+                    closeModal('confirmModal');
+                    closeModal('viewItemModal');
+                    openDbContentModal(dbName); // Refresh the list
+                    db.close();
+                };
+                
+                deleteRequest.onerror = (e) => {
+                    console.error("刪除項目時發生錯誤:", e.target.error);
+                    showMessage(`刪除項目時發生錯誤: ${e.target.error.name}`, true);
+                    closeModal('confirmModal');
+                    db.close();
+                };
+            };
+            request.onerror = (event) => {
+                console.error("無法開啟資料庫:", event.target.error);
+                showMessage("無法開啟資料庫。", true);
+                closeModal('confirmModal');
+            };
+        }
+
+        // 確認刪除資料庫
+        function confirmDelete(dbName) {
+            const title = document.getElementById('confirmTitle');
+            const message = document.getElementById('confirmMessage');
+            const confirmBtn = document.getElementById('confirmButton');
+
+            title.textContent = '確認刪除資料庫';
+            message.textContent = `您確定要刪除資料庫 '${dbName}' 及其所有內容嗎？此操作不可逆轉。`;
+            confirmBtn.onclick = () => executeDelete(dbName);
+            
+            confirmModal.classList.remove('hidden');
+        }
+        
+        // 執行刪除資料庫
+        function executeDelete(dbName) {
+            const request = indexedDB.deleteDatabase(dbName);
+            request.onerror = (event) => {
+                console.error(`刪除資料庫 '${dbName}' 時發生錯誤:`, event.target.error);
+                showMessage(`刪除資料庫時發生錯誤: ${event.target.error.name}`, true);
+                closeModal('confirmModal');
+            };
+            request.onsuccess = () => {
+                console.log(`資料庫 '${dbName}' 成功刪除!`);
+                showMessage(`資料庫 '${dbName}' 成功刪除!`);
+                closeModal('confirmModal');
+                refreshDatabases();
+            };
+        }
+
+        // 關閉任何 Modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
