@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="BIG5">
-    <meta http-equiv="Content-Type" content="text/html; charset=BIG5">
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DBF ÀÉ®×ºŞ²z¨t²Î</title>
+    <title>DBF æª”æ¡ˆç®¡ç†ç³»çµ±</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -244,8 +244,8 @@
     <div class="notification-container"></div>
     <div class="container">
         <div class="header">
-            <h1>DBF ÀÉ®×ºŞ²z¨t²Î</h1>
-            <p>FoxPro 6. ¤¤¤åª©</p>
+            <h1>DBF æª”æ¡ˆç®¡ç†ç³»çµ±</h1>
+            <p>FoxPro 6. ä¸­æ–‡ç‰ˆ</p>
         </div>
 
         <div class="main-content">
@@ -253,20 +253,20 @@
                 <div class="upload-area">
                     <label for="dbfFile">
                         <i class="fas fa-upload fa-3x"></i>
-                        <p>±N .dbf ÀÉ®×©ì¦²¦Ü¦¹³B©ÎÂIÀ»¿ï¾Ü</p>
+                        <p>å°‡ .dbf æª”æ¡ˆæ‹–æ›³è‡³æ­¤è™•æˆ–é»æ“Šé¸æ“‡</p>
                         <input type="file" id="dbfFile" accept=".dbf" onchange="handleFileUpload(event)">
                     </label>
                 </div>
                 <div class="options-panel">
-                    <label for="encodingSelect">¿ï¾Ü½s½X:</label>
+                    <label for="encodingSelect">é¸æ“‡ç·¨ç¢¼:</label>
                     <select id="encodingSelect">
-                        <option value="big5">BIG5 (ÁcÅé¤¤¤å)</option>
-                        <option value="gbk">GBK (Â²Åé¤¤¤å)</option>
+                        <option value="big5">BIG5 (ç¹é«”ä¸­æ–‡)</option>
+                        <option value="gbk">GBK (ç°¡é«”ä¸­æ–‡)</option>
                         <option value="utf-8">UTF-8</option>
                         <option value="ascii">ASCII</option>
                     </select>
-                    <button class="btn btn-action" id="reprocessBtn">­«·s³B²z</button>
-                    <button class="btn btn-export" onclick="exportToExcel()">¶×¥X¬° Excel</button>
+                    <button class="btn btn-action" id="reprocessBtn">é‡æ–°è™•ç†</button>
+                    <button class="btn btn-export" onclick="exportToExcel()">åŒ¯å‡ºç‚º Excel</button>
                 </div>
             </div>
 
@@ -280,21 +280,21 @@
         </div>
     </div>
 
-    <!-- ¼ÒºA®Ø -->
+    <!-- æ¨¡æ…‹æ¡† -->
     <div id="exportModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('exportModal')">&times;</span>
-            <h2>¶×¥X¦¨¥\¡I</h2>
-            <p>±zªº Excel ÀÉ®×¤w·Ç³Æ´Nºü¡C</p>
-            <p><a id="downloadLink" href="#" class="btn btn-upload" download>ÂI¦¹¤U¸üÀÉ®×</a></p>
+            <h2>åŒ¯å‡ºæˆåŠŸï¼</h2>
+            <p>æ‚¨çš„ Excel æª”æ¡ˆå·²æº–å‚™å°±ç·’ã€‚</p>
+            <p><a id="downloadLink" href="#" class="btn btn-upload" download>é»æ­¤ä¸‹è¼‰æª”æ¡ˆ</a></p>
         </div>
     </div>
     
     <script>
-        // ¥ş°ìÅÜ¼Æ
+        // å…¨åŸŸè®Šæ•¸
         let dbfData = null;
 
-        // ³qª¾Åã¥Ü¥\¯à
+        // é€šçŸ¥é¡¯ç¤ºåŠŸèƒ½
         function showNotification(message, type = 'success') {
             const container = document.querySelector('.notification-container');
             const notification = document.createElement('div');
@@ -302,12 +302,12 @@
             notification.textContent = message;
             container.appendChild(notification);
 
-            // Ä²µoÅã¥Ü°Êµe
+            // è§¸ç™¼é¡¯ç¤ºå‹•ç•«
             setTimeout(() => {
                 notification.classList.add('show');
             }, 10);
 
-            // 5¬í«á¦Û°Ê²¾°£
+            // 5ç§’å¾Œè‡ªå‹•ç§»é™¤
             setTimeout(() => {
                 notification.classList.remove('show');
                 notification.addEventListener('transitionend', () => {
@@ -316,19 +316,19 @@
             }, 5000);
         }
 
-        // Ãö³¬¼ÒºA®Ø
+        // é—œé–‰æ¨¡æ…‹æ¡†
         function closeModal(id) {
             document.getElementById(id).style.display = 'none';
         }
 
-        // ¸ÑªR DBF ÀÉ®×ªº¨ç¼Æ
+        // è§£æ DBF æª”æ¡ˆçš„å‡½æ•¸
         async function parseDbf(file, encoding) {
             try {
                 const buffer = await file.arrayBuffer();
                 const view = new DataView(buffer);
                 const decoder = new TextDecoder(encoding);
 
-                // ¸ÑªR DBF ¼ĞÀY
+                // è§£æ DBF æ¨™é ­
                 const header = {
                     version: view.getUint8(0),
                     recordCount: view.getUint32(4, true),
@@ -354,26 +354,26 @@
                 for (let i = 0; i < header.recordCount; i++) {
                     const record = {};
                     const recordOffset = dataOffset + (i * header.recordLength);
-                    let currentOffset = recordOffset + 1; // ¸õ¹L§R°£¼Ğ°O
+                    let currentOffset = recordOffset + 1; // è·³éåˆªé™¤æ¨™è¨˜
 
                     fields.forEach(field => {
                         const fieldDataBytes = new Uint8Array(buffer, currentOffset, field.length);
                         let value;
 
-                        if (field.type === 'C') { // ¦r¤¸Äæ¦ì
+                        if (field.type === 'C') { // å­—å…ƒæ¬„ä½
                             value = decoder.decode(fieldDataBytes).trim();
-                        } else if (field.type === 'N' || field.type === 'F') { // ¼Æ¦rÄæ¦ì
+                        } else if (field.type === 'N' || field.type === 'F') { // æ•¸å­—æ¬„ä½
                             const textValue = decoder.decode(fieldDataBytes).trim();
                             value = parseFloat(textValue) || 0;
-                        } else if (field.type === 'D') { // ¤é´ÁÄæ¦ì
+                        } else if (field.type === 'D') { // æ—¥æœŸæ¬„ä½
                             const textValue = decoder.decode(fieldDataBytes).trim();
-                            // °²³]¤é´Á®æ¦¡¬° YYYYMMDD
+                            // å‡è¨­æ—¥æœŸæ ¼å¼ç‚º YYYYMMDD
                             if (textValue.length === 8) {
                                 value = `${textValue.substring(0, 4)}-${textValue.substring(4, 6)}-${textValue.substring(6, 8)}`;
                             } else {
                                 value = textValue;
                             }
-                        } else { // ¨ä¥L¥¼³B²zªºÄæ¦ì
+                        } else { // å…¶ä»–æœªè™•ç†çš„æ¬„ä½
                             value = decoder.decode(fieldDataBytes).trim();
                         }
                         record[field.name] = value;
@@ -383,13 +383,13 @@
                 }
                 return { fields, records };
             } catch (error) {
-                console.error('¸ÑªR DBF ÀÉ®×®Éµo¥Í¿ù»~:', error);
-                showNotification(`¸ÑªRÀÉ®×®Éµo¥Í¿ù»~¡G${error.message}`, 'error');
+                console.error('è§£æ DBF æª”æ¡ˆæ™‚ç™¼ç”ŸéŒ¯èª¤:', error);
+                showNotification(`è§£ææª”æ¡ˆæ™‚ç™¼ç”ŸéŒ¯èª¤ï¼š${error.message}`, 'error');
                 return null;
             }
         }
 
-        // ³B²zÀÉ®×¤W¶Ç
+        // è™•ç†æª”æ¡ˆä¸Šå‚³
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) {
@@ -397,8 +397,8 @@
             }
 
             if (file.name.endsWith('.dbf')) {
-                document.getElementById('fileNameDisplay').textContent = `ÀÉ®×: ${file.name}`;
-                showNotification('¥¿¦b¸ÑªR DBF ÀÉ®×¡A½Ğµy­Ô...');
+                document.getElementById('fileNameDisplay').textContent = `æª”æ¡ˆ: ${file.name}`;
+                showNotification('æ­£åœ¨è§£æ DBF æª”æ¡ˆï¼Œè«‹ç¨å€™...');
 
                 const encodingSelect = document.getElementById('encodingSelect');
                 const selectedEncoding = encodingSelect.value;
@@ -406,26 +406,26 @@
                 dbfData = await parseDbf(file, selectedEncoding);
                 
                 if (dbfData) {
-                    showNotification('ÀÉ®×¸ÑªR¦¨¥\¡I');
+                    showNotification('æª”æ¡ˆè§£ææˆåŠŸï¼');
                     renderTable(dbfData.fields, dbfData.records);
                 }
             } else {
-                showNotification('½Ğ¤W¶Ç .dbf ®æ¦¡ÀÉ®×', 'error');
+                showNotification('è«‹ä¸Šå‚³ .dbf æ ¼å¼æª”æ¡ˆ', 'error');
             }
         }
 
-        // ´è¬V¸ê®Æªí®æ (·s¼W¤F½s¿è/§R°£¥\¯à)
+        // æ¸²æŸ“è³‡æ–™è¡¨æ ¼ (æ–°å¢äº†ç·¨è¼¯/åˆªé™¤åŠŸèƒ½)
         function renderTable(fields, records) {
             const table = document.getElementById('dataTable');
             table.innerHTML = '';
             document.getElementById('recordCountDisplay').textContent = '';
 
             if (!fields || fields.length === 0) {
-                table.innerHTML = '<thead><tr><th>½Ğ¤W¶Ç DBF ÀÉ®×¥HÅã¥Ü¸ê®Æ</th></tr></thead><tbody></tbody>';
+                table.innerHTML = '<thead><tr><th>è«‹ä¸Šå‚³ DBF æª”æ¡ˆä»¥é¡¯ç¤ºè³‡æ–™</th></tr></thead><tbody></tbody>';
                 return;
             }
 
-            // ´è¬VªíÀY
+            // æ¸²æŸ“è¡¨é ­
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             fields.forEach(field => {
@@ -433,14 +433,14 @@
                 th.textContent = field.name;
                 headerRow.appendChild(th);
             });
-            // ·s¼W¾Ş§@Äæ¦ì
+            // æ–°å¢æ“ä½œæ¬„ä½
             const thActions = document.createElement('th');
-            thActions.textContent = '¾Ş§@';
+            thActions.textContent = 'æ“ä½œ';
             headerRow.appendChild(thActions);
             thead.appendChild(headerRow);
             table.appendChild(thead);
 
-            // ´è¬V¸ê®Æ
+            // æ¸²æŸ“è³‡æ–™
             const tbody = document.createElement('tbody');
             records.forEach((record, index) => {
                 const row = document.createElement('tr');
@@ -453,21 +453,21 @@
                     row.appendChild(td);
                 });
 
-                // ·s¼W¾Ş§@«ö¶s
+                // æ–°å¢æ“ä½œæŒ‰éˆ•
                 const tdActions = document.createElement('td');
                 tdActions.innerHTML = `
-                    <button class="btn btn-action edit-btn" data-index="${index}">½s¿è</button>
-                    <button class="btn btn-danger delete-btn" data-index="${index}">§R°£</button>
+                    <button class="btn btn-action edit-btn" data-index="${index}">ç·¨è¼¯</button>
+                    <button class="btn btn-danger delete-btn" data-index="${index}">åˆªé™¤</button>
                 `;
                 row.appendChild(tdActions);
                 tbody.appendChild(row);
             });
             table.appendChild(tbody);
             
-            document.getElementById('recordCountDisplay').textContent = `Á`µ§¼Æ: ${records.length}`;
+            document.getElementById('recordCountDisplay').textContent = `ç¸½ç­†æ•¸: ${records.length}`;
         }
         
-        // ±Ò¥Î½s¿è¼Ò¦¡
+        // å•Ÿç”¨ç·¨è¼¯æ¨¡å¼
         function enableEditMode(rowIndex) {
             const row = document.querySelector(`tr[data-index="${rowIndex}"]`);
             const cells = row.querySelectorAll('td[data-field]');
@@ -481,21 +481,21 @@
                 if (fieldType === 'N' || fieldType === 'F') {
                     inputType = 'number';
                 } else if (fieldType === 'D') {
-                    inputType = 'date'; // HTML5 ¤é´Á¿é¤J
+                    inputType = 'date'; // HTML5 æ—¥æœŸè¼¸å…¥
                 }
 
                 cell.innerHTML = `<input type="${inputType}" class="edit-input" value="${value}" data-field="${fieldName}">`;
             });
 
-            // ´À´«¾Ş§@«ö¶s
+            // æ›¿æ›æ“ä½œæŒ‰éˆ•
             const actionsCell = row.querySelector('td:last-child');
             actionsCell.innerHTML = `
-                <button class="btn btn-upload save-btn" data-index="${rowIndex}">Àx¦s</button>
-                <button class="btn btn-danger cancel-btn" data-index="${rowIndex}">¨ú®ø</button>
+                <button class="btn btn-upload save-btn" data-index="${rowIndex}">å„²å­˜</button>
+                <button class="btn btn-danger cancel-btn" data-index="${rowIndex}">å–æ¶ˆ</button>
             `;
         }
 
-        // Àx¦s½s¿è«áªº¸ê®Æ
+        // å„²å­˜ç·¨è¼¯å¾Œçš„è³‡æ–™
         function saveChanges(rowIndex) {
             const row = document.querySelector(`tr[data-index="${rowIndex}"]`);
             const inputs = row.querySelectorAll('.edit-input');
@@ -506,27 +506,27 @@
                 updatedRecord[fieldName] = input.value;
             });
             
-            // §ó·s dbfData °}¦C
+            // æ›´æ–° dbfData é™£åˆ—
             dbfData.records[rowIndex] = updatedRecord;
             
-            // ­«·s´è¬Vªí®æ¥HÅã¥Ü·s¸ê®Æ
+            // é‡æ–°æ¸²æŸ“è¡¨æ ¼ä»¥é¡¯ç¤ºæ–°è³‡æ–™
             renderTable(dbfData.fields, dbfData.records);
-            showNotification('¸ê®Æ¤wÀx¦s¡I', 'success');
+            showNotification('è³‡æ–™å·²å„²å­˜ï¼', 'success');
         }
 
-        // §R°£¸ê®Æ
+        // åˆªé™¤è³‡æ–™
         function deleteRow(rowIndex) {
-            if (confirm(`½T©w­n§R°£³oµ§¸ê®Æ¶Ü¡H (¯Á¤Ş: ${rowIndex})`)) {
+            if (confirm(`ç¢ºå®šè¦åˆªé™¤é€™ç­†è³‡æ–™å—ï¼Ÿ (ç´¢å¼•: ${rowIndex})`)) {
                 dbfData.records.splice(rowIndex, 1);
                 renderTable(dbfData.fields, dbfData.records);
-                showNotification('¸ê®Æ¤w§R°£¡I', 'success');
+                showNotification('è³‡æ–™å·²åˆªé™¤ï¼', 'success');
             }
         }
 
-        // ¶×¥X¬° Excel
+        // åŒ¯å‡ºç‚º Excel
         function exportToExcel() {
             if (!dbfData) {
-                showNotification('½Ğ¥ı¤W¶ÇÀÉ®×', 'error');
+                showNotification('è«‹å…ˆä¸Šå‚³æª”æ¡ˆ', 'error');
                 return;
             }
 
@@ -543,21 +543,21 @@
             XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
             const fileName = "exported_data.xlsx";
             XLSX.writeFile(wb, fileName);
-            showNotification('¶×¥X¦¨¥\¡I', 'success');
+            showNotification('åŒ¯å‡ºæˆåŠŸï¼', 'success');
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // ­«·s³B²z«ö¶s¨Æ¥ó
+            // é‡æ–°è™•ç†æŒ‰éˆ•äº‹ä»¶
             document.getElementById('reprocessBtn').addEventListener('click', function() {
                 const fileInput = document.getElementById('dbfFile');
                 if (fileInput.files.length > 0) {
                     handleFileUpload({ target: { files: fileInput.files } });
                 } else {
-                    showNotification('½Ğ¥ı¿ï¾ÜÀÉ®×', 'error');
+                    showNotification('è«‹å…ˆé¸æ“‡æª”æ¡ˆ', 'error');
                 }
             });
 
-            // ©ì¦²¤W¶Ç¥\¯à
+            // æ‹–æ›³ä¸Šå‚³åŠŸèƒ½
             const uploadArea = document.querySelector('.upload-area');
             
             uploadArea.addEventListener('dragover', function(e) {
@@ -579,13 +579,13 @@
                     document.getElementById('dbfFile').files = files;
                     handleFileUpload({ target: { files: files } });
                 } else {
-                    showNotification('½Ğ¤W¶Ç .dbf ®æ¦¡ÀÉ®×', 'error');
+                    showNotification('è«‹ä¸Šå‚³ .dbf æ ¼å¼æª”æ¡ˆ', 'error');
                 }
             });
             
             renderTable();
 
-            // ¨Ï¥Î¨Æ¥ó¥N²z³B²z½s¿è¡BÀx¦s¡B¨ú®ø©M§R°£«ö¶sªºÂIÀ»
+            // ä½¿ç”¨äº‹ä»¶ä»£ç†è™•ç†ç·¨è¼¯ã€å„²å­˜ã€å–æ¶ˆå’Œåˆªé™¤æŒ‰éˆ•çš„é»æ“Š
             document.getElementById('dataTable').addEventListener('click', function(e) {
                 const target = e.target;
                 const rowIndex = target.getAttribute('data-index');
@@ -602,7 +602,7 @@
             });
         });
         
-        // ÂIÀ»¼ÒºA®Ø¥~³¡Ãö³¬
+        // é»æ“Šæ¨¡æ…‹æ¡†å¤–éƒ¨é—œé–‰
         window.onclick = function(event) {
             const modals = document.querySelectorAll('.modal');
             modals.forEach(modal => {
