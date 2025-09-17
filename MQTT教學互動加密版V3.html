@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/mqtt@5.3.4/dist/mqtt.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
     <style>
         :root {
             --primary-color: #4a69bd;
@@ -343,19 +342,6 @@
             max-height: 100%;
             object-fit: contain;
         }
-
-        .debug-info {
-            position: fixed;
-            bottom: 70px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            max-width: 300px;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -363,9 +349,6 @@
     <div id="mqttStatus" class="mqtt-status mqtt-disconnected" style="display: none;">
         <i class="bi bi-wifi-off"></i> MQTT 未連接
     </div>
-
-    <!-- 調試信息 -->
-    <div id="debugInfo" class="debug-info"></div>
 
     <!-- 登入畫面 -->
     <div id="loginScreen" class="container">
@@ -394,19 +377,13 @@
             <div id="teacherLoginForm">
                 <div class="mb-3">
                     <label class="form-label">帳號</label>
-                    <input type="text" class="form-control" id="teacherUsername" placeholder="請輸入教師帳號  value="">
+                    <input type="text" class="form-control" id="teacherUsername" placeholder="請輸入教師帳號" value="">
                    
                 </div>
                 <div class="mb-3">
                     <label class="form-label">密碼</label>
                     <input type="password" class="form-control" id="teacherPassword" placeholder="請輸入密碼">
-                   
-                </div>
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="debugMode">
-                    <label class="form-check-label" for="debugMode">
-                        啟用調試模式
-                    </label>
+                    
                 </div>
             </div>
 
@@ -580,16 +557,16 @@
         let maxReconnectAttempts = 5;
         let heartbeatInterval = null;
 
-        //'wss://mqtt.eclipseprojects.io:443/mqtt',
+        //'wss://mqtt.eclipseprojects.io:8083/mqtt',
         //    'wss://test.mosquitto.org:8081/mqtt'
 
         // 預先計算好的密碼SHA256值
         const TEACHER_USERNAME = 'teacher';
-        const TEACHER_PASSWORD_HASH = '5d1a0afd548f20c596aaa7c1c48be114fb816608d56824ce7519c48ce2d0122d'; // 的SHA256
+        const TEACHER_PASSWORD_HASH = '5d1a0afd548f20c596aaa7c1c48be114fb816608d56824ce7519c48ce2d0122d'; // admin0928的SHA256
 
-        // MQTT 連接設定 - 使用多個備用 broker (使用安全的 WSS 連接)
+        // MQTT 連接設定 - 使用多個備用 broker
         const MQTT_BROKERS = [
-            'wss://broker.hivemq.com:8884/mqtt',
+            'wss://broker.hivemq.com:8000/mqtt',
             
         ];
         let currentBrokerIndex = 0;
@@ -598,42 +575,27 @@
             clientId: 'web_' + Math.random().toString(16).substr(2, 8),
             clean: true,
             reconnectPeriod: 2000,
-            connectTimeout: 10000,
-            // 添加一些額外的選項以確保安全連接
-            rejectUnauthorized: false,
-            protocolVersion: 4
+            connectTimeout: 10000
         };
 
-        // SHA256加密函數 - 使用js-sha256庫
-        function sha256(message) {
-            return sha256_js(message);
-        }
-
-        // 測試SHA256函數
-        function testSha256() {
-            const testString = "admin0928";
-            const expectedHash = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
-            const actualHash = sha256(testString);
-            console.log(`測試字符串: ${testString}`);
-            console.log(`預期哈希: ${expectedHash}`);
-            console.log(`實際哈希: ${actualHash}`);
-            console.log(`哈希匹配: ${expectedHash === actualHash}`);
+        // SHA256加密函數
+        async function sha256(message) {
+            // 將字串編碼為Uint8Array
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
             
-            if (expectedHash !== actualHash) {
-                console.error("SHA256函數測試失敗！");
-            }
+            // 計算SHA256哈希
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
             
-            return expectedHash === actualHash;
+            // 將緩衝區轉換為十六進位字串
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            return hashHex;
         }
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 測試SHA256函數
-            const sha256Test = testSha256();
-            if (!sha256Test) {
-                showToast('SHA256函數測試失敗，密碼驗證可能無法正常工作', 'danger');
-            }
-            
             // 監聽角色切換
             const roleRadios = document.querySelectorAll('input[name="role"]');
             roleRadios.forEach(radio => {
@@ -675,9 +637,8 @@
             console.log('選擇的角色:', role);
             
             if (role === 'teacher') {
-                const username = document.getElementById('teacherUsername').value.trim();
-                const password = document.getElementById('teacherPassword').value.trim();
-                const debugMode = document.getElementById('debugMode').checked;
+                const username = document.getElementById('teacherUsername').value;
+                const password = document.getElementById('teacherPassword').value;
                 
                 console.log('教師登入 - 帳號:', username);
                 
@@ -694,21 +655,8 @@
                 
                 // 驗證密碼（SHA256加密比對）
                 try {
-                    const passwordHash = sha256(password);
-                    console.log('輸入密碼:', password);
+                    const passwordHash = await sha256(password);
                     console.log('輸入密碼的SHA256:', passwordHash);
-                    console.log('預期的SHA256:', TEACHER_PASSWORD_HASH);
-                    
-                    if (debugMode) {
-                        document.getElementById('debugInfo').style.display = 'block';
-                        document.getElementById('debugInfo').innerHTML = `
-                            <strong>調試信息:</strong><br>
-                            輸入密碼: ${password}<br>
-                            輸入密碼的SHA256: ${passwordHash}<br>
-                            預期的SHA256: ${TEACHER_PASSWORD_HASH}<br>
-                            匹配結果: ${passwordHash === TEACHER_PASSWORD_HASH ? '成功' : '失敗'}
-                        `;
-                    }
                     
                     if (passwordHash === TEACHER_PASSWORD_HASH) {
                         currentUser = { role: 'teacher', name: username };
@@ -723,8 +671,8 @@
                     showToast('系統錯誤，請稍後再試', 'danger');
                 }
             } else {
-                const classCode = document.getElementById('classCode').value.trim();
-                const studentName = document.getElementById('studentName').value.trim();
+                const classCode = document.getElementById('classCode').value;
+                const studentName = document.getElementById('studentName').value;
                 
                 console.log('學生登入 - 班級代碼:', classCode, '姓名:', studentName);
                 
@@ -745,7 +693,6 @@
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('teacherDashboard').style.display = 'block';
             document.getElementById('mqttStatus').style.display = 'block';
-            document.getElementById('debugInfo').style.display = 'none';
             showToast('歡迎回來，教師！', 'success');
         }
 
@@ -755,7 +702,6 @@
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('studentView').style.display = 'block';
             document.getElementById('mqttStatus').style.display = 'block';
-            document.getElementById('debugInfo').style.display = 'none';
             document.getElementById('studentDisplayName').textContent = currentUser.name;
             showToast(`歡迎 ${currentUser.name}！`, 'success');
             
