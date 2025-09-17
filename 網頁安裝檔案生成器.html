@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>網頁安裝檔案生成器 - PWA Manifest 創建工具</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #7c3aed;
+            --success-color: #10b981;
+            --dark-color: #1f2937;
+            --light-bg: #f9fafb;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--dark-color);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: 8px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            border-radius: 8px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+            border-color: #059669;
+            transform: translateY(-1px);
+        }
+
+        .preview-box {
+            background-color: #1f2937;
+            color: #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.875rem;
+            max-height: 400px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .preview-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .preview-box::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 4px;
+        }
+
+        .preview-box::-webkit-scrollbar-thumb {
+            background: #6b7280;
+            border-radius: 4px;
+        }
+
+        .icon-preview {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .instruction-step {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .instruction-step:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-number {
+            background-color: var(--primary-color);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .tab-content {
+            padding-top: 2rem;
+        }
+
+        .nav-pills .nav-link {
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            color: var(--dark-color);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-pills .nav-link.active {
+            background-color: var(--primary-color);
+        }
+
+        .nav-pills .nav-link:hover:not(.active) {
+            background-color: #e5e7eb;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #374151;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background-color: #4b5563;
+        }
+
+        .copy-btn.copied {
+            background-color: var(--success-color);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        .custom-toast {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .download-info {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #0369a1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3 fade-in">
+                <i class="fas fa-download me-3"></i>網頁安裝檔案生成器
+            </h1>
+            <p class="lead mb-0 fade-in" style="animation-delay: 0.2s;">
+                輕鬆創建 PWA Manifest.json 文件，讓您的網站可以像 App 一樣安裝到手機主畫面
+            </p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container mb-5">
+        <div class="row">
+            <!-- Left Column - Form -->
+            <div class="col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="card-title mb-4">
+                            <i class="fas fa-edit text-primary me-2"></i>填寫網站資訊
+                        </h3>
+                        
+                        <form id="manifestForm">
+                            <!-- Basic Info -->
+                            <div class="mb-3">
+                                <label for="appName" class="form-label">應用程式名稱 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="appName" placeholder="我的網站" required>
+                                <small class="text-muted">完整名稱，會顯示在安裝畫面</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="shortName" class="form-label">簡稱 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="shortName" placeholder="我的網站" required>
+                                <small class="text-muted">較短的名稱，會顯示在手機主畫面</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">描述</label>
+                                <textarea class="form-control" id="description" rows="3" placeholder="這是一個很棒的網站..."></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="startUrl" class="form-label">起始 URL <span class="text-danger">*</span></label>
+                                <input type="url" class="form-control" id="startUrl" value="/" required>
+                                <small class="text-muted">應用程式啟動時開啟的頁面</small>
+                            </div>
+
+                            <!-- Display Mode -->
+                            <div class="mb-3">
+                                <label for="display" class="form-label">顯示模式 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="display" required>
+                                    <option value="standalone">standalone - 全螢幕模式</option>
+                                    <option value="fullscreen">fullscreen - 完全全螢幕</option>
+                                    <option value="minimal-ui">minimal-ui - 最小化介面</option>
+                                    <option value="browser">browser - 瀏覽器模式</option>
+                                </select>
+                            </div>
+
+                            <!-- Colors -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="themeColor" class="form-label">主題顏色</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" id="themeColor" value="#4f46e5">
+                                        <input type="text" class="form-control" id="themeColorText" value="#4f46e5">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="backgroundColor" class="form-label">背景顏色</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" id="backgroundColor" value="#ffffff">
+                                        <input type="text" class="form-control" id="backgroundColorText" value="#ffffff">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Icons -->
+                            <div class="mb-3">
+                                <label class="form-label">應用程式圖標</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label for="icon192" class="form-label small">192x192 圖標 URL</label>
+                                        <input type="url" class="form-control" id="icon192" placeholder="https://example.com/icon-192.png">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="icon512" class="form-label small">512x512 圖標 URL</label>
+                                        <input type="url" class="form-control" id="icon512" placeholder="https://example.com/icon-512.png">
+                                    </div>
+                                </div>
+                                <small class="text-muted">建議使用 PNG 格式，背景透明</small>
+                            </div>
+
+                            <!-- Advanced Options -->
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="orientation">
+                                    <label class="form-check-label" for="orientation">
+                                        鎖定方向為直向
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-magic me-2"></i>生成 Manifest.json
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Preview & Instructions -->
+            <div class="col-lg-6">
+                <!-- Tabs -->
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="preview-tab" data-bs-toggle="pill" data-bs-target="#preview" type="button">
+                            <i class="fas fa-eye me-2"></i>預覽
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="instructions-tab" data-bs-toggle="pill" data-bs-target="#instructions" type="button">
+                            <i class="fas fa-book me-2"></i>使用說明
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="pills-tabContent">
+                    <!-- Preview Tab -->
+                    <div class="tab-pane fade show active" id="preview" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="card-title mb-3">
+                                    <i class="fas fa-code text-primary me-2"></i>Manifest.json 預覽
+                                </h4>
+                                <div class="preview-box" id="previewBox">
+                                    <pre id="jsonPreview">{
+  "name": "我的網站",
+  "short_name": "我的網站",
+  "description": "",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": []
+}</pre>
+                                    <button class="copy-btn" onclick="copyToClipboard()">
+                                        <i class="fas fa-copy me-1"></i>複製
+                                    </button>
+                                </div>
+                                
+                                <div class="mt-4 text-center">
+                                    <button class="btn btn-success" id="downloadBtn" onclick="downloadManifest()">
+                                        <i class="fas fa-download me-2"></i>下載 manifest.json
+                                    </button>
+                                    <div class="download-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        點擊下載按鈕即可保存當前預覽的 manifest.json 文件
+                                    </div>
+                                </div>
+
+                                <!-- App Preview -->
+                                <div class="mt-4">
+                                    <h5 class="mb-3">應用程式預覽</h5>
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <div class="text-center">
+                                            <img src="https://picsum.photos/seed/appicon/64/64.jpg" alt="App Icon" class="icon-preview mb-2" id="appIconPreview">
+                                            <div class="fw-bold" id="appNamePreview">我的網站</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Instructions Tab -->
+                    <div class="tab-pane fade" id="instructions" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">
+                                    <i class="fas fa-graduation-cap text-primary me-2"></i>如何使用 PWA Manifest
+                                </h4>
+
+                                <div class="instruction-step">
+                                    <div class="d-flex align-items-start">
+                                        <div class="step-number">1</div>
+                                        <div>
+                                            <h5 class="mb-2">準備圖標文件</h5>
+                                            <p class="mb-0">創建至少兩個尺寸的 PNG 圖標：192x192 和 512x512 像素。建議使用透明背景，確保圖標清晰可辨。</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="instruction-step">
+                                    <div class="d-flex align-items-start">
+                                        <div class="step-number">2</div>
+                                        <div>
+                                            <h5 class="mb-2">填寫網站資訊</h5>
+                                            <p class="mb-0">在左側表單中填寫您的網站資訊，包括名稱、描述、顏色等。所有標有 * 的欄位都是必填的。</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="instruction-step">
+                                    <div class="d-flex align-items-start">
+                                        <div class="step-number">3</div>
+                                        <div>
+                                            <h5 class="mb-2">生成並下載</h5>
+                                            <p class="mb-0">點擊「生成 Manifest.json」按鈕，系統會自動生成配置文件。確認無誤後，點擊下載按鈕保存文件。</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="instruction-step">
+                                    <div class="d-flex align-items-start">
+                                        <div class="step-number">4</div>
+                                        <div>
+                                            <h5 class="mb-2">上傳到網站</h5>
+                                            <p class="mb-0">將下載的 manifest.json 文件上傳到您網站的根目錄，並確保圖標文件也上傳到正確的位置。</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="instruction-step">
+                                    <div class="d-flex align-items-start">
+                                        <div class="step-number">5</div>
+                                        <div>
+                                            <h5 class="mb-2">在 HTML 中引用</h5>
+                                            <p class="mb-0">在您網站的 &lt;head&gt; 標籤中添加以下代碼：</p>
+                                            <div class="bg-light p-3 rounded mt-2">
+                                                <code>&lt;link rel="manifest" href="/manifest.json"&gt;</code>
+                                                <br>
+                                                <code>&lt;meta name="theme-color" content="#4f46e5"&gt;</code>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="instruction-step">
+                                    <div class="d-flex align-items-start">
+                                        <div class="step-number">6</div>
+                                        <div>
+                                            <h5 class="mb-2">測試安裝</h5>
+                                            <p class="mb-0">使用 Chrome 或 Edge 瀏覽器打開您的網站，如果滿足 PWA 條件，瀏覽器會顯示安裝提示。您也可以手動安裝測試。</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tips Section -->
+                                <div class="alert alert-info mt-4">
+                                    <h5 class="alert-heading">
+                                        <i class="fas fa-lightbulb me-2"></i>小貼士
+                                    </h5>
+                                    <ul class="mb-0">
+                                        <li>確保您的網站使用 HTTPS，這是 PWA 的必要條件</li>
+                                        <li>圖標最好使用 SVG 或高解析度的 PNG</li>
+                                        <li>可以為不同平台準備不同尺寸的圖標</li>
+                                        <li>使用 Chrome 開發者工具的 Application 標籤來測試 PWA</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3 class="text-center mb-4">
+                    <i class="fas fa-star text-warning me-2"></i>功能特色
+                </h3>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-bolt feature-icon"></i>
+                        <h5>快速生成</h5>
+                        <p class="text-muted">只需填寫基本資訊，即可快速生成符合標準的 manifest.json 文件</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-eye feature-icon"></i>
+                        <h5>即時預覽</h5>
+                        <p class="text-muted">修改任何設定都能立即看到預覽效果，確保配置正確</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-mobile-alt feature-icon"></i>
+                        <h5>跨平台支援</h5>
+                        <p class="text-muted">生成的 manifest.json 相容於 Android、iOS 和桌面平台</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="fas fa-code me-2"></i>網頁安裝檔案生成器 © 2025 | 
+                 design by koming
+                
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sync color inputs
+            const themeColor = document.getElementById('themeColor');
+            const themeColorText = document.getElementById('themeColorText');
+            const backgroundColor = document.getElementById('backgroundColor');
+            const backgroundColorText = document.getElementById('backgroundColorText');
+
+            themeColor.addEventListener('input', function() {
+                themeColorText.value = this.value;
+                updatePreview();
+            });
+
+            themeColorText.addEventListener('input', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    themeColor.value = this.value;
+                    updatePreview();
+                }
+            });
+
+            backgroundColor.addEventListener('input', function() {
+                backgroundColorText.value = this.value;
+                updatePreview();
+            });
+
+            backgroundColorText.addEventListener('input', function() {
+                if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+                    backgroundColor.value = this.value;
+                    updatePreview();
+                }
+            });
+
+            // Add event listeners to all form inputs
+            const formInputs = document.querySelectorAll('#manifestForm input, #manifestForm select, #manifestForm textarea');
+            formInputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+                input.addEventListener('change', updatePreview);
+            });
+
+            // Initial preview update
+            updatePreview();
+        });
+
+        // Form submission
+        document.getElementById('manifestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            updatePreview();
+            showToast('Manifest.json 已更新！', 'success');
+        });
+
+        // Update preview
+        function updatePreview() {
+            const manifest = {
+                name: document.getElementById('appName').value || '我的網站',
+                short_name: document.getElementById('shortName').value || '我的網站',
+                description: document.getElementById('description').value || '',
+                start_url: document.getElementById('startUrl').value || '/',
+                display: document.getElementById('display').value || 'standalone',
+                background_color: document.getElementById('backgroundColorText').value || '#ffffff',
+                theme_color: document.getElementById('themeColorText').value || '#4f46e5',
+                icons: []
+            };
+
+            // Add icons if provided
+            const icon192 = document.getElementById('icon192').value;
+            const icon512 = document.getElementById('icon512').value;
+            
+            if (icon192) {
+                manifest.icons.push({
+                    src: icon192,
+                    sizes: '192x192',
+                    type: 'image/png'
+                });
+            }
+            
+            if (icon512) {
+                manifest.icons.push({
+                    src: icon512,
+                    sizes: '512x512',
+                    type: 'image/png'
+                });
+            }
+
+            // Add orientation if checked
+            if (document.getElementById('orientation').checked) {
+                manifest.orientation = 'portrait';
+            }
+
+            // Update JSON preview
+            document.getElementById('jsonPreview').textContent = JSON.stringify(manifest, null, 2);
+
+            // Update app preview
+            document.getElementById('appNamePreview').textContent = manifest.short_name;
+            if (icon192) {
+                document.getElementById('appIconPreview').src = icon192;
+            }
+        }
+
+        // Copy to clipboard
+        function copyToClipboard() {
+            const jsonText = document.getElementById('jsonPreview').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                const copyBtn = document.querySelector('.copy-btn');
+                copyBtn.classList.add('copied');
+                copyBtn.innerHTML = '<i class="fas fa-check me-1"></i>已複製';
+                
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                    copyBtn.innerHTML = '<i class="fas fa-copy me-1"></i>複製';
+                }, 2000);
+                
+                showToast('已複製到剪貼簿！', 'success');
+            }).catch(err => {
+                console.error('複製失敗:', err);
+                showToast('複製失敗，請手動選擇文字複製', 'error');
+            });
+        }
+
+        // Download manifest
+        function downloadManifest() {
+            try {
+                const jsonText = document.getElementById('jsonPreview').textContent;
+                
+                // 創建 Blob
+                const blob = new Blob([jsonText], { type: 'application/json' });
+                
+                // 創建下載連結
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'manifest.json';
+                
+                // 添加到頁面並觸發點擊
+                document.body.appendChild(a);
+                a.click();
+                
+                // 清理
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                showToast('manifest.json 已下載！', 'success');
+            } catch (error) {
+                console.error('下載失敗:', error);
+                showToast('下載失敗，請檢查瀏覽器設定', 'error');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            
+            let icon = 'fa-info-circle text-primary';
+            if (type === 'success') {
+                icon = 'fa-check-circle text-success';
+            } else if (type === 'error') {
+                icon = 'fa-exclamation-circle text-danger';
+            }
+            
+            toast.innerHTML = `
+                <i class="fas ${icon} me-3"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

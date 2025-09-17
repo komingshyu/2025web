@@ -12,4 +12,7 @@ const linksData = [
   { name: "SVG編輯", description: "SVG編輯管理", link: "SVG編輯V2.html" },
   { name: "localstorage管理系統", description: "localstorage管理系統", link: "localstorage管理系統.html" },
   { name: "瀏覽器IndexedDB 管理系統", description: "瀏覽器IndexedDB 管理系統", link: "瀏覽器IndexedDB 管理系統.html" },
+  { name: "網頁安裝檔案生成器", description: "網頁安裝檔案生成器", link: "網頁安裝檔案生成器.html" },  
+  { name: "MQTT教學互動加密版V3", description: "利用MQTT來做教學互動", link: "MQTT教學互動加密版V3.html" },
+  { name: "教師座位分配V12版", description: "教師座位分配套印XML版本", link: "教師座位分配V12OK版.html" },
 ];

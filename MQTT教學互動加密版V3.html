@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教學互動系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mqtt@5.3.4/dist/mqtt.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a69bd;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--light-bg);
+            font-family: 'Microsoft JhengHei', sans-serif;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .teacher-dashboard {
+            display: none;
+            min-height: 100vh;
+            width: 100%;
+            background-color: #f5f6fa;
+        }
+
+        .student-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #fff;
+        }
+
+        .student-view .d-flex {
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 20%;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .main-content {
+            width: 80%;
+            height: 100%;
+            overflow: hidden;
+            padding: 0;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .content-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        .student-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .student-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .student-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .message-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .content-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .status-online {
+            background-color: var(--success-color);
+        }
+
+        .status-offline {
+            background-color: var(--danger-color);
+        }
+
+        .response-area {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .response-input {
+            background: #2c3e50;
+            border: 1px solid #4a5f7a;
+            color: white;
+            border-radius: 5px;
+            padding: 10px;
+            width: 100%;
+            resize: none;
+        }
+
+        .response-input:focus {
+            background: #2c3e50;
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: none;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        .custom-toast {
+            background: white;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.2);
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .mqtt-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .mqtt-connected {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .mqtt-disconnected {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .student-status {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .refresh-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+        }
+
+        .youtube-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .youtube-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .full-size-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .full-size-content .content-header {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #dee2e6;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .full-size-content .content-body {
+            flex: 1;
+            overflow: hidden;
+            padding: 0;
+            position: relative;
+            height: calc(100% - 70px); /* 減去header的高度 */
+        }
+
+        .responses-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .logout-section {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid #4a5f7a;
+        }
+
+        .required-field::after {
+            content: " *";
+            color: var(--danger-color);
+        }
+
+        /* 修正iframe顯示問題 */
+        .iframe-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* 確保圖片顯示正確 */
+        .image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <!-- MQTT 連接狀態指示器 -->
+    <div id="mqttStatus" class="mqtt-status mqtt-disconnected" style="display: none;">
+        <i class="bi bi-wifi-off"></i> MQTT 未連接
+    </div>
+
+    <!-- 登入畫面 -->
+    <div id="loginScreen" class="container">
+        <div class="login-container">
+            <h2 class="text-center mb-4">
+                <i class="bi bi-mortarboard-fill text-primary"></i> 教學互動系統
+            </h2>
+            
+            <!-- 角色選擇 -->
+            <div class="mb-3">
+                <label class="form-label">選擇角色</label>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="role" id="teacherRole" value="teacher" checked>
+                    <label class="btn btn-outline-primary" for="teacherRole">
+                        <i class="bi bi-person-badge"></i> 教師
+                    </label>
+                    
+                    <input type="radio" class="btn-check" name="role" id="studentRole" value="student">
+                    <label class="btn btn-outline-primary" for="studentRole">
+                        <i class="bi bi-person"></i> 學生
+                    </label>
+                </div>
+            </div>
+
+            <!-- 教師登入表單 -->
+            <div id="teacherLoginForm">
+                <div class="mb-3">
+                    <label class="form-label">帳號</label>
+                    <input type="text" class="form-control" id="teacherUsername" placeholder="請輸入教師帳號" value="">
+                   
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密碼</label>
+                    <input type="password" class="form-control" id="teacherPassword" placeholder="請輸入密碼">
+                    
+                </div>
+            </div>
+
+            <!-- 學生登入表單 -->
+            <div id="studentLoginForm" style="display: none;">
+                <div class="mb-3">
+                    <label class="form-label">班級代碼</label>
+                    <input type="text" class="form-control" id="classCode" placeholder="請輸入班級代碼">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">學生姓名</label>
+                    <input type="text" class="form-control" id="studentName" placeholder="請輸入您的姓名">
+                </div>
+            </div>
+
+            <button class="btn btn-primary w-100" onclick="handleLogin()">
+                <i class="bi bi-box-arrow-in-right"></i> 登入
+            </button>
+        </div>
+    </div>
+
+    <!-- 教師畫面 -->
+    <div id="teacherDashboard" class="teacher-dashboard">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-mortarboard-fill"></i> 教師控制台
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3">
+                        <i class="bi bi-person-circle"></i> 
+                        <span id="teacherName">教師</span>
+                    </span>
+                    <button class="btn btn-outline-light" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> 登出
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid mt-4">
+            <div class="row">
+                <!-- 左側：學生管理 -->
+                <div class="col-md-4">
+                    <div class="content-card" style="position: relative;">
+                        <button class="btn btn-sm btn-outline-secondary refresh-btn" onclick="refreshStudentList()">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新
+                        </button>
+                        <h5><i class="bi bi-people"></i> 班級管理</h5>
+                        <div class="mb-3">
+                            <label class="form-label required-field">班級名稱</label>
+                            <input type="text" class="form-control" id="className" placeholder="輸入班級名稱" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">班級代碼</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="classCodeDisplay" readonly>
+                                <button class="btn btn-outline-secondary" onclick="generateClassCode()">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6>在線學生 (<span id="onlineCount">0</span>)</h6>
+                            <div class="student-list" id="studentList">
+                                <!-- 學生列表將動態生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：內容發布 -->
+                <div class="col-md-8">
+                    <div class="content-card">
+                        <h5><i class="bi bi-send"></i> 發布內容</h5>
+                        
+                        <!-- 內容類型選擇 -->
+                        <div class="mb-3">
+                            <label class="form-label">內容類型</label>
+                            <select class="form-select" id="contentType">
+                                <option value="text">本文</option>
+                                <option value="website">網站連結</option>
+                                <option value="youtube">YouTube連結</option>
+                                <option value="image">圖片URL</option>
+                            </select>
+                        </div>
+
+                        <!-- 內容輸入區 -->
+                        <div class="mb-3">
+                            <label class="form-label">內容</label>
+                            <textarea class="form-control" id="contentInput" rows="3" placeholder="請輸入要發布的內容"></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="publishContent()">
+                            <i class="bi bi-send-fill"></i> 發布
+                        </button>
+                    </div>
+
+                    <!-- 學生回應區 -->
+                    <div class="content-card">
+                        <h5><i class="bi bi-chat-dots"></i> 學生回應</h5>
+                        <div class="responses-container" id="responsesList">
+                            <!-- 回應內容將動態生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 學生畫面 -->
+    <div id="studentView" class="student-view">
+        <div class="d-flex h-100">
+            <!-- 左側：回應區域 (20%) -->
+            <div class="sidebar">
+                <h5 class="mb-3">
+                    <i class="bi bi-mortarboard"></i> 
+                    <span id="studentClassName">班級</span>
+                </h5>
+                <p class="text-muted">
+                    <i class="bi bi-person"></i> 
+                    <span id="studentDisplayName">學生</span>
+                </p>
+                
+                <div class="response-area">
+                    <h6 class="mb-3">我的回應</h6>
+                    <textarea class="response-input" id="studentResponse" rows="4" 
+                              placeholder="輸入您的回應..."></textarea>
+                    <button class="btn btn-primary btn-sm mt-2 w-100" onclick="sendResponse()">
+                        <i class="bi bi-send"></i> 發送回應
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <h6>歷史回應</h6>
+                    <div id="studentHistory" style="max-height: 300px; overflow-y: auto;">
+                        <!-- 歷史回應將顯示在這裡 -->
+                    </div>
+                </div>
+
+                <div class="logout-section">
+                    <button class="btn btn-outline-light w-100" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> 登出
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右側：內容顯示區域 (80%) -->
+            <div class="main-content">
+                <div id="contentDisplay" class="full-size-content">
+                    <div class="text-center mt-5">
+                        <i class="bi bi-hourglass-split" style="font-size: 3rem; color: #6c757d;"></i>
+                        <h4 class="mt-3 text-muted">等待教師發布內容...</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // 全局變數
+        let currentUser = null;
+        let currentClass = null;
+        let currentClassName = null;
+        let mqttClient = null;
+        let onlineStudents = new Map();
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let heartbeatInterval = null;
+
+        // 預先計算好的密碼SHA256值
+        const TEACHER_USERNAME = 'teacher';
+        const TEACHER_PASSWORD_HASH = '5d1a0afd548f20c596aaa7c1c48be114fb816608d56824ce7519c48ce2d0122d'; // 加密SHA256
+
+        // MQTT 連接設定 - 使用多個備用 broker
+        const MQTT_BROKERS = [
+            'ws://broker.hivemq.com:8000/mqtt',
+            
+        ];
+
+        // 'ws://mqtt.eclipseprojects.io:8083/mqtt',  'ws://test.mosquitto.org:8081/mqtt'
+
+        let currentBrokerIndex = 0;
+
+        const MQTT_OPTIONS = {
+            clientId: 'web_' + Math.random().toString(16).substr(2, 8),
+            clean: true,
+            reconnectPeriod: 2000,
+            connectTimeout: 10000
+        };
+
+        // SHA256加密函數
+        async function sha256(message) {
+            // 將字串編碼為Uint8Array
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            
+            // 計算SHA256哈希
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            
+            // 將緩衝區轉換為十六進位字串
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            return hashHex;
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 監聽角色切換
+            const roleRadios = document.querySelectorAll('input[name="role"]');
+            roleRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    console.log('角色切換到:', this.value);
+                    if (this.value === 'teacher') {
+                        document.getElementById('teacherLoginForm').style.display = 'block';
+                        document.getElementById('studentLoginForm').style.display = 'none';
+                    } else {
+                        document.getElementById('teacherLoginForm').style.display = 'none';
+                        document.getElementById('studentLoginForm').style.display = 'block';
+                    }
+                });
+            });
+
+            // 生成初始班級代碼
+            generateClassCode();
+            
+            // 監聽 Enter 鍵登入
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+                    handleLogin();
+                }
+            });
+        });
+
+        // 處理登入
+        async function handleLogin() {
+           // console.log('開始處理登入...');
+            
+            const selectedRole = document.querySelector('input[name="role"]:checked');
+            if (!selectedRole) {
+                //console.log('未選擇角色');
+                showToast('請選擇角色', 'warning');
+                return;
+            }
+            
+            const role = selectedRole.value;
+            //console.log('選擇的角色:', role);
+            
+            if (role === 'teacher') {
+                const username = document.getElementById('teacherUsername').value;
+                const password = document.getElementById('teacherPassword').value;
+                
+                //console.log('教師登入 - 帳號:', username);
+                
+                if (!username || !password) {
+                    showToast('請輸入帳號和密碼', 'warning');
+                    return;
+                }
+                
+                // 驗證帳號
+                if (username !== TEACHER_USERNAME) {
+                    showToast('帳號錯誤', 'danger');
+                    return;
+                }
+                
+                // 驗證密碼（SHA256加密比對）
+                try {
+                    const passwordHash = await sha256(password);
+                    //console.log('輸入密碼的SHA256:', passwordHash);
+                    
+                    if (passwordHash === TEACHER_PASSWORD_HASH) {
+                        currentUser = { role: 'teacher', name: username };
+                        document.getElementById('teacherName').textContent = username;
+                        showTeacherDashboard();
+                        connectMQTT();
+                    } else {
+                        showToast('密碼錯誤', 'danger');
+                    }
+                } catch (error) {
+                    console.error('密碼加密錯誤:', error);
+                    showToast('系統錯誤，請稍後再試', 'danger');
+                }
+            } else {
+                const classCode = document.getElementById('classCode').value;
+                const studentName = document.getElementById('studentName').value;
+                
+                //console.log('學生登入 - 班級代碼:', classCode, '姓名:', studentName);
+                
+                if (!classCode || !studentName) {
+                    showToast('請輸入班級代碼和姓名', 'warning');
+                    return;
+                }
+                
+                currentUser = { role: 'student', name: studentName, classCode: classCode };
+                showStudentView();
+                connectMQTT();
+            }
+        }
+
+        // 顯示教師儀表板
+        function showTeacherDashboard() {
+            //console.log('顯示教師儀表板');
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('teacherDashboard').style.display = 'block';
+            document.getElementById('mqttStatus').style.display = 'block';
+            showToast('歡迎回來，教師！', 'success');
+        }
+
+        // 顯示學生畫面
+        function showStudentView() {
+            //console.log('顯示學生畫面');
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('studentView').style.display = 'block';
+            document.getElementById('mqttStatus').style.display = 'block';
+            document.getElementById('studentDisplayName').textContent = currentUser.name;
+            showToast(`歡迎 ${currentUser.name}！`, 'success');
+            
+            // 強制觸發重新計算佈局
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
+        }
+
+        // 生成班級代碼
+        function generateClassCode() {
+            const code = 'CLASS' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            document.getElementById('classCodeDisplay').value = code;
+            currentClass = code;
+        }
+
+        // 連接 MQTT
+        function connectMQTT() {
+            if (currentBrokerIndex >= MQTT_BROKERS.length) {
+                currentBrokerIndex = 0;
+                showToast('所有 MQTT 伺服器連接失敗，請稍後再試', 'danger');
+                return;
+            }
+
+            const broker = MQTT_BROKERS[currentBrokerIndex];
+            console.log(`嘗試連接 MQTT broker: ${broker}`);
+            
+            try {
+                if (mqttClient) {
+                    mqttClient.end();
+                }
+
+                mqttClient = mqtt.connect(broker, MQTT_OPTIONS);
+                
+                mqttClient.on('connect', function() {
+                    console.log('MQTT 連接成功');
+                    reconnectAttempts = 0;
+                    updateMQTTStatus(true);
+                    showToast('MQTT 連接成功', 'success');
+                    
+                    // 訂閱相關主題
+                    if (currentUser.role === 'teacher') {
+                        subscribeTeacherTopics();
+                        // 啟動心跳檢測
+                        startHeartbeat();
+                    } else {
+                        subscribeStudentTopics();
+                        // 發送上線通知
+                        sendOnlineStatus();
+                        // 啟動心跳檢測
+                        startHeartbeat();
+                    }
+                });
+                
+                mqttClient.on('message', function(topic, message) {
+                    const data = JSON.parse(message.toString());
+                    handleMQTTMessage(topic, data);
+                });
+                
+                mqttClient.on('error', function(error) {
+                    console.error('MQTT 錯誤:', error);
+                    updateMQTTStatus(false);
+                    showToast(`MQTT 連接錯誤: ${error.message}`, 'danger');
+                });
+                
+                mqttClient.on('close', function() {
+                    console.log('MQTT 連接關閉');
+                    updateMQTTStatus(false);
+                    stopHeartbeat();
+                    
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        console.log(`嘗試重新連接 (${reconnectAttempts}/${maxReconnectAttempts})`);
+                        setTimeout(() => {
+                            connectMQTT();
+                        }, 3000);
+                    } else {
+                        // 嘗試下一個 broker
+                        currentBrokerIndex++;
+                        reconnectAttempts = 0;
+                        setTimeout(() => {
+                            connectMQTT();
+                        }, 1000);
+                    }
+                });
+                
+                mqttClient.on('offline', function() {
+                    console.log('MQTT 離線');
+                    updateMQTTStatus(false);
+                });
+                
+                mqttClient.on('reconnect', function() {
+                    console.log('MQTT 重新連接中...');
+                });
+                
+            } catch (error) {
+                console.error('MQTT 連接失敗:', error);
+                updateMQTTStatus(false);
+                showToast(`連接失敗: ${error.message}`, 'danger');
+                
+                // 嘗試下一個 broker
+                currentBrokerIndex++;
+                setTimeout(() => {
+                    connectMQTT();
+                }, 1000);
+            }
+        }
+
+        // 訂閱教師主題
+        function subscribeTeacherTopics() {
+            // 訂閱學生回應主題（班級名稱+班級代碼）
+            const className = document.getElementById('className').value || '班級';
+            currentClassName = className;
+            const responseTopic = `response/${className}${currentClass}`;
+            mqttClient.subscribe(responseTopic, function(err) {
+                if (!err) {
+                    console.log(`教師訂閱回應主題: ${responseTopic}`);
+                }
+            });
+            
+            // 訂閱學生狀態主題
+            const statusTopic = `status/${currentClass}`;
+            mqttClient.subscribe(statusTopic, function(err) {
+                if (!err) {
+                    console.log(`訂閱狀態主題: ${statusTopic}`);
+                }
+            });
+        }
+
+        // 訂閱學生主題
+        function subscribeStudentTopics() {
+            // 訂閱班級內容主題（班級代碼）
+            const classTopic = `class/${currentUser.classCode}`;
+            mqttClient.subscribe(classTopic, function(err) {
+                if (!err) {
+                    console.log(`學生訂閱班級主題: ${classTopic}`);
+                }
+            });
+            
+            // 訂閱班級名稱主題
+            const nameTopic = `classname/${currentUser.classCode}`;
+            mqttClient.subscribe(nameTopic, function(err) {
+                if (!err) {
+                    console.log(`訂閱班級名稱主題: ${nameTopic}`);
+                }
+            });
+        }
+
+        // 發送上線狀態
+        function sendOnlineStatus() {
+            const onlineMessage = {
+                type: 'online',
+                studentName: currentUser.name,
+                timestamp: new Date().toISOString()
+            };
+            mqttClient.publish(`status/${currentUser.classCode}`, JSON.stringify(onlineMessage), { qos: 1 });
+        }
+
+        // 啟動心跳檢測
+        function startHeartbeat() {
+            stopHeartbeat(); // 先停止現有的心跳
+            
+            heartbeatInterval = setInterval(() => {
+                if (mqttClient && mqttClient.connected) {
+                    if (currentUser.role === 'student') {
+                        sendOnlineStatus(); // 學生定期發送心跳
+                    }
+                }
+            }, 30000); // 每30秒發送一次心跳
+        }
+
+        // 停止心跳檢測
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        }
+
+        // 更新 MQTT 狀態顯示
+        function updateMQTTStatus(connected) {
+            const statusElement = document.getElementById('mqttStatus');
+            if (connected) {
+                statusElement.className = 'mqtt-status mqtt-connected';
+                statusElement.innerHTML = '<i class="bi bi-wifi"></i> MQTT 已連接';
+            } else {
+                statusElement.className = 'mqtt-status mqtt-disconnected';
+                statusElement.innerHTML = '<i class="bi bi-wifi-off"></i> MQTT 未連接';
+            }
+        }
+
+        // 處理 MQTT 訊息
+        function handleMQTTMessage(topic, data) {
+            if (currentUser.role === 'teacher') {
+                // 教師接收訊息
+                if (topic.startsWith('status/')) {
+                    handleStudentStatus(data);
+                } else if (topic.startsWith('response/')) {
+                    handleStudentResponse(data);
+                }
+            } else {
+                // 學生接收訊息
+                if (topic.startsWith('class/')) {
+                    handleClassContent(data);
+                } else if (topic.startsWith('classname/')) {
+                    handleClassNameUpdate(data);
+                }
+            }
+        }
+
+        // 處理學生狀態
+        function handleStudentStatus(data) {
+            if (data.type === 'online') {
+                onlineStudents.set(data.studentName, {
+                    name: data.studentName,
+                    status: 'online',
+                    lastSeen: new Date(data.timestamp)
+                });
+                updateStudentList();
+            }
+        }
+
+        // 處理學生回應
+        function handleStudentResponse(data) {
+            const responsesList = document.getElementById('responsesList');
+            const responseItem = document.createElement('div');
+            responseItem.className = 'message-item';
+            responseItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>${data.studentName}</strong>
+                        <small class="text-muted ms-2">${new Date(data.timestamp).toLocaleTimeString()}</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteResponse(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <p class="mt-2 mb-0">${data.content}</p>
+            `;
+            responsesList.insertBefore(responseItem, responsesList.firstChild);
+            
+            // 自動滾動到最新回應
+            responsesList.scrollTop = 0;
+            
+            // 限制顯示數量
+            while (responsesList.children.length > 50) {
+                responsesList.removeChild(responsesList.lastChild);
+            }
+        }
+
+        // 處理班級內容
+        function handleClassContent(data) {
+            const contentDisplay = document.getElementById('contentDisplay');
+            
+            switch (data.type) {
+                case 'text':
+                    contentDisplay.innerHTML = `
+                        <div class="content-header">
+                            <h4>${data.title || '教師公告'}</h4>
+                            <small class="text-muted">發布時間: ${new Date(data.timestamp).toLocaleString()}</small>
+                        </div>
+                        <div class="content-body">
+                            <div class="p-4">
+                                <p>${data.content}</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'website':
+                    contentDisplay.innerHTML = `
+                        <div class="content-header">
+                            <h4>網站連結</h4>
+                        </div>
+                        <div class="content-body">
+                            <div class="iframe-container">
+                                <iframe src="${data.content}" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'youtube':
+                    const videoId = extractYouTubeId(data.content);
+                    if (videoId) {
+                        contentDisplay.innerHTML = `
+                            <div class="content-header">
+                                <h4>YouTube 影片</h4>
+                            </div>
+                            <div class="content-body">
+                                <div class="youtube-container">
+                                    <iframe src="https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=0" 
+                                            frameborder="0" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                            allowfullscreen></iframe>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        contentDisplay.innerHTML = `
+                            <div class="content-header">
+                                <h4>YouTube 連結</h4>
+                            </div>
+                            <div class="content-body">
+                                <div class="text-center p-5">
+                                    <p><a href="${data.content}" target="_blank" class="btn btn-danger btn-lg">
+                                        <i class="bi bi-youtube"></i> 觀看影片
+                                    </a></p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    break;
+                    
+                case 'image':
+                    contentDisplay.innerHTML = `
+                        <div class="content-header">
+                            <h4>圖片</h4>
+                        </div>
+                        <div class="content-body">
+                            <div class="image-container">
+                                <img src="${data.content}" alt="教師發布的圖片">
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            showToast('教師發布了新內容', 'info');
+        }
+
+        // 處理班級名稱更新
+        function handleClassNameUpdate(data) {
+            document.getElementById('studentClassName').textContent = data.className;
+            currentClassName = data.className;
+        }
+
+        // 提取 YouTube 影片 ID
+        function extractYouTubeId(url) {
+            const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        // 發布內容
+        function publishContent() {
+            if (!mqttClient || !mqttClient.connected) {
+                showToast('MQTT 未連接，無法發布內容', 'warning');
+                return;
+            }
+
+            const className = document.getElementById('className').value.trim();
+            if (!className) {
+                showToast('請先輸入班級名稱', 'warning');
+                document.getElementById('className').focus();
+                return;
+            }
+
+            const contentType = document.getElementById('contentType').value;
+            const content = document.getElementById('contentInput').value.trim();
+            
+            if (!content) {
+                showToast('請輸入要發布的內容', 'warning');
+                return;
+            }
+            
+            const message = {
+                type: contentType,
+                content: content,
+                timestamp: new Date().toISOString(),
+                teacherName: currentUser.name
+            };
+            
+            if (contentType === 'text') {
+                message.title = '教師公告';
+            }
+            
+            // 發布到班級主題（班級代碼）
+            const topic = `class/${currentClass}`;
+            mqttClient.publish(topic, JSON.stringify(message), { qos: 1 }, function(err) {
+                if (err) {
+                    console.error('發布失敗:', err);
+                    showToast('發布失敗', 'danger');
+                } else {
+                    // 發布班級名稱
+                    const nameMessage = {
+                        className: className
+                    };
+                    mqttClient.publish(`classname/${currentClass}`, JSON.stringify(nameMessage), { qos: 1 });
+                    currentClassName = className;
+                    
+                    // 重新訂閱回應主題（使用新的班級名稱）
+                    const responseTopic = `response/${className}${currentClass}`;
+                    mqttClient.subscribe(responseTopic, function(err) {
+                        if (!err) {
+                            console.log(`重新訂閱回應主題: ${responseTopic}`);
+                        }
+                    });
+                    
+                    document.getElementById('contentInput').value = '';
+                    showToast('內容已發布', 'success');
+                }
+            });
+        }
+
+        // 發送學生回應
+        function sendResponse() {
+            if (!mqttClient || !mqttClient.connected) {
+                showToast('MQTT 未連接，無法發送回應', 'warning');
+                return;
+            }
+
+            const response = document.getElementById('studentResponse').value.trim();
+            
+            if (!response) {
+                showToast('請輸入回應內容', 'warning');
+                return;
+            }
+            
+            const message = {
+                studentName: currentUser.name,
+                content: response,
+                timestamp: new Date().toISOString()
+            };
+            
+            // 發布回應到班級名稱+班級代碼主題
+            const topic = `response/${currentClassName}${currentUser.classCode}`;
+            mqttClient.publish(topic, JSON.stringify(message), { qos: 1 }, function(err) {
+                if (err) {
+                    console.error('回應發送失敗:', err);
+                    showToast('回應發送失敗', 'danger');
+                } else {
+                    // 添加到歷史記錄
+                    addToHistory(response);
+                    
+                    document.getElementById('studentResponse').value = '';
+                    showToast('回應已發送', 'success');
+                }
+            });
+        }
+
+        // 添加到歷史記錄
+        function addToHistory(response) {
+            const history = document.getElementById('studentHistory');
+            const historyItem = document.createElement('div');
+            historyItem.className = 'mb-2 p-2 bg-dark rounded';
+            historyItem.innerHTML = `
+                <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                <p class="mb-0">${response}</p>
+            `;
+            history.insertBefore(historyItem, history.firstChild);
+            
+            // 限制歷史記錄數量
+            while (history.children.length > 10) {
+                history.removeChild(history.lastChild);
+            }
+        }
+
+        // 更新學生列表
+        function updateStudentList() {
+            const studentList = document.getElementById('studentList');
+            const onlineCount = document.getElementById('onlineCount');
+            
+            studentList.innerHTML = '';
+            onlineCount.textContent = onlineStudents.size;
+            
+            // 清理超過5分鐘未更新的學生
+            const now = new Date();
+            for (let [name, student] of onlineStudents) {
+                const timeDiff = now - new Date(student.lastSeen);
+                if (timeDiff > 300000) { // 5分鐘
+                    onlineStudents.delete(name);
+                }
+            }
+            
+            onlineStudents.forEach((student, name) => {
+                const studentItem = document.createElement('div');
+                studentItem.className = 'student-item';
+                studentItem.innerHTML = `
+                    <div>
+                        <span class="status-indicator status-online"></span>
+                        ${name}
+                    </div>
+                    <small class="student-status">${new Date(student.lastSeen).toLocaleTimeString()}</small>
+                `;
+                studentList.appendChild(studentItem);
+            });
+        }
+
+        // 刷新學生列表
+        function refreshStudentList() {
+            // 清空學生列表，讓學生重新發送上線通知
+            onlineStudents.clear();
+            updateStudentList();
+            showToast('已刷新學生列表', 'info');
+        }
+
+        // 刪除回應
+        function deleteResponse(button) {
+            if (confirm('確定要刪除這則回應嗎？')) {
+                button.closest('.message-item').remove();
+                showToast('回應已刪除', 'info');
+            }
+        }
+
+        // 顯示 Toast 通知
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            
+            const icon = {
+                'success': 'bi-check-circle-fill text-success',
+                'danger': 'bi-exclamation-triangle-fill text-danger',
+                'warning': 'bi-exclamation-triangle-fill text-warning',
+                'info': 'bi-info-circle-fill text-info'
+            }[type] || 'bi-info-circle-fill text-info';
+            
+            toast.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi ${icon} me-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // 登出
+        function logout() {
+            // 發送離線通知
+            if (mqttClient && mqttClient.connected && currentUser.role === 'student') {
+                const offlineMessage = {
+                    type: 'offline',
+                    studentName: currentUser.name,
+                    timestamp: new Date().toISOString()
+                };
+                mqttClient.publish(`status/${currentUser.classCode}`, JSON.stringify(offlineMessage), { qos: 1 });
+            }
+            
+            if (mqttClient) {
+                mqttClient.end();
+            }
+            
+            stopHeartbeat();
+            
+            currentUser = null;
+            currentClass = null;
+            currentClassName = null;
+            onlineStudents.clear();
+            reconnectAttempts = 0;
+            currentBrokerIndex = 0;
+            
+            document.getElementById('mqttStatus').style.display = 'none';
+            document.getElementById('teacherDashboard').style.display = 'none';
+            document.getElementById('studentView').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'block';
+            
+            // 清空表單
+            document.getElementById('teacherUsername').value = '';
+            document.getElementById('teacherPassword').value = '';
+            document.getElementById('classCode').value = '';
+            document.getElementById('studentName').value = '';
+            document.getElementById('className').value = '';
+            
+            showToast('已登出', 'info');
+        }
+
+        // 頁面關閉前發送離線通知
+        window.addEventListener('beforeunload', function() {
+            if (mqttClient && mqttClient.connected && currentUser && currentUser.role === 'student') {
+                const offlineMessage = {
+                    type: 'offline',
+                    studentName: currentUser.name,
+                    timestamp: new Date().toISOString()
+                };
+                navigator.sendBeacon(`https://httpbin.org/post`, JSON.stringify(offlineMessage));
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2966 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教師座位分配系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/pizzip@3.0.6/dist/pizzip.js"></script>
+    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        /* 原有樣式保持不變 */
+        :root {
+            --primary: #ff6b9d;
+            --secondary: #c44569;
+            --accent: #f8b500;
+            --light: #fff5f7;
+            --dark: #2d3436;
+            --gray: #dfe6e9;
+            --success: #00b894;
+            --info: #0984e3;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --left-width: 35%;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 100%;
+        }
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 15px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        h1 {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1rem;
+        }
+        .left-panel {
+            width: var(--left-width);
+            background: white;
+            padding: 80px 20px 20px;
+            overflow-y: auto;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+        }
+        .right-panel {
+            flex: 1;
+            padding: 80px 20px 20px;
+            overflow-y: auto;
+        }
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light);
+        }
+        .section-title i {
+            margin-right: 10px;
+        }
+        .import-section {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px dashed var(--primary);
+        }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+        .file-label {
+            display: inline-block;
+            padding: 8px 15px;
+            background: var(--primary);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .file-label:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .import-info {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--dark);
+        }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        .btn i {
+            margin-right: 6px;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover {
+            background: #00a085;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .btn-info {
+            background: var(--info);
+            color: white;
+        }
+        .btn-info:hover {
+            background: #0770c4;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #b71c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .teachers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .teacher-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            cursor: grab;
+            border: 2px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .teacher-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            border-color: var(--primary);
+        }
+        .teacher-card.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+        .teacher-card.has-seat {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: var(--light);
+        }
+        .teacher-card.has-seat:hover {
+            transform: none;
+            border-color: transparent;
+        }
+        .teacher-info {
+            flex: 1;
+        }
+        .teacher-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 3px;
+        }
+        .teacher-title {
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+        .teacher-seat {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--dark);
+        }
+        .teacher-seat i {
+            margin-right: 5px;
+            color: var(--accent);
+        }
+        .seat-number-input {
+            border: 1px solid var(--gray);
+            border-radius: 5px;
+            padding: 4px 8px;
+            margin-left: 8px;
+            width: 70px;
+            font-size: 0.85rem;
+        }
+        .teacher-actions {
+            display: flex;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        .teacher-btn {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 5px;
+            transition: color 0.3s ease;
+        }
+        .teacher-btn:hover {
+            color: var(--primary);
+        }
+        .teacher-btn.delete:hover {
+            color: var(--danger);
+        }
+        .building {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        .building-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .building-header i {
+            margin-right: 10px;
+        }
+        .building-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .building-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 2px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        .building-btn:hover {
+            opacity: 1;
+        }
+        .floor {
+            margin: 15px;
+            border: 1px solid var(--gray);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .floor-header {
+            background: var(--light);
+            padding: 8px 15px;
+            font-weight: 600;
+            color: var(--secondary);
+            border-bottom: 1px solid var(--gray);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .office {
+            padding: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        .office:last-child {
+            border-bottom: none;
+        }
+        .office-name {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .office-name i {
+            margin-right: 8px;
+            color: var(--accent);
+        }
+        .office-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .office-btn {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 2px;
+            transition: color 0.3s ease;
+        }
+        .office-btn:hover {
+            color: var(--danger);
+        }
+        .seats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+        .seat {
+            background: var(--light);
+            border: 2px dashed var(--gray);
+            border-radius: 10px;
+            padding: 10px 5px;
+            text-align: center;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+        .seat:hover {
+            border-color: var(--primary);
+            background: white;
+            transform: scale(1.05);
+        }
+        .seat.occupied {
+            background: white;
+            border: 2px solid var(--success);
+        }
+        .seat-number {
+            position: absolute;
+            top: 3px;
+            right: 5px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            width: 34px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .seat-teacher {
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 1.05rem;
+            margin-top: 5px;
+        }
+        .seat-title {
+            font-size: 0.75rem;
+            color: var(--secondary);
+        }
+        .seat-actions {
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            display: none;
+        }
+        .seat:hover .seat-actions {
+            display: block;
+        }
+        .seat-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 1px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            animation: modalFadeIn 0.3s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            color: var(--primary);
+        }
+        .close {
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .close:hover {
+            color: var(--danger);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid var(--gray);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .config-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 15px;
+        }
+        .config-title {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .config-title i {
+            margin-right: 8px;
+        }
+        .config-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .config-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        .config-item-info {
+            flex: 1;
+        }
+        .config-item-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .config-item-details {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        .config-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .config-btn {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 5px;
+            transition: color 0.3s ease;
+        }
+        .config-btn:hover {
+            color: var(--primary);
+        }
+        .config-btn.delete:hover {
+            color: var(--danger);
+        }
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 12px 18px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .notification.success {
+            background: var(--success);
+        }
+        .notification.error {
+            background: var(--danger);
+        }
+        .notification.info {
+            background: var(--info);
+        }
+        .notification.warning {
+            background: var(--warning);
+        }
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                height: auto;
+            }
+            .left-panel {
+                display: none;
+            }
+            .right-panel {
+                padding: 20px;
+            }
+            header {
+                position: static;
+                box-shadow: none;
+                margin-bottom: 20px;
+            }
+            .action-buttons {
+                display: none;
+            }
+            .building-actions,
+            .floor-header .btn,
+            .office-actions,
+            .seat-actions {
+                display: none !important;
+            }
+            .building {
+                break-inside: avoid;
+                margin-bottom: 20px;
+            }
+            .seats-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+                gap: 8px;
+            }
+            .seat {
+                min-height: 70px;
+                padding: 8px 4px;
+                border: 1px solid #ddd;
+            }
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .left-panel {
+                width: 100%;
+                height: 50vh;
+            }
+            .right-panel {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>全校教師辦公座位分配系統</h1>
+        <p class="subtitle">高雄市立立國民中學教務處</p>
+    </header>
+    <div class="container">
+        <div class="left-panel">
+            <h2 class="section-title">
+                <i class="fas fa-users"></i> 教師資料管理
+            </h2>
+            <div class="import-section">
+                <div class="file-input-wrapper">
+                    <input type="file" id="csvFile" class="file-input" accept=".csv">
+                    <label for="csvFile" class="file-label">
+                        <i class="fas fa-upload"></i> 匯入教師
+                    </label>
+                </div>
+                <div class="file-input-wrapper">
+                    <input type="file" id="configFile" class="file-input" accept=".csv">
+                    <label for="configFile" class="file-label">
+                        <i class="fas fa-upload"></i> 匯入樓層座位
+                    </label>
+                </div>
+                <div class="file-input-wrapper">
+                    <input type="file" id="xmlTemplateFile" class="file-input" accept=".xml">
+                    <label for="xmlTemplateFile" class="file-label">
+                        <i class="fas fa-file-code"></i> 上傳XML模板
+                    </label>
+                </div>
+                <div class="file-input-wrapper">
+                    <input type="file" id="backupFile" class="file-input" accept=".json">
+                    <label for="backupFile" class="file-label">
+                        <i class="fas fa-upload"></i> 匯入備份
+                    </label>
+                </div>
+                <p class="import-info">教師格式：姓名,職稱,座位編號<br>樓層座位格式：棟別,樓層別,辦公室別,座位編號開始值,座位數量<br>XML模板：需包含{座位編號}占位符<br>備份格式：.json</p>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="addTeacher()">
+                    <i class="fas fa-plus"></i> 新增
+                </button>
+                <button class="btn btn-success" onclick="syncSeats()">
+                    <i class="fas fa-sync-alt"></i> 同步
+                </button>
+                <button class="btn btn-info" onclick="exportTeacherSeating()">
+                    <i class="fas fa-download"></i> 匯出教師座位表
+                </button>
+                <button class="btn btn-info" onclick="exportBackup()">
+                    <i class="fas fa-download"></i> 匯出備份
+                </button>
+                <button class="btn btn-warning" onclick="generateXMLDocument()">
+                    <i class="fas fa-file-code"></i> 套印XML
+                </button>
+                <button class="btn btn-warning" onclick="loadSampleTeachers()">
+                    <i class="fas fa-user-graduate"></i> 載入範例教師資料
+                </button>
+                <button class="btn btn-warning" onclick="openUsageModal()">
+                    <i class="fas fa-info-circle"></i> 使用說明
+                </button>
+                <button class="btn btn-danger" onclick="clearTeacherData()">
+                    <i class="fas fa-trash-alt"></i> 清除教師資料
+                </button>
+            </div>
+            <div class="teachers-list" id="teachersList">
+                <!-- 教師卡片將動態生成 -->
+            </div>
+        </div>
+        <div class="right-panel">
+            <h2 class="section-title">
+                <i class="fas fa-th"></i> 座位分配管理
+            </h2>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="generateSeatNumbers()">
+                    <i class="fas fa-magic"></i> 自動編號
+                </button>
+               
+                <button class="btn btn-warning" onclick="loadDefaultSeatingData()">
+                    <i class="fas fa-building"></i> 載入預設座位表資料
+                </button>
+                <button class="btn btn-warning" onclick="openConfigModal()">
+                    <i class="fas fa-cog"></i> 管理建築物
+                </button>
+                <button class="btn btn-danger" onclick="clearSeatingData()">
+                    <i class="fas fa-trash-alt"></i> 清除座位表資料
+                </button>
+                <button class="btn btn-danger" onclick="clearAllData()">
+                    <i class="fas fa-trash-alt"></i> 清除所有資料
+                </button>
+            </div>
+            <div id="buildingsContainer">
+                <!-- 建築物座位將動態生成 -->
+            </div>
+        </div>
+    </div>
+    <!-- 編輯座位編號模態框 -->
+    <div id="seatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">編輯座位編號</h3>
+                <span class="close" onclick="closeModal('seatModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">座位編號</label>
+                <input type="text" id="seatNumberInput" class="form-input" placeholder="請輸入座位編號">
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveSeatNumber()">儲存</button>
+                <button class="btn" onclick="closeModal('seatModal')">取消</button>
+            </div>
+        </div>
+    </div>
+    <!-- 編輯教師資料模態框 -->
+    <div id="teacherModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">編輯教師資料</h3>
+                <span class="close" onclick="closeModal('teacherModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">姓名</label>
+                <input type="text" id="teacherNameInput" class="form-input" placeholder="請輸入教師姓名">
+            </div>
+            <div class="form-group">
+                <label class="form-label">職稱</label>
+                <input type="text" id="teacherTitleInput" class="form-input" placeholder="請輸入教師職稱">
+            </div>
+            <div class="form-group">
+                <label class="form-label">座位編號</label>
+                <input type="text" id="teacherSeatInput" class="form-input" placeholder="請輸入座位編號（可留空）">
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveTeacherData()">儲存</button>
+                <button class="btn" onclick="closeModal('teacherModal')">取消</button>
+            </div>
+        </div>
+    </div>
+    <!-- 管理建築物配置模態框 -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">管理建築物配置</h3>
+                <span class="close" onclick="closeModal('configModal')">&times;</span>
+            </div>
+            
+            <div class="config-section">
+                <h4 class="config-title">
+                    <i class="fas fa-building"></i> 建築物管理
+                </h4>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="addBuilding()">
+                        <i class="fas fa-plus"></i> 新增建築物
+                    </button>
+                </div>
+                <div class="config-list" id="buildingsConfigList">
+                    <!-- 建築物配置將動態生成 -->
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h4 class="config-title">
+                    <i class="fas fa-layer-group"></i> 樓層管理
+                </h4>
+                <div class="form-group">
+                    <label class="form-label">選擇建築物</label>
+                    <select id="buildingSelect" class="form-select" onchange="updateFloorsList()">
+                        <option value="">請選擇建築物</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="addFloor()">
+                        <i class="fas fa-plus"></i> 新增樓層
+                    </button>
+                </div>
+                <div class="config-list" id="floorsConfigList">
+                    <!-- 樓層配置將動態生成 -->
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h4 class="config-title">
+                    <i class="fas fa-door-open"></i> 辦公室管理
+                </h4>
+                <div class="form-group">
+                    <label class="form-label">選擇樓層</label>
+                    <select id="floorSelect" class="form-select" onchange="updateOfficesList()">
+                        <option value="">請選擇樓層</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="addOffice()">
+                        <i class="fas fa-plus"></i> 新增辦公室
+                    </button>
+                </div>
+                <div class="config-list" id="officesConfigList">
+                    <!-- 辦公室配置將動態生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 確認清除模態框 -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="confirmTitle">確認清除</h3>
+                <span class="close" onclick="closeModal('confirmModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <p id="confirmMessage">確定要執行此操作嗎？此操作無法復原。</p>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-danger" id="confirmButton">確定清除</button>
+                <button class="btn" onclick="closeModal('confirmModal')">取消</button>
+            </div>
+        </div>
+    </div>
+    <!-- 使用說明模態框 -->
+    <div id="usageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">使用說明</h3>
+                <span class="close" onclick="closeModal('usageModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <h4>使用流程：</h4>
+                <ol>
+                    <li>匯入樓層座位CSV：建立建築物、樓層、辦公室和座位結構。</li>
+                    <li>匯入教師CSV：載入教師資料，可包含預設座位編號。</li>
+                    <li>手動分配座位：拖拽教師到座位，或編輯教師座位編號。</li>
+                    <li>同步座位：將教師座位編號與座位表同步。</li>
+                    <li>上傳XML模板：包含{座位編號}占位符的XML文件。</li>
+                    <li>生成XML：套印教師姓名到對應座位編號的占位符。</li>
+                    <li>匯出備份/匯入備份：保存/恢復所有資料。</li>
+                    <li>管理建築物：新增/編輯/刪除建築物、樓層、辦公室。</li>
+                </ol>
+                <h4>格式要求：</h4>
+                <ul>
+                    <li>教師CSV：姓名,職稱,座位編號 (第一行為標題，從第二行開始匯入資料)。範例：<br>姓名,職稱,座位編號<br>張三,教師,1001<br>李四,主任,<br>王五,組長,1003</li>
+                    <li>樓層座位CSV：棟別,樓層別,辦公室別,座位編號開始值,座位數量 (第一行為標題，從第二行開始匯入資料)。範例：<br>棟別,樓層別,辦公室別,座位編號開始值,座位數量<br>致美樓1000,1F,體育組,1001,12<br>致善樓2000,2F,學務處,2001,13</li>
+                    <li>XML模板：使用{座位編號}作為占位符，例如&lt;text&gt;{1001}&lt;/text&gt;，系統會替換為教師姓名，未分配的不變。範例：&lt;root&gt;&lt;seat&gt;{1001}&lt;/seat&gt;&lt;seat&gt;{1002}&lt;/seat&gt;&lt;/root&gt;</li>
+                    <li>備份檔案：JSON格式，包含所有教師和座位資料。範例：{"teachers":[...],"buildings":[...],"nextSeatId":...}</li>
+                </ul>
+                <h4>模板設計事項：</h4>
+                <ul>
+                    <li>XML模板需為有效XML格式，占位符{座位編號}應置於需要教師姓名的位置。</li>
+                    <li>座位編號需與系統中一致，建議先設定座位表再設計模板。</li>
+                    <li>未匹配占位符保持原樣，不會被替換。</li>
+                    <li>支援全局替換，多處相同占位符會被相同姓名替換。</li>
+                    <li>XML模板可使用Word、EXCEL存為XML格式即可，套印完的XML檔案再使用Word、EXCEL開啟即可看到結果。</li>
+                </ul>
+                <h4>本網頁設計者:koming 20250912</h4>
+            </div>
+            <div class="form-actions">
+                <button class="btn" onclick="closeModal('usageModal')">關閉</button>
+            </div>
+        </div>
+    </div>
+    <!-- XML模板上傳狀態 -->
+    <div id="xmlTemplateStatus" style="display: none; padding: 10px; margin: 10px 0; border-radius: 5px; background-color: #e8f5e9; color: #2e7d32;">
+        <i class="fas fa-check-circle"></i> XML模板已上傳成功
+    </div>
+    <!-- 調試信息顯示區 -->
+    <div id="debugInfo" style="display: none; padding: 10px; margin: 10px 0; border-radius: 5px; background-color: #f5f5f5; color: #333; font-size: 12px; white-space: pre-wrap;"></div>
+    <script>
+        // 預設教師資料
+        const SAMPLE_TEACHERS = [
+            { id: 1, name: "侯小玲", title: "教師", seatNumber: "" },
+            { id: 2, name: "張靜怡", title: "教師", seatNumber: "" },
+            { id: 3, name: "李明華", title: "教師", seatNumber: "" },
+            { id: 4, name: "王子涵", title: "教師", seatNumber: "" },
+            { id: 5, name: "劉志強", title: "教師", seatNumber: "" },
+            { id: 6, name: "陳美玲", title: "教師", seatNumber: "" },
+            { id: 7, name: "楊雅婷", title: "教師", seatNumber: "" },
+            { id: 8, name: "趙子豪", title: "教師", seatNumber: "" },
+            { id: 9, name: "黃志偉", title: "教師", seatNumber: "" },
+            { id: 10, name: "吳佳慧", title: "教師", seatNumber: "" },
+            { id: 11, name: "蔡文婷", title: "教師", seatNumber: "" },
+            { id: 12, name: "鄭家豪", title: "教師", seatNumber: "" },
+            { id: 13, name: "蘇怡君", title: "教師", seatNumber: "" },
+            { id: 14, name: "許文傑", title: "教師", seatNumber: "" },
+            { id: 15, name: "馬志偉", title: "教師", seatNumber: "" },
+            { id: 16, name: "何子軒", title: "教師", seatNumber: "" },
+            { id: 17, name: "冉佩君", title: "教師", seatNumber: "" },
+            { id: 18, name: "龍雅琪", title: "教師", seatNumber: "" },
+            { id: 19, name: "魏俊傑", title: "教師", seatNumber: "" },
+            { id: 20, name: "陸建華", title: "教師", seatNumber: "" }
+        ];
+        // 預設建築物配置
+        const DEFAULT_BUILDINGS = [
+            {
+                id: 1,
+                name: "致美樓1000",
+                icon: "fa-building",
+                floors: [
+                    {
+                        id: 1,
+                        name: "1F",
+                        offices: [
+                            {
+                                id: 1,
+                                name: "體育組",
+                                icon: "fa-running",
+                                seatCount: 12,
+                                startNumber: "1001"
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        name: "2F",
+                        offices: [
+                            {
+                                id: 2,
+                                name: "東",
+                                icon: "fa-door-open",
+                                seatCount: 8,
+                                startNumber: "1021"
+                            }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        name: "3F",
+                        offices: [
+                            {
+                                id: 3,
+                                name: "一導辦公室",
+                                icon: "fa-chalkboard-teacher",
+                                seatCount: 36,
+                                startNumber: "1101"
+                            }
+                        ]
+                    },
+                    {
+                        id: 4,
+                        name: "4F",
+                        offices: [
+                            {
+                                id: 4,
+                                name: "西",
+                                icon: "fa-door-open",
+                                seatCount: 8,
+                                startNumber: "1041"
+                            }
+                        ]
+                    },
+                    {
+                        id: 5,
+                        name: "4F",
+                        offices: [
+                            {
+                                id: 5,
+                                name: "東",
+                                icon: "fa-door-open",
+                                seatCount: 8,
+                                startNumber: "1051"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 2,
+                name: "致善樓2000",
+                icon: "fa-building",
+                floors: [
+                    {
+                        id: 6,
+                        name: "2F",
+                        offices: [
+                            {
+                                id: 6,
+                                name: "學務處",
+                                icon: "fa-user-graduate",
+                                seatCount: 13,
+                                startNumber: "2001"
+                            }
+                        ]
+                    },
+                    {
+                        id: 7,
+                        name: "3F",
+                        offices: [
+                            {
+                                id: 7,
+                                name: "三導",
+                                icon: "fa-chalkboard-teacher",
+                                seatCount: 36,
+                                startNumber: "2301"
+                            }
+                        ]
+                    },
+                    {
+                        id: 8,
+                        name: "4F",
+                        offices: [
+                            {
+                                id: 8,
+                                name: "專任",
+                                icon: "fa-door-open",
+                                seatCount: 36,
+                                startNumber: "2041"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 3,
+                name: "致真樓3000",
+                icon: "fa-building",
+                floors: [
+                    {
+                        id: 9,
+                        name: "3F",
+                        offices: [
+                            {
+                                id: 9,
+                                name: "教務處",
+                                icon: "fa-book",
+                                seatCount: 17,
+                                startNumber: "3001"
+                            },
+                            {
+                                id: 10,
+                                name: "輔導室",
+                                icon: "fa-hands-helping",
+                                seatCount: 21,
+                                startNumber: "3021"
+                            },
+                            {
+                                id: 11,
+                                name: "總務處",
+                                icon: "fa-cogs",
+                                seatCount: 10,
+                                startNumber: "3041"
+                            },
+                            {
+                                id: 12,
+                                name: "二導",
+                                icon: "fa-chalkboard-teacher",
+                                seatCount: 36,
+                                startNumber: "3201"
+                            },
+                            {
+                                id: 13,
+                                name: "國際交流中心",
+                                icon: "fa-globe-asia",
+                                seatCount: 7,
+                                startNumber: "3061"
+                            },
+                            {
+                                id: 14,
+                                name: "資訊組",
+                                icon: "fa-laptop-code",
+                                seatCount: 2,
+                                startNumber: "3071"
+                            }
+                        ]
+                    },
+                    {
+                        id: 10,
+                        name: "4F",
+                        offices: [
+                            {
+                                id: 15,
+                                name: "研發組",
+                                icon: "fa-flask",
+                                seatCount: 9,
+                                startNumber: "3081"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 4,
+                name: "尚義樓4000",
+                icon: "fa-building",
+                floors: [
+                    {
+                        id: 11,
+                        name: "1F",
+                        offices: [
+                            {
+                                id: 16,
+                                name: "科技中心",
+                                icon: "fa-microchip",
+                                seatCount: 6,
+                                startNumber: "4001"
+                            }
+                        ]
+                    },
+                    {
+                        id: 12,
+                        name: "2F",
+                        offices: [
+                            {
+                                id: 17,
+                                name: "特教組",
+                                icon: "fa-universal-access",
+                                seatCount: 9,
+                                startNumber: "4021"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 5,
+                name: "崇德樓5000",
+                icon: "fa-building",
+                floors: [
+                    {
+                        id: 13,
+                        name: "2F",
+                        offices: [
+                            {
+                                id: 18,
+                                name: "專任",
+                                icon: "fa-door-open",
+                                seatCount: 12,
+                                startNumber: "5001"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+        
+        // 初始化資料
+        let teachers = [];
+        let buildings = [];
+        let nextSeatId = 1;
+        let currentEditingSeat = null;
+        let currentEditingTeacher = null;
+        let draggedTeacher = null;
+        let confirmCallback = null;
+        let xmlTemplateFile = null;
+        
+        // 初始化頁面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 從localStorage讀取資料
+            loadDataFromLocalStorage();
+            
+            // 如果沒有資料，則使用預設資料
+            if (teachers.length === 0) {
+                teachers = JSON.parse(JSON.stringify(SAMPLE_TEACHERS));
+            }
+            
+            if (buildings.length === 0) {
+                buildings = JSON.parse(JSON.stringify(DEFAULT_BUILDINGS));
+                initializeSeats();
+            }
+            
+            renderTeachers();
+            renderBuildings();
+            
+            // 設置檔案上傳事件
+            document.getElementById('csvFile').addEventListener('change', handleTeacherFileUpload);
+            document.getElementById('configFile').addEventListener('change', handleConfigFileUpload);
+            document.getElementById('xmlTemplateFile').addEventListener('change', handleXMLTemplateUpload);
+            document.getElementById('backupFile').addEventListener('change', handleBackupImport);
+        });
+        
+        // 從localStorage讀取資料
+        function loadDataFromLocalStorage() {
+            try {
+                const teachersData = localStorage.getItem('teachers');
+                if (teachersData) {
+                    teachers = JSON.parse(teachersData);
+                }
+                
+                const buildingsData = localStorage.getItem('buildings');
+                if (buildingsData) {
+                    buildings = JSON.parse(buildingsData);
+                }
+                
+                const nextSeatIdData = localStorage.getItem('nextSeatId');
+                if (nextSeatIdData) {
+                    nextSeatId = parseInt(nextSeatIdData);
+                }
+            } catch (error) {
+                console.error('從localStorage讀取資料時出錯:', error);
+            }
+        }
+        
+        // 儲存資料到localStorage
+        function saveDataToLocalStorage() {
+            try {
+                localStorage.setItem('teachers', JSON.stringify(teachers));
+                localStorage.setItem('buildings', JSON.stringify(buildings));
+                localStorage.setItem('nextSeatId', nextSeatId.toString());
+            } catch (error) {
+                console.error('儲存資料到localStorage時出錯:', error);
+                showNotification('儲存資料時出錯', 'error');
+            }
+        }
+        
+        // 處理XML模板上傳
+        function handleXMLTemplateUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.xml')) {
+                showNotification('請上傳.xml格式的文件', 'error');
+                return;
+            }
+            
+            xmlTemplateFile = file;
+            document.getElementById('xmlTemplateStatus').style.display = 'block';
+            showNotification('XML模板上傳成功！', 'success');
+        }
+        
+        // 生成XML文檔
+        function generateXMLDocument() {
+            if (!xmlTemplateFile) {
+                showNotification('請先上傳XML模板文件！', 'error');
+                return;
+            }
+            const teachersWithSeats = teachers.filter(t => t.seatNumber && t.seatNumber.trim() !== "");
+            if (teachersWithSeats.length === 0) {
+                showNotification('沒有已分配座位的教師，無法生成XML文檔！', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let content = e.target.result;
+                    // 準備資料
+                    const data = {
+                        teachers: teachersWithSeats.map(teacher => ({
+                            教師姓名: teacher.name,
+                            教師職稱: teacher.title,
+                            座位編號: teacher.seatNumber
+                        })),
+                        seats: {}
+                    };
+                    teachersWithSeats.forEach(teacher => {
+                        data.seats[teacher.seatNumber] = teacher.name;
+                    });
+                    // 替換XML中的占位符
+                    Object.keys(data.seats).forEach(seatNumber => {
+                        const placeholder = `{${seatNumber}}`;
+                        const teacherName = data.seats[seatNumber] || '';
+                        // 使用正則表達式進行全局替換
+                        const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                        content = content.replace(regex, teacherName);
+                    });
+                    // 儲存生成的XML文件
+                    const blob = new Blob([content], { type: 'text/xml;charset=utf-8;' });
+                    saveAs(blob, '教師座位分配表.xml');
+                    showNotification('XML文檔生成成功！', 'success');
+                } catch (error) {
+                    console.error('生成XML文檔時出錯:', error);
+                    showNotification('生成XML文檔時出錯：' + error.message, 'error');
+                }
+            };
+            reader.readAsText(xmlTemplateFile);
+        }
+        
+        // 匯出備份
+        function exportBackup() {
+            const backupData = {
+                teachers: teachers,
+                buildings: buildings,
+                nextSeatId: nextSeatId
+            };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json;charset=utf-8;' });
+            saveAs(blob, 'teacher_seat_backup.json');
+            showNotification('備份匯出成功！', 'success');
+        }
+        
+        // 處理備份匯入
+        function handleBackupImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.json')) {
+                showNotification('請上傳.json格式的文件', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backupData = JSON.parse(e.target.result);
+                    teachers = backupData.teachers || [];
+                    buildings = backupData.buildings || [];
+                    nextSeatId = backupData.nextSeatId || 1;
+                    
+                    // 儲存到localStorage
+                    saveDataToLocalStorage();
+                    
+                    // 重新渲染
+                    renderTeachers();
+                    renderBuildings();
+                    
+                    showNotification('備份匯入成功！', 'success');
+                } catch (error) {
+                    console.error('匯入備份時出錯:', error);
+                    showNotification('匯入備份時出錯：' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // 初始化座位
+        function initializeSeats() {
+            buildings.forEach(building => {
+                building.floors.forEach(floor => {
+                    floor.offices.forEach(office => {
+                        office.seats = [];
+                        let startNum = parseInt(office.startNumber) || 1;
+                        for (let i = 0; i < office.seatCount; i++) {
+                            office.seats.push({
+                                id: nextSeatId++,
+                                number: (startNum + i).toString(),
+                                teacherId: null
+                            });
+                        }
+                    });
+                });
+            });
+        }
+        
+        // 渲染教師列表
+        function renderTeachers() {
+            const teachersList = document.getElementById('teachersList');
+            teachersList.innerHTML = '';
+            
+            teachers.forEach(teacher => {
+                const teacherCard = document.createElement('div');
+                const hasSeat = teacher.seatNumber && teacher.seatNumber.trim() !== "";
+                teacherCard.className = `teacher-card ${hasSeat ? 'has-seat' : ''}`;
+                
+                if (!hasSeat) {
+                    teacherCard.draggable = true;
+                    teacherCard.dataset.teacherId = teacher.id;
+                    
+                    // 拖拽事件
+                    teacherCard.addEventListener('dragstart', function(e) {
+                        draggedTeacher = teacher;
+                        this.classList.add('dragging');
+                    });
+                    
+                    teacherCard.addEventListener('dragend', function(e) {
+                        this.classList.remove('dragging');
+                    });
+                }
+                
+                teacherCard.innerHTML = `
+                    <div class="teacher-info">
+                        <div class="teacher-name">${teacher.name}</div>
+                        <div class="teacher-title">${teacher.title}</div>
+                    </div>
+                    <div class="teacher-seat">
+                        <i class="fas fa-chair"></i>
+                        <input type="text" class="seat-number-input" value="${teacher.seatNumber}" 
+                               onchange="updateTeacherSeat(${teacher.id}, this.value)"
+                               placeholder="座位號">
+                    </div>
+                    <div class="teacher-actions">
+                        <button class="teacher-btn" onclick="editTeacher(${teacher.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="teacher-btn delete" onclick="deleteTeacher(${teacher.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                teachersList.appendChild(teacherCard);
+            });
+        }
+        
+        // 渲染建築物座位
+        function renderBuildings() {
+            const buildingsContainer = document.getElementById('buildingsContainer');
+            buildingsContainer.innerHTML = '';
+            
+            buildings.forEach(building => {
+                const buildingDiv = document.createElement('div');
+                buildingDiv.className = 'building';
+                
+                let floorsHtml = '';
+                building.floors.forEach(floor => {
+                    let officesHtml = '';
+                    floor.offices.forEach(office => {
+                        const seatsHtml = office.seats.map(seat => {
+                            const teacher = teachers.find(t => t.id === seat.teacherId);
+                            return `
+                                <div class="seat ${teacher ? 'occupied' : ''}" 
+                                     data-seat-id="${seat.id}"
+                                     data-building="${building.name}"
+                                     data-floor="${floor.name}"
+                                     data-office="${office.name}"
+                                     ondrop="drop(event)" 
+                                     ondragover="allowDrop(event)"
+                                     onclick="editSeatNumber(${seat.id})">
+                                    <div class="seat-number">${seat.number}</div>
+                                    ${teacher ? `
+                                        <div class="seat-teacher">${teacher.name}</div>
+                                        <div class="seat-title">${teacher.title}</div>
+                                        <div class="seat-actions">
+                                            <button class="seat-btn" onclick="removeTeacherFromSeat(event, ${seat.id})">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    ` : '<div class="seat-teacher">空位</div>'}
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        officesHtml += `
+                            <div class="office">
+                                <div class="office-name">
+                                    <span>
+                                        <i class="fas ${office.icon}"></i> ${office.name}
+                                    </span>
+                                    <div class="office-actions">
+                                        <button class="office-btn" onclick="editOffice(${office.id})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="office-btn" onclick="deleteOffice(${office.id})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="seats-grid">
+                                    ${seatsHtml}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    floorsHtml += `
+                        <div class="floor">
+                            <div class="floor-header">
+                                <span>${floor.name}</span>
+                                <div>
+                                    <button class="btn btn-primary btn-sm" onclick="addOfficeToFloor(${floor.id})">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            ${officesHtml}
+                        </div>
+                    `;
+                });
+                
+                buildingDiv.innerHTML = `
+                    <div class="building-header">
+                        <span>
+                            <i class="fas ${building.icon}"></i> ${building.name}
+                        </span>
+                        <div class="building-actions">
+                            <button class="building-btn" onclick="addFloorToBuilding(${building.id})">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="building-btn" onclick="deleteBuilding(${building.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    ${floorsHtml}
+                `;
+                
+                buildingsContainer.appendChild(buildingDiv);
+            });
+        }
+        
+        // 允許拖放
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+        
+        // 處理拖放
+        function drop(ev) {
+            ev.preventDefault();
+            if (!draggedTeacher) return;
+            
+            // 檢查教師是否已經有座位
+            if (draggedTeacher.seatNumber && draggedTeacher.seatNumber.trim() !== "") {
+                showNotification('該教師已經有座位，不能再次分配！', 'error');
+                return;
+            }
+            
+            const seatElement = ev.target.closest('.seat');
+            if (!seatElement) return;
+            
+            const seatId = parseInt(seatElement.dataset.seatId);
+            
+            // 找到座位
+            let targetSeat = null;
+            for (const building of buildings) {
+                for (const floor of building.floors) {
+                    for (const office of floor.offices) {
+                        targetSeat = office.seats.find(s => s.id === seatId);
+                        if (targetSeat) break;
+                    }
+                    if (targetSeat) break;
+                }
+                if (targetSeat) break;
+            }
+            
+            if (!targetSeat) return;
+            
+            // 如果座位已有人，先移除
+            if (targetSeat.teacherId) {
+                const prevTeacher = teachers.find(t => t.id === targetSeat.teacherId);
+                if (prevTeacher) {
+                    prevTeacher.seatNumber = "";
+                }
+            }
+            
+            // 分配教師到座位
+            targetSeat.teacherId = draggedTeacher.id;
+            draggedTeacher.seatNumber = targetSeat.number;
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            // 重新渲染
+            renderTeachers();
+            renderBuildings();
+            
+            showNotification('座位分配成功！', 'success');
+        }
+        
+        // 編輯座位編號
+        function editSeatNumber(seatId) {
+            // 找到座位
+            let seat = null;
+            for (const building of buildings) {
+                for (const floor of building.floors) {
+                    for (const office of floor.offices) {
+                        seat = office.seats.find(s => s.id === seatId);
+                        if (seat) break;
+                    }
+                    if (seat) break;
+                }
+                if (seat) break;
+            }
+            
+            if (!seat) return;
+            
+            currentEditingSeat = seat;
+            document.getElementById('seatNumberInput').value = seat.number;
+            document.getElementById('seatModal').style.display = 'flex';
+        }
+        
+        // 儲存座位編號
+        function saveSeatNumber() {
+            if (!currentEditingSeat) return;
+            
+            const newNumber = document.getElementById('seatNumberInput').value.trim();
+            if (!newNumber) {
+                showNotification('座位編號不能為空！', 'error');
+                return;
+            }
+            
+            // 檢查編號是否重複
+            let isDuplicate = false;
+            for (const building of buildings) {
+                for (const floor of building.floors) {
+                    for (const office of floor.offices) {
+                        for (const seat of office.seats) {
+                            if (seat.id !== currentEditingSeat.id && seat.number === newNumber) {
+                                isDuplicate = true;
+                                break;
+                            }
+                        }
+                        if (isDuplicate) break;
+                    }
+                    if (isDuplicate) break;
+                }
+                if (isDuplicate) break;
+            }
+            
+            if (isDuplicate) {
+                showNotification('座位編號已存在！', 'error');
+                return;
+            }
+            
+            // 更新座位編號
+            const oldNumber = currentEditingSeat.number;
+            currentEditingSeat.number = newNumber;
+            
+            // 如果座位有教師，更新教師的座位編號
+            if (currentEditingSeat.teacherId) {
+                const teacher = teachers.find(t => t.id === currentEditingSeat.teacherId);
+                if (teacher) {
+                    teacher.seatNumber = newNumber;
+                }
+            }
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            // 重新渲染
+            renderTeachers();
+            renderBuildings();
+            closeModal('seatModal');
+            
+            showNotification('座位編號更新成功！', 'success');
+        }
+        
+        // 關閉模態框
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            if (modalId === 'seatModal') {
+                currentEditingSeat = null;
+            } else if (modalId === 'teacherModal') {
+                currentEditingTeacher = null;
+            } else if (modalId === 'confirmModal') {
+                confirmCallback = null;
+            }
+        }
+        
+        // 從座位移除教師
+        function removeTeacherFromSeat(event, seatId) {
+            event.stopPropagation();
+            
+            // 找到座位
+            let seat = null;
+            for (const building of buildings) {
+                for (const floor of building.floors) {
+                    for (const office of floor.offices) {
+                        seat = office.seats.find(s => s.id === seatId);
+                        if (seat) break;
+                    }
+                    if (seat) break;
+                }
+                if (seat) break;
+            }
+            
+            if (!seat || !seat.teacherId) return;
+            
+            // 找到教師並清除座位編號
+            const teacher = teachers.find(t => t.id === seat.teacherId);
+            if (teacher) {
+                teacher.seatNumber = "";
+            }
+            
+            // 清除座位上的教師
+            seat.teacherId = null;
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            // 重新渲染
+            renderTeachers();
+            renderBuildings();
+            
+            showNotification('教師已從座位移除！', 'info');
+        }
+        
+        // 更新教師座位編號
+        function updateTeacherSeat(teacherId, newSeatNumber) {
+            const teacher = teachers.find(t => t.id === teacherId);
+            if (!teacher) return;
+            
+            // 清除之前的座位分配
+            if (teacher.seatNumber) {
+                for (const building of buildings) {
+                    for (const floor of building.floors) {
+                        for (const office of floor.offices) {
+                            for (const seat of office.seats) {
+                                if (seat.number === teacher.seatNumber && seat.teacherId === teacherId) {
+                                    seat.teacherId = null;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 更新教師座位編號
+            teacher.seatNumber = newSeatNumber;
+            
+            // 如果新座位編號不為空，嘗試分配到對應座位
+            if (newSeatNumber) {
+                let assigned = false;
+                for (const building of buildings) {
+                    for (const floor of building.floors) {
+                        for (const office of floor.offices) {
+                            for (const seat of office.seats) {
+                                if (seat.number === newSeatNumber) {
+                                    // 如果座位已有人，先移除
+                                    if (seat.teacherId) {
+                                        const prevTeacher = teachers.find(t => t.id === seat.teacherId);
+                                        if (prevTeacher) {
+                                            prevTeacher.seatNumber = "";
+                                        }
+                                    }
+                                    
+                                    seat.teacherId = teacherId;
+                                    assigned = true;
+                                    break;
+                                }
+                            }
+                            if (assigned) break;
+                        }
+                        if (assigned) break;
+                    }
+                    if (assigned) break;
+                }
+            }
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            // 重新渲染
+            renderTeachers();
+            renderBuildings();
+        }
+        
+        // 同步座位編號
+        function syncSeats() {
+            let count = 0;
+            
+            // 遍歷所有教師
+            teachers.forEach(teacher => {
+                if (teacher.seatNumber) {
+                    // 清除之前的座位分配
+                    for (const building of buildings) {
+                        for (const floor of building.floors) {
+                            for (const office of floor.offices) {
+                                for (const seat of office.seats) {
+                                    if (seat.teacherId === teacher.id) {
+                                        seat.teacherId = null;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 嘗試分配到新座位
+                    let assigned = false;
+                    for (const building of buildings) {
+                        for (const floor of building.floors) {
+                            for (const office of floor.offices) {
+                                for (const seat of office.seats) {
+                                    if (seat.number === teacher.seatNumber) {
+                                        // 如果座位已有人，先移除
+                                        if (seat.teacherId) {
+                                            const prevTeacher = teachers.find(t => t.id === seat.teacherId);
+                                            if (prevTeacher) {
+                                                prevTeacher.seatNumber = "";
+                                            }
+                                        }
+                                        
+                                        seat.teacherId = teacher.id;
+                                        assigned = true;
+                                        count++;
+                                        break;
+                                    }
+                                }
+                                if (assigned) break;
+                            }
+                            if (assigned) break;
+                        }
+                        if (assigned) break;
+                    }
+                }
+            });
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            // 重新渲染
+            renderTeachers();
+            renderBuildings();
+            
+            showNotification(`成功同步 ${count} 個座位分配！`, 'success');
+        }
+        
+        // 自動生成座位編號
+        function generateSeatNumbers() {
+            let counter = 1;
+            
+            // 為所有座位生成編號
+            for (const building of buildings) {
+                for (const floor of building.floors) {
+                    for (const office of floor.offices) {
+                        for (const seat of office.seats) {
+                            seat.number = counter.toString();
+                            counter++;
+                            
+                            // 如果座位有教師，更新教師的座位編號
+                            if (seat.teacherId) {
+                                const teacher = teachers.find(t => t.id === seat.teacherId);
+                                if (teacher) {
+                                    teacher.seatNumber = seat.number;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            // 重新渲染
+            renderTeachers();
+            renderBuildings();
+            
+            showNotification('座位編號自動生成完成！', 'success');
+        }
+        
+        // 新增教師
+        function addTeacher() {
+            currentEditingTeacher = null;
+            document.getElementById('teacherNameInput').value = '';
+            document.getElementById('teacherTitleInput').value = '';
+            document.getElementById('teacherSeatInput').value = '';
+            document.getElementById('teacherModal').style.display = 'flex';
+        }
+        
+        // 編輯教師
+        function editTeacher(teacherId) {
+            const teacher = teachers.find(t => t.id === teacherId);
+            if (!teacher) return;
+            
+            currentEditingTeacher = teacher;
+            document.getElementById('teacherNameInput').value = teacher.name;
+            document.getElementById('teacherTitleInput').value = teacher.title;
+            document.getElementById('teacherSeatInput').value = teacher.seatNumber;
+            document.getElementById('teacherModal').style.display = 'flex';
+        }
+        
+        // 儲存教師資料
+        function saveTeacherData() {
+            const name = document.getElementById('teacherNameInput').value.trim();
+            const title = document.getElementById('teacherTitleInput').value.trim();
+            const seatNumber = document.getElementById('teacherSeatInput').value.trim();
+            
+            if (!name || !title) {
+                showNotification('請填寫完整的教師資料！', 'error');
+                return;
+            }
+            
+            if (currentEditingTeacher) {
+                // 編輯現有教師
+                currentEditingTeacher.name = name;
+                currentEditingTeacher.title = title;
+                
+                // 如果座位編號有變更，更新座位分配
+                if (currentEditingTeacher.seatNumber !== seatNumber) {
+                    // 清除之前的座位分配
+                    if (currentEditingTeacher.seatNumber) {
+                        for (const building of buildings) {
+                            for (const floor of building.floors) {
+                                for (const office of floor.offices) {
+                                    for (const seat of office.seats) {
+                                        if (seat.number === currentEditingTeacher.seatNumber && seat.teacherId === currentEditingTeacher.id) {
+                                            seat.teacherId = null;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 更新教師座位編號
+                    currentEditingTeacher.seatNumber = seatNumber;
+                    
+                    // 如果新座位編號不為空，嘗試分配到對應座位
+                    if (seatNumber) {
+                        let assigned = false;
+                        for (const building of buildings) {
+                            for (const floor of building.floors) {
+                                for (const office of floor.offices) {
+                                    for (const seat of office.seats) {
+                                        if (seat.number === seatNumber) {
+                                            // 如果座位已有人，先移除
+                                            if (seat.teacherId) {
+                                                const prevTeacher = teachers.find(t => t.id === seat.teacherId);
+                                                if (prevTeacher) {
+                                                    prevTeacher.seatNumber = "";
+                                                }
+                                            }
+                                            
+                                            seat.teacherId = currentEditingTeacher.id;
+                                            assigned = true;
+                                            break;
+                                        }
+                                    }
+                                    if (assigned) break;
+                                }
+                                if (assigned) break;
+                            }
+                            if (assigned) break;
+                        }
+                    }
+                }
+                
+                showNotification('教師資料更新成功！', 'success');
+            } else {
+                // 新增教師
+                const newTeacher = {
+                    id: teachers.length > 0 ? Math.max(...teachers.map(t => t.id)) + 1 : 1,
+                    name: name,
+                    title: title,
+                    seatNumber: seatNumber
+                };
+                teachers.push(newTeacher);
+                
+                // 如果有座位編號，嘗試分配到對應座位
+                if (seatNumber) {
+                    let assigned = false;
+                    for (const building of buildings) {
+                        for (const floor of building.floors) {
+                            for (const office of floor.offices) {
+                                for (const seat of office.seats) {
+                                    if (seat.number === seatNumber) {
+                                        // 如果座位已有人，先移除
+                                        if (seat.teacherId) {
+                                            const prevTeacher = teachers.find(t => t.id === seat.teacherId);
+                                            if (prevTeacher) {
+                                                prevTeacher.seatNumber = "";
+                                            }
+                                        }
+                                        
+                                        seat.teacherId = newTeacher.id;
+                                        assigned = true;
+                                        break;
+                                    }
+                                }
+                                if (assigned) break;
+                            }
+                            if (assigned) break;
+                        }
+                        if (assigned) break;
+                    }
+                }
+                
+                showNotification('教師新增成功！', 'success');
+            }
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            renderTeachers();
+            renderBuildings();
+            closeModal('teacherModal');
+        }
+        
+        // 刪除教師
+        function deleteTeacher(teacherId) {
+            if (!confirm('確定要刪除這位教師嗎？')) return;
+            
+            const teacherIndex = teachers.findIndex(t => t.id === teacherId);
+            if (teacherIndex === -1) return;
+            
+            const teacher = teachers[teacherIndex];
+            
+            // 清除座位分配
+            if (teacher.seatNumber) {
+                for (const building of buildings) {
+                    for (const floor of building.floors) {
+                        for (const office of floor.offices) {
+                            for (const seat of office.seats) {
+                                if (seat.number === teacher.seatNumber && seat.teacherId === teacherId) {
+                                    seat.teacherId = null;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            teachers.splice(teacherIndex, 1);
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            renderTeachers();
+            renderBuildings();
+            
+            showNotification('教師刪除成功！', 'success');
+        }
+        
+        // 載入範例教師資料
+        function loadSampleTeachers() {
+            showConfirmModal(
+                '載入範例教師資料',
+                '確定要載入範例教師資料嗎？此操作將清除現有教師資料，並載入預設的教師資料。',
+                function() {
+                    // 清除所有座位上的教師分配
+                    for (const building of buildings) {
+                        for (const floor of building.floors) {
+                            for (const office of floor.offices) {
+                                for (const seat of office.seats) {
+                                    seat.teacherId = null;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 載入預設教師資料
+                    teachers = JSON.parse(JSON.stringify(SAMPLE_TEACHERS));
+                    
+                    // 儲存資料到localStorage
+                    saveDataToLocalStorage();
+                    
+                    // 重新渲染
+                    renderTeachers();
+                    renderBuildings();
+                    
+                    showNotification('範例教師資料載入成功！', 'success');
+                }
+            );
+        }
+        
+        // 載入預設座位表資料
+        function loadDefaultSeatingData() {
+            showConfirmModal(
+                '載入預設座位表資料',
+                '確定要載入預設座位表資料嗎？此操作將清除現有座位表資料，並載入預設的建築物配置，同時清除所有教師的座位分配。',
+                function() {
+                    // 清除所有教師的座位分配
+                    teachers.forEach(teacher => {
+                        teacher.seatNumber = "";
+                    });
+                    
+                    // 載入預設建築物配置
+                    buildings = JSON.parse(JSON.stringify(DEFAULT_BUILDINGS));
+                    nextSeatId = 1;
+                    
+                    // 初始化座位
+                    initializeSeats();
+                    
+                    // 儲存資料到localStorage
+                    saveDataToLocalStorage();
+                    
+                    // 重新渲染
+                    renderTeachers();
+                    renderBuildings();
+                    
+                    showNotification('預設座位表資料載入成功！', 'success');
+                }
+            );
+        }
+        
+        // 清除教師資料
+        function clearTeacherData() {
+            showConfirmModal(
+                '清除教師資料',
+                '確定要清除所有教師資料嗎？此操作將刪除所有教師及其座位分配，但保留座位表結構。此操作無法復原。',
+                function() {
+                    // 清除所有座位上的教師分配
+                    for (const building of buildings) {
+                        for (const floor of building.floors) {
+                            for (const office of floor.offices) {
+                                for (const seat of office.seats) {
+                                    seat.teacherId = null;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 清空教師列表
+                    teachers = [];
+                    
+                    // 儲存資料到localStorage
+                    saveDataToLocalStorage();
+                    
+                    // 重新渲染
+                    renderTeachers();
+                    renderBuildings();
+                    
+                    showNotification('教師資料已清除！', 'success');
+                }
+            );
+        }
+        
+        // 清除座位表資料
+        function clearSeatingData() {
+            showConfirmModal(
+                '清除座位表資料',
+                '確定要清除所有座位表資料嗎？此操作將刪除所有建築物、樓層和辦公室，並清除所有教師的座位分配。此操作無法復原。',
+                function() {
+                    // 清除所有教師的座位編號
+                    teachers.forEach(teacher => {
+                        teacher.seatNumber = "";
+                    });
+                    
+                    // 清空建築物列表
+                    buildings = [];
+                    nextSeatId = 1;
+                    
+                    // 儲存資料到localStorage
+                    saveDataToLocalStorage();
+                    
+                    // 重新渲染
+                    renderTeachers();
+                    renderBuildings();
+                    
+                    showNotification('座位表資料已清除！', 'success');
+                }
+            );
+        }
+        
+        // 清除所有資料
+        function clearAllData() {
+            showConfirmModal(
+                '清除所有資料',
+                '確定要清除所有資料嗎？此操作將刪除所有教師資料、座位表資料以及localStorage中的所有資料。此操作無法復原。',
+                function() {
+                    // 清除所有教師的座位編號
+                    teachers.forEach(teacher => {
+                        teacher.seatNumber = "";
+                    });
+                    
+                    // 清空教師列表和建築物列表
+                    teachers = [];
+                    buildings = [];
+                    nextSeatId = 1;
+                    
+                    // 清除localStorage中的所有資料
+                    localStorage.removeItem('teachers');
+                    localStorage.removeItem('buildings');
+                    localStorage.removeItem('nextSeatId');
+                    
+                    // 重新渲染
+                    renderTeachers();
+                    renderBuildings();
+                    
+                    showNotification('所有資料已清除！', 'success');
+                }
+            );
+        }
+        
+        // 處理教師檔案上傳
+        function handleTeacherFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const lines = content.split('\n');
+                
+                // 清空現有教師
+                teachers = [];
+                
+                // 解析CSV，從第二行開始（跳過標題）
+                lines.forEach((line, index) => {
+                    if (index === 0 || line.trim() === '') return;
+                    
+                    const parts = line.split(',');
+                    if (parts.length >= 2) {
+                        const name = parts[0].trim();
+                        const title = parts[1].trim();
+                        const seatNumber = parts.length >= 3 ? parts[2].trim() : "";
+                        
+                        teachers.push({
+                            id: teachers.length + 1,
+                            name: name,
+                            title: title,
+                            seatNumber: seatNumber
+                        });
+                    }
+                });
+                
+                // 為有座位編號的教師分配座位
+                teachers.forEach(teacher => {
+                    if (teacher.seatNumber) {
+                        for (const building of buildings) {
+                            for (const floor of building.floors) {
+                                for (const office of floor.offices) {
+                                    for (const seat of office.seats) {
+                                        if (seat.number === teacher.seatNumber) {
+                                            seat.teacherId = teacher.id;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // 儲存資料到localStorage
+                saveDataToLocalStorage();
+                
+                renderTeachers();
+                renderBuildings();
+                showNotification(`成功匯入 ${teachers.length} 位教師！`, 'success');
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // 處理座位表設定檔案上傳 - 修正版本
+        function handleConfigFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const lines = content.split('\n');
+                
+                // 清空現有建築物
+                buildings = [];
+                nextSeatId = 1;
+                
+                // 解析CSV，從第二行開始（跳過標題）
+                lines.forEach((line, index) => {
+                    if (index === 0 || line.trim() === '') return;
+                    
+                    const parts = line.split(',');
+                    if (parts.length >= 5) {
+                        const buildingName = parts[0].trim();
+                        const floorName = parts[1].trim();
+                        const officeName = parts[2].trim();
+                        const startNumber = parts[3].trim();
+                        const seatCount = parseInt(parts[4].trim()) || 1;
+                        
+                        // 尋找或建立建築物
+                        let building = buildings.find(b => b.name === buildingName);
+                        if (!building) {
+                            building = {
+                                id: buildings.length > 0 ? Math.max(...buildings.map(b => b.id)) + 1 : 1,
+                                name: buildingName,
+                                icon: "fa-building",
+                                floors: []
+                            };
+                            buildings.push(building);
+                        }
+                        
+                        // 尋找或建立樓層
+                        let floor = building.floors.find(f => f.name === floorName);
+                        if (!floor) {
+                            const allFloorIds = buildings.flatMap(b => b.floors.map(f => f.id));
+                            const maxFloorId = allFloorIds.length > 0 ? Math.max(...allFloorIds) : 0;
+                            floor = {
+                                id: maxFloorId + 1,
+                                name: floorName,
+                                offices: []
+                            };
+                            building.floors.push(floor);
+                        }
+                        
+                        // 建立辦公室 - 修正ID生成方式
+                        const allOfficeIds = buildings.flatMap(b => b.floors.flatMap(f => f.offices.map(o => o.id)));
+                        const maxOfficeId = allOfficeIds.length > 0 ? Math.max(...allOfficeIds) : 0;
+                        const office = {
+                            id: maxOfficeId + 1,
+                            name: officeName,
+                            icon: "fa-door-open",
+                            seatCount: seatCount,
+                            startNumber: startNumber,
+                            seats: []
+                        };
+                        
+                        floor.offices.push(office);
+                    }
+                });
+                
+                // 初始化座位
+                initializeSeats();
+                
+                // 儲存資料到localStorage
+                saveDataToLocalStorage();
+                
+                renderBuildings();
+                
+                showNotification('座位表設定匯入成功！', 'success');
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // 匯出教師座位表
+        function exportTeacherSeating() {
+            let csvContent = "姓名,職稱,座位編號\n";
+            
+            // 收集所有教師，按姓名排序
+            teachers.sort((a, b) => a.name.localeCompare(b.name));
+            
+            teachers.forEach(teacher => {
+                csvContent += `${teacher.name},${teacher.title},${teacher.seatNumber}\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '教師座位表.csv';
+            link.click();
+            
+            showNotification('教師座位表匯出成功！', 'success');
+        }
+        
+        // 列印座位表
+        function printSeatingChart() {
+            window.print();
+        }
+        
+        // 顯示通知
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 打開配置模態框
+        function openConfigModal() {
+            document.getElementById('configModal').style.display = 'flex';
+            updateBuildingsConfigList();
+            updateBuildingSelect();
+        }
+        
+        // 打開使用說明模態框
+        function openUsageModal() {
+            document.getElementById('usageModal').style.display = 'flex';
+        }
+        
+        // 更新建築物配置列表
+        function updateBuildingsConfigList() {
+            const buildingsConfigList = document.getElementById('buildingsConfigList');
+            buildingsConfigList.innerHTML = '';
+            
+            buildings.forEach(building => {
+                const configItem = document.createElement('div');
+                configItem.className = 'config-item';
+                configItem.innerHTML = `
+                    <div class="config-item-info">
+                        <div class="config-item-name">${building.name}</div>
+                        <div class="config-item-details">${building.floors.length} 個樓層</div>
+                    </div>
+                    <div class="config-item-actions">
+                        <button class="config-btn" onclick="editBuilding(${building.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="config-btn delete" onclick="deleteBuilding(${building.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                buildingsConfigList.appendChild(configItem);
+            });
+        }
+        
+        // 更新建築物選擇框
+        function updateBuildingSelect() {
+            const buildingSelect = document.getElementById('buildingSelect');
+            buildingSelect.innerHTML = '<option value="">請選擇建築物</option>';
+            
+            buildings.forEach(building => {
+                const option = document.createElement('option');
+                option.value = building.id;
+                option.textContent = building.name;
+                buildingSelect.appendChild(option);
+            });
+        }
+        
+        // 更新樓層列表
+        function updateFloorsList() {
+            const buildingId = parseInt(document.getElementById('buildingSelect').value);
+            const floorsConfigList = document.getElementById('floorsConfigList');
+            floorsConfigList.innerHTML = '';
+            
+            if (!buildingId) return;
+            
+            const building = buildings.find(b => b.id === buildingId);
+            if (!building) return;
+            
+            building.floors.forEach(floor => {
+                const configItem = document.createElement('div');
+                configItem.className = 'config-item';
+                configItem.innerHTML = `
+                    <div class="config-item-info">
+                        <div class="config-item-name">${floor.name}</div>
+                        <div class="config-item-details">${floor.offices.length} 個辦公室</div>
+                    </div>
+                    <div class="config-item-actions">
+                        <button class="config-btn" onclick="editFloor(${floor.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="config-btn delete" onclick="deleteFloor(${floor.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                floorsConfigList.appendChild(configItem);
+            });
+            
+            updateFloorSelect();
+        }
+        
+        // 更新樓層選擇框
+        function updateFloorSelect() {
+            const buildingId = parseInt(document.getElementById('buildingSelect').value);
+            const floorSelect = document.getElementById('floorSelect');
+            floorSelect.innerHTML = '<option value="">請選擇樓層</option>';
+            
+            if (!buildingId) return;
+            
+            const building = buildings.find(b => b.id === buildingId);
+            if (!building) return;
+            
+            building.floors.forEach(floor => {
+                const option = document.createElement('option');
+                option.value = floor.id;
+                option.textContent = floor.name;
+                floorSelect.appendChild(option);
+            });
+        }
+        
+        // 更新辦公室列表
+        function updateOfficesList() {
+            const floorId = parseInt(document.getElementById('floorSelect').value);
+            const officesConfigList = document.getElementById('officesConfigList');
+            officesConfigList.innerHTML = '';
+            
+            if (!floorId) return;
+            
+            let floor = null;
+            for (const building of buildings) {
+                floor = building.floors.find(f => f.id === floorId);
+                if (floor) break;
+            }
+            
+            if (!floor) return;
+            
+            floor.offices.forEach(office => {
+                const configItem = document.createElement('div');
+                configItem.className = 'config-item';
+                configItem.innerHTML = `
+                    <div class="config-item-info">
+                        <div class="config-item-name">${office.name || '未命名辦公室'}</div>
+                        <div class="config-item-details">${office.seatCount} 個座位 (起始: ${office.startNumber})</div>
+                    </div>
+                    <div class="config-item-actions">
+                        <button class="config-btn" onclick="editOffice(${office.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="config-btn delete" onclick="deleteOffice(${office.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                officesConfigList.appendChild(configItem);
+            });
+        }
+        
+        // 新增建築物
+        function addBuilding() {
+            const name = prompt('請輸入建築物名稱：');
+            if (!name) return;
+            
+            const newBuilding = {
+                id: buildings.length > 0 ? Math.max(...buildings.map(b => b.id)) + 1 : 1,
+                name: name,
+                icon: "fa-building",
+                floors: []
+            };
+            
+            buildings.push(newBuilding);
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            updateBuildingsConfigList();
+            updateBuildingSelect();
+            renderBuildings();
+            
+            showNotification('建築物新增成功！', 'success');
+        }
+        
+        // 新增樓層
+        function addFloor() {
+            const buildingId = parseInt(document.getElementById('buildingSelect').value);
+            if (!buildingId) {
+                showNotification('請先選擇建築物！', 'error');
+                return;
+            }
+            
+            const name = prompt('請輸入樓層名稱：');
+            if (!name) return;
+            
+            const building = buildings.find(b => b.id === buildingId);
+            if (!building) return;
+            
+            const newFloor = {
+                id: Math.max(...buildings.flatMap(b => b.floors.map(f => f.id))) + 1,
+                name: name,
+                offices: []
+            };
+            
+            building.floors.push(newFloor);
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            updateFloorsList();
+            updateFloorSelect();
+            renderBuildings();
+            
+            showNotification('樓層新增成功！', 'success');
+        }
+        
+        // 新增辦公室 - 修正版本
+        function addOffice() {
+            const floorId = parseInt(document.getElementById('floorSelect').value);
+            if (!floorId) {
+                showNotification('請先選擇樓層！', 'error');
+                return;
+            }
+            
+            const name = prompt('請輸入辦公室名稱：');
+            if (name === null) return;
+            
+            const seatCount = prompt('請輸入座位數量：');
+            if (!seatCount || isNaN(seatCount) || seatCount <= 0) {
+                showNotification('請輸入有效的座位數量！', 'error');
+                return;
+            }
+            
+            const startNumber = prompt('請輸入座位編號開始值：');
+            if (!startNumber || isNaN(startNumber)) {
+                showNotification('請輸入有效的座位編號開始值！', 'error');
+                return;
+            }
+            
+            let floor = null;
+            for (const building of buildings) {
+                floor = building.floors.find(f => f.id === floorId);
+                if (floor) break;
+            }
+            
+            if (!floor) return;
+            
+            // 確保ID是全局唯一的
+            const allOfficeIds = buildings.flatMap(b => b.floors.flatMap(f => f.offices.map(o => o.id)));
+            const maxOfficeId = allOfficeIds.length > 0 ? Math.max(...allOfficeIds) : 0;
+            
+            const newOffice = {
+                id: maxOfficeId + 1,
+                name: name,
+                icon: "fa-door-open",
+                seatCount: parseInt(seatCount),
+                startNumber: startNumber,
+                seats: []
+            };
+            
+            // 生成座位
+            let startNum = parseInt(startNumber);
+            for (let i = 0; i < newOffice.seatCount; i++) {
+                newOffice.seats.push({
+                    id: nextSeatId++,
+                    number: (startNum + i).toString(),
+                    teacherId: null
+                });
+            }
+            
+            floor.offices.push(newOffice);
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            updateOfficesList();
+            renderBuildings();
+            
+            showNotification('辦公室新增成功！', 'success');
+        }
+        
+        // 編輯建築物
+        function editBuilding(buildingId) {
+            const building = buildings.find(b => b.id === buildingId);
+            if (!building) return;
+            
+            const newName = prompt('請輸入新的建築物名稱：', building.name);
+            if (!newName) return;
+            
+            building.name = newName;
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            updateBuildingsConfigList();
+            updateBuildingSelect();
+            renderBuildings();
+            
+            showNotification('建築物更新成功！', 'success');
+        }
+        
+        // 編輯樓層
+        function editFloor(floorId) {
+            let floor = null;
+            for (const building of buildings) {
+                floor = building.floors.find(f => f.id === floorId);
+                if (floor) break;
+            }
+            
+            if (!floor) return;
+            
+            const newName = prompt('請輸入新的樓層名稱：', floor.name);
+            if (!newName) return;
+            
+            floor.name = newName;
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            updateFloorsList();
+            updateFloorSelect();
+            renderBuildings();
+            
+            showNotification('樓層更新成功！', 'success');
+        }
+        
+        // 編輯辦公室
+        function editOffice(officeId) {
+            let office = null;
+            for (const building of buildings) {
+                for (const floor of building.floors) {
+                    office = floor.offices.find(o => o.id === officeId);
+                    if (office) break;
+                }
+                if (office) break;
+            }
+            
+            if (!office) return;
+            
+            const newName = prompt('請輸入新的辦公室名稱：', office.name);
+            if (newName === null) return;
+            
+            const newSeatCount = prompt('請輸入新的座位數量：', office.seatCount);
+            if (!newSeatCount || isNaN(newSeatCount) || newSeatCount <= 0) {
+                showNotification('請輸入有效的座位數量！', 'error');
+                return;
+            }
+            
+            const newStartNumber = prompt('請輸入新的座位編號開始值：', office.startNumber);
+            if (!newStartNumber || isNaN(newStartNumber)) {
+                showNotification('請輸入有效的座位編號開始值！', 'error');
+                return;
+            }
+            
+            const seatCountDiff = parseInt(newSeatCount) - office.seatCount;
+            
+            if (seatCountDiff > 0) {
+                // 新增座位
+                let startNum = parseInt(newStartNumber) + office.seatCount;
+                for (let i = 0; i < seatCountDiff; i++) {
+                    office.seats.push({
+                        id: nextSeatId++,
+                        number: (startNum + i).toString(),
+                        teacherId: null
+                    });
+                }
+            } else if (seatCountDiff < 0) {
+                // 移除座位
+                for (let i = 0; i < Math.abs(seatCountDiff); i++) {
+                    const removedSeat = office.seats.pop();
+                    if (removedSeat.teacherId) {
+                        const teacher = teachers.find(t => t.id === removedSeat.teacherId);
+                        if (teacher) {
+                            teacher.seatNumber = "";
+                        }
+                    }
+                }
+            }
+            
+            // 更新現有座位的編號
+            let startNum = parseInt(newStartNumber);
+            office.seats.forEach((seat, index) => {
+                const newNumber = (startNum + index).toString();
+                if (seat.number !== newNumber) {
+                    seat.number = newNumber;
+                    // 如果座位有教師，更新教師的座位編號
+                    if (seat.teacherId) {
+                        const teacher = teachers.find(t => t.id === seat.teacherId);
+                        if (teacher) {
+                            teacher.seatNumber = newNumber;
+                        }
+                    }
+                }
+            });
+            
+            office.name = newName;
+            office.seatCount = parseInt(newSeatCount);
+            office.startNumber = newStartNumber;
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            updateOfficesList();
+            renderBuildings();
+            renderTeachers();
+            
+            showNotification('辦公室更新成功！', 'success');
+        }
+        
+        // 刪除建築物
+        function deleteBuilding(buildingId) {
+            if (!confirm('確定要刪除這個建築物嗎？這將同時刪除所有樓層和辦公室。')) return;
+            
+            const buildingIndex = buildings.findIndex(b => b.id === buildingId);
+            if (buildingIndex === -1) return;
+            
+            const building = buildings[buildingIndex];
+            
+            // 清除所有教師的座位分配
+            building.floors.forEach(floor => {
+                floor.offices.forEach(office => {
+                    office.seats.forEach(seat => {
+                        if (seat.teacherId) {
+                            const teacher = teachers.find(t => t.id === seat.teacherId);
+                            if (teacher) {
+                                teacher.seatNumber = "";
+                            }
+                        }
+                    });
+                });
+            });
+            
+            buildings.splice(buildingIndex, 1);
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            updateBuildingsConfigList();
+            updateBuildingSelect();
+            renderBuildings();
+            renderTeachers();
+            
+            showNotification('建築物刪除成功！', 'success');
+        }
+        
+        // 刪除樓層
+        function deleteFloor(floorId) {
+            if (!confirm('確定要刪除這個樓層嗎？這將同時刪除所有辦公室。')) return;
+            
+            for (const building of buildings) {
+                const floorIndex = building.floors.findIndex(f => f.id === floorId);
+                if (floorIndex !== -1) {
+                    const floor = building.floors[floorIndex];
+                    
+                    // 清除所有教師的座位分配
+                    floor.offices.forEach(office => {
+                        office.seats.forEach(seat => {
+                            if (seat.teacherId) {
+                                const teacher = teachers.find(t => t.id === seat.teacherId);
+                                if (teacher) {
+                                    teacher.seatNumber = "";
+                                }
+                            }
+                        });
+                    });
+                    
+                    building.floors.splice(floorIndex, 1);
+                    
+                    // 儲存資料到localStorage
+                    saveDataToLocalStorage();
+                    
+                    updateFloorsList();
+                    updateFloorSelect();
+                    renderBuildings();
+                    renderTeachers();
+                    
+                    showNotification('樓層刪除成功！', 'success');
+                    return;
+                }
+            }
+        }
+        
+        // 刪除辦公室
+        function deleteOffice(officeId) {
+            if (!confirm('確定要刪除這個辦公室嗎？')) return;
+            
+            for (const building of buildings) {
+                for (const floor of building.floors) {
+                    const officeIndex = floor.offices.findIndex(o => o.id === officeId);
+                    if (officeIndex !== -1) {
+                        const office = floor.offices[officeIndex];
+                        
+                        // 清除所有教師的座位分配
+                        office.seats.forEach(seat => {
+                            if (seat.teacherId) {
+                                const teacher = teachers.find(t => t.id === seat.teacherId);
+                                if (teacher) {
+                                    teacher.seatNumber = "";
+                                }
+                            }
+                        });
+                        
+                        floor.offices.splice(officeIndex, 1);
+                        
+                        // 儲存資料到localStorage
+                        saveDataToLocalStorage();
+                        
+                        updateOfficesList();
+                        renderBuildings();
+                        renderTeachers();
+                        
+                        showNotification('辦公室刪除成功！', 'success');
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // 新增樓層到建築物
+        function addFloorToBuilding(buildingId) {
+            const building = buildings.find(b => b.id === buildingId);
+            if (!building) return;
+            
+            const name = prompt('請輸入樓層名稱：');
+            if (!name) return;
+            
+            const newFloor = {
+                id: Math.max(...buildings.flatMap(b => b.floors.map(f => f.id))) + 1,
+                name: name,
+                offices: []
+            };
+            
+            building.floors.push(newFloor);
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            renderBuildings();
+            
+            showNotification('樓層新增成功！', 'success');
+        }
+        
+        // 新增辦公室到樓層 - 修正版本
+        function addOfficeToFloor(floorId) {
+            let floor = null;
+            for (const building of buildings) {
+                floor = building.floors.find(f => f.id === floorId);
+                if (floor) break;
+            }
+            
+            if (!floor) return;
+            
+            const name = prompt('請輸入辦公室名稱：');
+            if (name === null) return;
+            
+            const seatCount = prompt('請輸入座位數量：');
+            if (!seatCount || isNaN(seatCount) || seatCount <= 0) {
+                showNotification('請輸入有效的座位數量！', 'error');
+                return;
+            }
+            
+            const startNumber = prompt('請輸入座位編號開始值：');
+            if (!startNumber || isNaN(startNumber)) {
+                showNotification('請輸入有效的座位編號開始值！', 'error');
+                return;
+            }
+            
+            // 確保ID是全局唯一的
+            const allOfficeIds = buildings.flatMap(b => b.floors.flatMap(f => f.offices.map(o => o.id)));
+            const maxOfficeId = allOfficeIds.length > 0 ? Math.max(...allOfficeIds) : 0;
+            
+            const newOffice = {
+                id: maxOfficeId + 1,
+                name: name,
+                icon: "fa-door-open",
+                seatCount: parseInt(seatCount),
+                startNumber: startNumber,
+                seats: []
+            };
+            
+            // 生成座位
+            let startNum = parseInt(startNumber);
+            for (let i = 0; i < newOffice.seatCount; i++) {
+                newOffice.seats.push({
+                    id: nextSeatId++,
+                    number: (startNum + i).toString(),
+                    teacherId: null
+                });
+            }
+            
+            floor.offices.push(newOffice);
+            
+            // 儲存資料到localStorage
+            saveDataToLocalStorage();
+            
+            renderBuildings();
+            
+            showNotification('辦公室新增成功！', 'success');
+        }
+        
+        // 顯示確認模態框
+        function showConfirmModal(title, message, callback) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmButton').onclick = function() {
+                if (callback) callback();
+                closeModal('confirmModal');
+            };
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
