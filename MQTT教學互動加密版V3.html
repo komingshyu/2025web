@@ -557,7 +557,7 @@
         let maxReconnectAttempts = 5;
         let heartbeatInterval = null;
 
-        //'wss://mqtt.eclipseprojects.io:8083/mqtt',
+        //'wss://mqtt.eclipseprojects.io:443/mqtt',
         //    'wss://test.mosquitto.org:8081/mqtt'
 
         // 預先計算好的密碼SHA256值
@@ -566,7 +566,7 @@
 
         // MQTT 連接設定 - 使用多個備用 broker
         const MQTT_BROKERS = [
-            'wss://broker.hivemq.com:8000/mqtt',
+            'wss://broker.hivemq.com:8884/mqtt',
             
         ];
         let currentBrokerIndex = 0;
