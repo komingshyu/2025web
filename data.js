@@ -14,5 +14,6 @@ const linksData = [
   { name: "瀏覽器IndexedDB 管理系統", description: "瀏覽器IndexedDB 管理系統", link: "瀏覽器IndexedDB 管理系統.html" },
   { name: "網頁安裝檔案生成器", description: "網頁安裝檔案生成器", link: "網頁安裝檔案生成器.html" },  
   { name: "MQTT教學互動加密版V3", description: "利用MQTT來做教學互動", link: "MQTT教學互動加密版V3.html" },
+  { name: "可愛班級聊天室", description: "利用MQTT來做班級聊天室", link: "可愛班級聊天室.html" },
   { name: "教師座位分配V12版", description: "教師座位分配套印XML版本<br><a href='座位配置圖測試.xml' >demo檔案：座位配置圖測試.xml</a>", link: "教師座位分配V12OK版.html" },
 ];
