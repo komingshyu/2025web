@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業影音播放器</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 深色主題變數 */
+        :root {
+            --primary-color: #6366f1;
+            --secondary-color: #8b5cf6;
+            --accent-color: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-medium: #1e293b;
+            --bg-light: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #374151;
+            --switch-bg: #374151;
+            --switch-active: #6366f1;
+            --card-bg: rgba(30, 41, 59, 0.5);
+            --modal-bg: #1e293b;
+            --kbd-bg: #334155;
+            --kbd-text: #f1f5f9;
+        }
+
+        /* 淺色主題變數 - 淡綠色系 */
+        body.light-theme {
+            --primary-color: #16a34a;
+            --secondary-color: #22c55e;
+            --accent-color: #4ade80;
+            --bg-dark: #f0fdf4;
+            --bg-medium: #dcfce7;
+            --bg-light: #bbf7d0;
+            --text-primary: #166534;
+            --text-secondary: #4d7c0f;
+            --border-color: #86efac;
+            --switch-bg: #bbf7d0;
+            --switch-active: #22c55e;
+            --card-bg: #dcfce7;
+            --modal-bg: #ffffff;
+            --kbd-bg: #16a34a;
+            --kbd-text: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-medium);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        /* LED 音頻可視化 - 增強效果 */
+        .led-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 1px;
+            height: 80px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .light-theme .led-container {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .led-bar {
+            flex: 1;
+            border-radius: 2px;
+            transition: all 0.1s ease;
+            min-height: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .led-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .led-bar.glowing {
+            box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+            animation: pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scaleY(1); }
+            to { transform: scaleY(1.1); }
+        }
+
+        /* 均衡器滑塊樣式 */
+        .eq-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--bg-light);
+            outline: none;
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .eq-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .eq-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 2px 20px rgba(99, 102, 241, 0.8);
+        }
+
+        /* 進度條樣式 */
+        .progress-bar {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--bg-light);
+            outline: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--primary-color);
+            cursor: pointer;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .progress-bar:hover::-webkit-slider-thumb {
+            opacity: 1;
+        }
+
+        .progress-filled {
+            position: absolute;
+            height: 6px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 3px;
+            pointer-events: none;
+        }
+
+        /* 播放按鈕動畫 */
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.6);
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 播放列表項目 */
+        .playlist-item {
+            padding: 12px 16px;
+            background: var(--bg-medium);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .playlist-item:hover {
+            background: var(--bg-light);
+            transform: translateX(5px);
+        }
+
+        .playlist-item.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-color: transparent;
+        }
+
+        /* 音量控制 */
+        .volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100px;
+            height: 4px;
+            background: var(--bg-light);
+            outline: none;
+            border-radius: 2px;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--primary-color);
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        /* 全螢幕樣式 */
+        video:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+
+        video:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+
+        video:-moz-full-screen {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+
+        video:-ms-fullscreen {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+
+        /* 載入動畫 */
+        .loader {
+            border: 3px solid var(--bg-light);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-medium);
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+
+        /* 字幕樣式 */
+        .subtitle-container {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            width: 90%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .subtitle-text {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 16px;
+            display: inline-block;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        /* 均衡器頻段標籤 */
+        .eq-frequency-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        /* 強化的開關按鈕樣式 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--switch-bg);
+            transition: all 0.3s ease;
+            border-radius: 24px;
+            border: 2px solid var(--border-color);
+        }
+
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: all 0.3s ease;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked + .switch-slider {
+            background-color: var(--switch-active);
+            border-color: var(--switch-active);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+        }
+
+        input:checked + .switch-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* 開關按鈕的動畫效果 */
+        .switch-slider {
+            animation: switchPulse 2s infinite;
+        }
+
+        input:checked + .switch-slider {
+            animation: switchGlow 2s infinite;
+        }
+
+        @keyframes switchPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1); }
+            50% { box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1); }
+        }
+
+        @keyframes switchGlow {
+            0% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.6); }
+            100% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+        }
+
+        /* 主題切換按鈕 */
+        .theme-toggle {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: var(--bg-medium);
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid var(--border-color);
+        }
+
+        .theme-toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        body.light-theme .theme-toggle-slider {
+            transform: translateX(24px);
+        }
+
+        /* 背景漸層 - 深色主題 */
+        .bg-gradient-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        /* 背景漸層 - 淺色主題改為淡綠色 */
+        .bg-gradient-light {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        /* 音頻全螢幕模式樣式 */
+        #audioFullscreenContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #audioFullscreenContainer .led-container {
+            width: 90vw;
+            height: 60vh;
+            padding: 20px;
+        }
+
+        #audioFullscreenContainer .track-info {
+            position: absolute;
+            top: 40px;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        #audioFullscreenContainer .controls {
+            position: absolute;
+            bottom: 40px;
+            display: flex;
+            gap: 20px;
+        }
+
+        #audioFullscreenContainer .progress-container {
+            position: absolute;
+            bottom: 120px;
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #audioFullscreenContainer .control-btn {
+            padding: 16px;
+            border-radius: 50%;
+            background: rgba(30, 41, 59, 0.7);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #audioFullscreenContainer .control-btn:hover {
+            background: rgba(51, 65, 85, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* 淺色主題下的全螢幕樣式 */
+        body.light-theme #audioFullscreenContainer {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        body.light-theme #audioFullscreenContainer .control-btn {
+            background: rgba(187, 247, 208, 0.7);
+            color: #166534;
+        }
+
+        body.light-theme #audioFullscreenContainer .control-btn:hover {
+            background: rgba(187, 247, 208, 0.9);
+        }
+
+        /* 淺色主題下的進度條和滑塊樣式調整 */
+        body.light-theme .eq-slider::-webkit-slider-thumb {
+            box-shadow: 0 2px 10px rgba(22, 163, 74, 0.5);
+        }
+
+        body.light-theme .eq-slider::-webkit-slider-thumb:hover {
+            box-shadow: 0 2px 20px rgba(22, 163, 74, 0.8);
+        }
+
+        body.light-theme .play-btn {
+            box-shadow: 0 4px 20px rgba(22, 163, 74, 0.4);
+        }
+
+        body.light-theme .play-btn:hover {
+            box-shadow: 0 6px 30px rgba(22, 163, 74, 0.6);
+        }
+
+        /* 說明彈窗樣式 - 修改為不透明 */
+        #helpModal {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        #helpModal > div {
+            background-color: var(--modal-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        #helpModal h3 {
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        #helpModal .space-y-2 > div {
+            color: var(--text-primary);
+        }
+
+        #helpModal kbd {
+            background-color: var(--kbd-bg);
+            color: var(--kbd-text);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #helpModal button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        #helpModal button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        body.light-theme #helpModal > div {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 影片容器樣式修正 */
+        #videoContainer {
+            position: relative;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            display: block;
+            background: #000;
+            object-fit: contain;
+        }
+
+        /* 影片預覽圖樣式 */
+        .video-poster {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        /* 錯誤訊息樣式 */
+        .video-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #fff;
+            z-index: 2;
+        }
+
+        .video-error i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #ef4444;
+        }
+
+        .video-error p {
+            font-size: 16px;
+            max-width: 300px;
+        }
+
+        /* 影片播放按鈕覆蓋層 */
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 3;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #videoContainer:hover .video-overlay {
+            opacity: 1;
+        }
+
+        .play-overlay-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .play-overlay-btn i {
+            font-size: 36px;
+            color: white;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-gradient-dark transition-all duration-300">
+        <!-- 頂部導航 -->
+        <header class="bg-gray-900/50 backdrop-blur-md border-b border-gray-700 sticky top-0 z-50 transition-all duration-300">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                        <i class="fas fa-play-circle mr-2"></i>專業影音播放器
+                    </h1>
+                    <div class="flex items-center gap-4">
+                        <div class="theme-toggle" onclick="toggleTheme()">
+                            <div class="theme-toggle-slider">
+                                <i class="fas fa-moon" id="themeIcon"></i>
+                            </div>
+                        </div>
+                        <button onclick="showHelp()" class="p-2 rounded-lg hover:bg-gray-700 transition">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要內容區 -->
+        <main class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 左側播放器 -->
+                <div class="lg:col-span-2">
+                    <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-6 shadow-2xl transition-all duration-300" style="background: var(--card-bg);">
+                        <!-- 檔案載入區 -->
+                        <div class="mb-6">
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <div class="flex-1">
+                                    <label class="block text-sm font-medium mb-2 text-gray-300">
+                                        <i class="fas fa-upload mr-2"></i>載入本地檔案
+                                    </label>
+                                    <input type="file" id="fileInput" accept="video/*,audio/*" 
+                                           class="w-full px-4 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all duration-300">
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-sm font-medium mb-2 text-gray-300">
+                                        <i class="fas fa-link mr-2"></i>載入網址
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="urlInput" placeholder="輸入影音網址" 
+                                               class="flex-1 px-4 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all duration-300">
+                                        <button onclick="loadUrl()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 影音播放區 -->
+                        <div class="relative bg-black rounded-xl overflow-hidden mb-6" id="videoContainer">
+                            <video id="videoPlayer" preload="metadata" playsinline>
+                                您的瀏覽器不支援影片播放
+                            </video>
+                            <div id="loader" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden">
+                                <div class="loader"></div>
+                            </div>
+                            <!-- 影片覆蓋層 -->
+                            <div class="video-overlay" onclick="togglePlay()">
+                                <div class="play-overlay-btn">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                            </div>
+                            <!-- 錯誤訊息容器 -->
+                            <div id="videoError" class="video-error hidden">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <p>無法載入媒體檔案</p>
+                            </div>
+                            <!-- 字幕容器 -->
+                            <div id="subtitleContainer" class="subtitle-container" style="display: none;">
+                                <div id="subtitleText" class="subtitle-text">字幕將顯示在這裡</div>
+                            </div>
+                        </div>
+
+                        <!-- LED 音頻可視化 -->
+                        <div class="mb-6" id="visualizerContainer">
+                            <div class="led-container" id="ledContainer">
+                                <!-- LED 條將由 JavaScript 動態生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 播放控制 -->
+                        <div class="space-y-4" id="controlsContainer">
+                            <!-- 進度條 -->
+                            <div class="relative">
+                                <input type="range" id="progressBar" class="progress-bar w-full" min="0" max="100" value="0">
+                                <div class="progress-filled" id="progressFilled" style="width: 0%"></div>
+                                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                    <span id="currentTime">0:00</span>
+                                    <span id="duration">0:00</span>
+                                </div>
+                            </div>
+
+                            <!-- 控制按鈕 -->
+                            <div class="flex items-center justify-center gap-4">
+                                <button onclick="skipTime(-10)" class="tooltip p-3 rounded-lg hover:bg-gray-700 transition" data-tooltip="倒退 10 秒">
+                                    <i class="fas fa-backward text-xl"></i>
+                                </button>
+                                <button onclick="togglePlay()" class="play-btn">
+                                    <i id="playIcon" class="fas fa-play text-white text-xl ml-1"></i>
+                                </button>
+                                <button onclick="skipTime(10)" class="tooltip p-3 rounded-lg hover:bg-gray-700 transition" data-tooltip="快進 10 秒">
+                                    <i class="fas fa-forward text-xl"></i>
+                                </button>
+                            </div>
+
+                            <!-- 音量和速度控制 -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-volume-up text-gray-400"></i>
+                                        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+                                        <span id="volumeValue" class="text-sm text-gray-400 w-10">70%</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-tachometer-alt text-gray-400"></i>
+                                        <select id="playbackRate" class="bg-gray-700 px-3 py-1 rounded-lg text-sm focus:outline-none">
+                                            <option value="0.5">0.5x</option>
+                                            <option value="0.75">0.75x</option>
+                                            <option value="1" selected>1x</option>
+                                            <option value="1.25">1.25x</option>
+                                            <option value="1.5">1.5x</option>
+                                            <option value="2">2x</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="toggleFullscreen()" class="tooltip p-2 rounded-lg hover:bg-gray-700 transition" data-tooltip="全螢幕">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                    <button onclick="togglePictureInPicture()" class="tooltip p-2 rounded-lg hover:bg-gray-700 transition" data-tooltip="子母畫面">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側控制面板 -->
+                <div class="space-y-6">
+                    <!-- 均衡器 -->
+                    <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-6 shadow-2xl transition-all duration-300" style="background: var(--card-bg);">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-sliders-h mr-2 text-indigo-500"></i>
+                            專業音效均衡器
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm text-gray-300">60Hz (超低音)</label>
+                                    <span id="eq60Value" class="text-sm text-indigo-400">0 dB</span>
+                                </div>
+                                <input type="range" id="eq60Slider" class="eq-slider" min="-12" max="12" value="0" step="0.1">
+                                <div class="eq-frequency-label">超低音</div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm text-gray-300">230Hz (低音)</label>
+                                    <span id="eq230Value" class="text-sm text-purple-400">0 dB</span>
+                                </div>
+                                <input type="range" id="eq230Slider" class="eq-slider" min="-12" max="12" value="0" step="0.1">
+                                <div class="eq-frequency-label">低音</div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm text-gray-300">910Hz (中低音)</label>
+                                    <span id="eq910Value" class="text-sm text-pink-400">0 dB</span>
+                                </div>
+                                <input type="range" id="eq910Slider" class="eq-slider" min="-12" max="12" value="0" step="0.1">
+                                <div class="eq-frequency-label">中低音</div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm text-gray-300">3kHz (中高音)</label>
+                                    <span id="eq3kValue" class="text-sm text-yellow-400">0 dB</span>
+                                </div>
+                                <input type="range" id="eq3kSlider" class="eq-slider" min="-12" max="12" value="0" step="0.1">
+                                <div class="eq-frequency-label">中高音</div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <label class="text-sm text-gray-300">14kHz (高音)</label>
+                                    <span id="eq14kValue" class="text-sm text-green-400">0 dB</span>
+                                </div>
+                                <input type="range" id="eq14kSlider" class="eq-slider" min="-12" max="12" value="0" step="0.1">
+                                <div class="eq-frequency-label">高音</div>
+                            </div>
+                            <button onclick="resetEQ()" class="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm">
+                                <i class="fas fa-undo mr-2"></i>重置均衡器
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 播放列表 -->
+                    <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-6 shadow-2xl transition-all duration-300" style="background: var(--card-bg);">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center justify-between">
+                            <span>
+                                <i class="fas fa-list-music mr-2 text-purple-500"></i>
+                                播放列表
+                            </span>
+                            <button onclick="clearPlaylist()" class="text-sm text-gray-400 hover:text-red-400 transition">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </h3>
+                        <div id="playlist" class="space-y-2 max-h-64 overflow-y-auto">
+                            <p class="text-gray-400 text-center py-8">播放列表為空</p>
+                        </div>
+                    </div>
+
+                    <!-- 設定 -->
+                    <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-6 shadow-2xl transition-all duration-300" style="background: var(--card-bg);">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-cog mr-2 text-pink-500"></i>
+                            播放設定
+                        </h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-gray-300">自動播放</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="autoplay" onchange="updateSettings()">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-gray-300">循環播放</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="loop" onchange="updateSettings()">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-gray-300">隨機播放</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="shuffle" onchange="updateSettings()">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-gray-300">顯示字幕</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="subtitles" onchange="updateSettings()">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 說明彈窗 -->
+    <div id="helpModal" class="fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+        <div class="rounded-2xl p-6 max-w-md w-full transition-all duration-300">
+            <h3 class="text-xl font-semibold mb-4">快捷鍵說明</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span>播放/暫停</span>
+                    <kbd class="px-2 py-1 rounded">Space</kbd>
+                </div>
+                <div class="flex justify-between">
+                    <span>快進 10 秒</span>
+                    <kbd class="px-2 py-1 rounded">→</kbd>
+                </div>
+                <div class="flex justify-between">
+                    <span>倒退 10 秒</span>
+                    <kbd class="px-2 py-1 rounded">←</kbd>
+                </div>
+                <div class="flex justify-between">
+                    <span>增加音量</span>
+                    <kbd class="px-2 py-1 rounded">↑</kbd>
+                </div>
+                <div class="flex justify-between">
+                    <span>降低音量</span>
+                    <kbd class="px-2 py-1 rounded">↓</kbd>
+                </div>
+                <div class="flex justify-between">
+                    <span>靜音</span>
+                    <kbd class="px-2 py-1 rounded">M</kbd>
+                </div>
+                <div class="flex justify-between">
+                    <span>全螢幕</span>
+                    <kbd class="px-2 py-1 rounded">F</kbd>
+                </div>
+            </div>
+            <button onclick="closeHelp()" class="mt-6 w-full py-2 rounded-lg transition">
+                關閉
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let audioContext;
+        let analyser;
+        let source;
+        let filters = [];
+        let dataArray;
+        let animationId;
+        let playlist = [];
+        let currentTrackIndex = -1;
+        let playerSettings = {
+            autoplay: false,
+            loop: false,
+            shuffle: false,
+            subtitles: false
+        };
+        let localFiles = {}; // 存儲本地檔案對象
+
+        // 初始化主題
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+                document.querySelector('.min-h-screen').classList.remove('bg-gradient-dark');
+                document.querySelector('.min-h-screen').classList.add('bg-gradient-light');
+                document.getElementById('themeIcon').className = 'fas fa-sun';
+            }
+        }
+
+        // 切換主題
+        function toggleTheme() {
+            const body = document.body;
+            const bgElement = document.querySelector('.min-h-screen');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (body.classList.contains('light-theme')) {
+                body.classList.remove('light-theme');
+                bgElement.classList.remove('bg-gradient-light');
+                bgElement.classList.add('bg-gradient-dark');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.add('light-theme');
+                bgElement.classList.remove('bg-gradient-dark');
+                bgElement.classList.add('bg-gradient-light');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // 載入播放列表
+        function loadPlaylist() {
+            const savedPlaylist = localStorage.getItem('playlist');
+            if (savedPlaylist) {
+                playlist = JSON.parse(savedPlaylist);
+                
+                // 檢查並更新無效的blob URL
+                playlist.forEach((track, index) => {
+                    if (track.isLocalFile) {
+                        // 本地檔案需要重新創建blob URL
+                        track.url = '';
+                    }
+                });
+                
+                updatePlaylistUI();
+            }
+            
+            const savedSettings = localStorage.getItem('playerSettings');
+            if (savedSettings) {
+                playerSettings = JSON.parse(savedSettings);
+                document.getElementById('autoplay').checked = playerSettings.autoplay;
+                document.getElementById('loop').checked = playerSettings.loop;
+                document.getElementById('shuffle').checked = playerSettings.shuffle;
+                document.getElementById('subtitles').checked = playerSettings.subtitles;
+                updateSettings();
+            }
+        }
+
+        // 儲存播放列表
+        function savePlaylist() {
+            // 儲存前移除blob URL，因為它們在頁面刷新後會失效
+            const playlistToSave = playlist.map(track => {
+                if (track.isLocalFile) {
+                    return { ...track, url: '' };
+                }
+                return track;
+            });
+            localStorage.setItem('playlist', JSON.stringify(playlistToSave));
+        }
+
+        // 儲存設定
+        function saveSettings() {
+            localStorage.setItem('playerSettings', JSON.stringify(playerSettings));
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+            loadPlaylist();
+            initializePlayer();
+            initializeLED();
+            setupEventListeners();
+            initializeEQ();
+        });
+
+        // 初始化播放器
+        function initializePlayer() {
+            const video = document.getElementById('videoPlayer');
+            const fileInput = document.getElementById('fileInput');
+            
+            // 設置影片初始尺寸
+            video.style.width = '100%';
+            video.style.height = 'auto';
+            video.style.maxHeight = '500px';
+            video.style.display = 'block';
+            
+            // 檔案載入事件
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const url = URL.createObjectURL(file);
+                    // 存儲檔案對象以便後續使用
+                    const fileId = 'file_' + Date.now();
+                    localFiles[fileId] = file;
+                    addToPlaylist(url, file.name, true, fileId);
+                    loadMedia(url, file.name, true, fileId);
+                }
+            });
+
+            // 播放器事件
+            video.addEventListener('loadedmetadata', onLoadedMetadata);
+            video.addEventListener('timeupdate', updateProgress);
+            video.addEventListener('ended', handleMediaEnd);
+            video.addEventListener('play', startVisualization);
+            video.addEventListener('pause', stopVisualization);
+            video.addEventListener('loadstart', showLoader);
+            video.addEventListener('canplay', hideLoader);
+            video.addEventListener('canplaythrough', onCanPlayThrough);
+            video.addEventListener('error', handleVideoError);
+            video.addEventListener('waiting', showLoader);
+            video.addEventListener('playing', hideLoader);
+        }
+
+        // 處理影片元數據載入完成
+        function onLoadedMetadata() {
+            const video = document.getElementById('videoPlayer');
+            updateDuration();
+            
+            // 檢查是否為音頻文件（沒有視頻軌道）
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                // 音頻文件，顯示音頻可視化
+                document.getElementById('visualizerContainer').style.display = 'block';
+            } else {
+                // 視頻文件，隱藏音頻可視化
+                document.getElementById('visualizerContainer').style.display = 'none';
+            }
+            
+            // 設置音頻上下文
+            setupAudioContext();
+            
+            // 如果設置了自動播放，則開始播放
+            if (playerSettings.autoplay) {
+                video.play().catch(e => {
+                    console.error('自動播放失敗:', e);
+                });
+            }
+        }
+
+        // 處理影片可以完全播放
+        function onCanPlayThrough() {
+            console.log('影片可以完全播放');
+            hideLoader();
+        }
+
+        // 顯示載入動畫
+        function showLoader() {
+            const loader = document.getElementById('loader');
+            const videoError = document.getElementById('videoError');
+            loader.classList.remove('hidden');
+            videoError.classList.add('hidden');
+        }
+
+        // 隱藏載入動畫
+        function hideLoader() {
+            const loader = document.getElementById('loader');
+            loader.classList.add('hidden');
+        }
+
+        // 處理影片錯誤
+        function handleVideoError() {
+            const loader = document.getElementById('loader');
+            const videoError = document.getElementById('videoError');
+            loader.classList.add('hidden');
+            videoError.classList.remove('hidden');
+            
+            console.error('影片載入錯誤');
+        }
+
+        // 初始化 LED 顯示 - 增加到 128 個條
+        function initializeLED() {
+            const container = document.getElementById('ledContainer');
+            for (let i = 0; i < 128; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'led-bar';
+                bar.style.height = '2px';
+                container.appendChild(bar);
+            }
+        }
+
+        // 初始化均衡器
+        function initializeEQ() {
+            const frequencies = [60, 230, 910, 3000, 14000];
+            const sliders = ['eq60Slider', 'eq230Slider', 'eq910Slider', 'eq3kSlider', 'eq14kSlider'];
+            const values = ['eq60Value', 'eq230Value', 'eq910Value', 'eq3kValue', 'eq14kValue'];
+            
+            sliders.forEach((sliderId, index) => {
+                const slider = document.getElementById(sliderId);
+                slider.addEventListener('input', function() {
+                    document.getElementById(values[index]).textContent = this.value + ' dB';
+                    updateEQFilter(index, parseFloat(this.value));
+                });
+            });
+        }
+
+        // 設置事件監聽器
+        function setupEventListeners() {
+            // 進度條
+            const progressBar = document.getElementById('progressBar');
+            progressBar.addEventListener('input', function() {
+                const video = document.getElementById('videoPlayer');
+                const time = (this.value / 100) * video.duration;
+                video.currentTime = time;
+            });
+
+            // 音量控制
+            const volumeSlider = document.getElementById('volumeSlider');
+            volumeSlider.addEventListener('input', function() {
+                const video = document.getElementById('videoPlayer');
+                video.volume = this.value / 100;
+                document.getElementById('volumeValue').textContent = this.value + '%';
+            });
+
+            // 播放速度
+            const playbackRate = document.getElementById('playbackRate');
+            playbackRate.addEventListener('change', function() {
+                const video = document.getElementById('videoPlayer');
+                video.playbackRate = parseFloat(this.value);
+            });
+
+            // 鍵盤快捷鍵
+            document.addEventListener('keydown', handleKeyboard);
+        }
+
+        // 載入媒體
+        function loadMedia(url, name, isLocalFile = false, fileId = null) {
+            const video = document.getElementById('videoPlayer');
+            
+            // 如果是本地檔案但沒有有效的URL，嘗試從存儲的檔案對象創建
+            if (isLocalFile && (!url || url.startsWith('blob:') && !isValidBlobUrl(url))) {
+                if (fileId && localFiles[fileId]) {
+                    url = URL.createObjectURL(localFiles[fileId]);
+                    // 更新播放列表中的URL
+                    if (currentTrackIndex >= 0 && currentTrackIndex < playlist.length) {
+                        playlist[currentTrackIndex].url = url;
+                    }
+                } else {
+                    alert('無法載入本地檔案，請重新選擇檔案');
+                    return;
+                }
+            }
+            
+            // 重置影片元素
+            video.src = '';
+            video.load();
+            
+            // 隱藏錯誤訊息
+            document.getElementById('videoError').classList.add('hidden');
+            
+            // 設置新的源
+            video.src = url;
+            video.load();
+            
+            // 更新播放列表中的當前曲目
+            updateCurrentTrack(name);
+        }
+
+        // 檢查blob URL是否有效
+        function isValidBlobUrl(url) {
+            if (!url || !url.startsWith('blob:')) return false;
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open('HEAD', url, false);
+                xhr.send();
+                return xhr.status !== 404;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 設置音頻上下文和濾波器
+        function setupAudioContext() {
+            const video = document.getElementById('videoPlayer');
+            
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                
+                // 創建濾波器
+                const frequencies = [60, 230, 910, 3000, 14000];
+                filters = frequencies.map(freq => {
+                    const filter = audioContext.createBiquadFilter();
+                    filter.type = 'peaking';
+                    filter.frequency.value = freq;
+                    filter.Q.value = 1.0;
+                    filter.gain.value = 0;
+                    return filter;
+                });
+                
+                // 連接音頻節點
+                source = audioContext.createMediaElementSource(video);
+                
+                // 串聯濾波器
+                let currentNode = source;
+                filters.forEach(filter => {
+                    currentNode.connect(filter);
+                    currentNode = filter;
+                });
+                
+                currentNode.connect(analyser);
+                analyser.connect(audioContext.destination);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+            }
+        }
+
+        // 更新均衡器濾波器
+        function updateEQFilter(index, gain) {
+            if (filters[index]) {
+                filters[index].gain.value = gain;
+            }
+        }
+
+        // 載入網址
+        function loadUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+            
+            if (url) {
+                addToPlaylist(url, url, false);
+                loadMedia(url, url, false);
+                urlInput.value = '';
+            }
+        }
+
+        // 播放/暫停
+        function togglePlay() {
+            const video = document.getElementById('videoPlayer');
+            const playIcon = document.getElementById('playIcon');
+            
+            if (video.paused) {
+                video.play().catch(e => {
+                    console.error('播放失敗:', e);
+                    alert('播放失敗，請檢查媒體檔案');
+                });
+                playIcon.className = 'fas fa-pause text-white text-xl';
+            } else {
+                video.pause();
+                playIcon.className = 'fas fa-play text-white text-xl ml-1';
+            }
+        }
+
+        // 跳轉時間
+        function skipTime(seconds) {
+            const video = document.getElementById('videoPlayer');
+            video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
+        }
+
+        // 更新進度
+        function updateProgress() {
+            const video = document.getElementById('videoPlayer');
+            const progressBar = document.getElementById('progressBar');
+            const progressFilled = document.getElementById('progressFilled');
+            const currentTime = document.getElementById('currentTime');
+            
+            if (video.duration) {
+                const progress = (video.currentTime / video.duration) * 100;
+                progressBar.value = progress;
+                progressFilled.style.width = progress + '%';
+                currentTime.textContent = formatTime(video.currentTime);
+            }
+        }
+
+        // 更新時長
+        function updateDuration() {
+            const video = document.getElementById('videoPlayer');
+            const duration = document.getElementById('duration');
+            duration.textContent = formatTime(video.duration);
+        }
+
+        // 格式化時間
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // 處理媒體結束
+        function handleMediaEnd() {
+            const playIcon = document.getElementById('playIcon');
+            playIcon.className = 'fas fa-play text-white text-xl ml-1';
+            
+            if (playerSettings.loop) {
+                const video = document.getElementById('videoPlayer');
+                video.play();
+                return;
+            }
+            
+            if (playerSettings.shuffle) {
+                playRandomTrack();
+            } else {
+                playNextTrack();
+            }
+        }
+
+        // 音頻可視化 - 增強效果
+        function startVisualization() {
+            if (!analyser) return;
+            
+            visualize();
+        }
+
+        function stopVisualization() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        function visualize() {
+            animationId = requestAnimationFrame(visualize);
+            
+            if (!analyser) return;
+            
+            analyser.getByteFrequencyData(dataArray);
+            
+            // 更新原始LED容器
+            updateLedContainer(document.getElementById('ledContainer'));
+            
+            // 如果存在全螢幕LED容器，也更新它
+            if (window.enlargedLedContainer) {
+                updateLedContainer(window.enlargedLedContainer);
+                
+                // 更新全螢幕進度條
+                const fullscreenProgressBar = document.getElementById('fullscreenProgressBar');
+                if (fullscreenProgressBar) {
+                    const video = document.getElementById('videoPlayer');
+                    const progress = (video.currentTime / video.duration) * 100;
+                    fullscreenProgressBar.value = progress;
+                    fullscreenProgressBar.nextElementSibling.style.width = progress + '%';
+                    
+                    // 更新時間顯示
+                    const timeElements = fullscreenProgressBar.parentElement.nextElementSibling.querySelectorAll('span');
+                    if (timeElements.length === 2) {
+                        timeElements[0].textContent = formatTime(video.currentTime);
+                        timeElements[1].textContent = formatTime(video.duration);
+                    }
+                }
+                
+                // 更新播放/暫停按鈕
+                const fullscreenPlayIcon = document.getElementById('fullscreenPlayIcon');
+                if (fullscreenPlayIcon) {
+                    const isPlaying = document.getElementById('playIcon').className.includes('pause');
+                    fullscreenPlayIcon.className = `fas ${isPlaying ? 'fa-pause' : 'fa-play'} text-white text-xl ml-1`;
+                }
+            }
+        }
+
+        // 輔助函數：更新LED容器
+        function updateLedContainer(container) {
+            const ledBars = container.querySelectorAll('.led-bar');
+            const eqValues = [
+                parseFloat(document.getElementById('eq60Slider').value),
+                parseFloat(document.getElementById('eq230Slider').value),
+                parseFloat(document.getElementById('eq910Slider').value),
+                parseFloat(document.getElementById('eq3kSlider').value),
+                parseFloat(document.getElementById('eq14kSlider').value)
+            ];
+            
+            for (let i = 0; i < ledBars.length; i++) {
+                let value = dataArray[i] || 0;
+                
+                // 根據頻率範圍應用對應的均衡器增益
+                if (i < 26) {
+                    value *= Math.pow(10, eqValues[0] / 20);
+                } else if (i < 51) {
+                    value *= Math.pow(10, eqValues[1] / 20);
+                } else if (i < 77) {
+                    value *= Math.pow(10, eqValues[2] / 20);
+                } else if (i < 102) {
+                    value *= Math.pow(10, eqValues[3] / 20);
+                } else {
+                    value *= Math.pow(10, eqValues[4] / 20);
+                }
+                
+                const height = Math.max(2, (value / 255) * 100);
+                ledBars[i].style.height = height + '%';
+                
+                // 動態彩虹漸層效果
+                const hue = (i / ledBars.length) * 360;
+                const saturation = 70 + (value / 255) * 30;
+                const lightness = 50 + (value / 255) * 20;
+                ledBars[i].style.background = `linear-gradient(to top, 
+                    hsl(${hue}, ${saturation}%, ${lightness}%), 
+                    hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
+                
+                // 高亮效果
+                if (value > 200) {
+                    ledBars[i].classList.add('glowing');
+                } else {
+                    ledBars[i].classList.remove('glowing');
+                }
+            }
+        }
+
+        // 重置均衡器
+        function resetEQ() {
+            const sliders = ['eq60Slider', 'eq230Slider', 'eq910Slider', 'eq3kSlider', 'eq14kSlider'];
+            const values = ['eq60Value', 'eq230Value', 'eq910Value', 'eq3kValue', 'eq14kValue'];
+            
+            sliders.forEach((sliderId, index) => {
+                document.getElementById(sliderId).value = 0;
+                document.getElementById(values[index]).textContent = '0 dB';
+                updateEQFilter(index, 0);
+            });
+        }
+
+        // 播放列表功能
+        function addToPlaylist(url, name, isLocalFile = false, fileId = null) {
+            playlist.push({ url, name, isLocalFile, fileId });
+            savePlaylist();
+            updatePlaylistUI();
+        }
+
+        function updatePlaylistUI() {
+            const playlistContainer = document.getElementById('playlist');
+            
+            if (playlist.length === 0) {
+                playlistContainer.innerHTML = '<p class="text-gray-400 text-center py-8">播放列表為空</p>';
+                return;
+            }
+            
+            playlistContainer.innerHTML = playlist.map((track, index) => {
+                // 如果是本地檔案且URL為空，顯示為需要重新選擇
+                const displayName = track.isLocalFile && !track.url ? `${track.name} (需要重新選擇檔案)` : track.name;
+                const iconClass = index === currentTrackIndex ? 'fa-volume-up' : (track.isLocalFile && !track.url ? 'fa-exclamation-triangle text-yellow-400' : 'fa-music');
+                
+                return `
+                    <div class="playlist-item ${index === currentTrackIndex ? 'active' : ''}" onclick="playTrack(${index})">
+                        <i class="fas ${iconClass}"></i>
+                        <span class="flex-1 truncate">${displayName}</span>
+                        <button onclick="removeTrack(${index}); event.stopPropagation();" class="text-gray-400 hover:text-red-400 transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function playTrack(index) {
+            if (index >= 0 && index < playlist.length) {
+                currentTrackIndex = index;
+                const track = playlist[index];
+                
+                // 如果是本地檔案且URL為空，提示用戶重新選擇檔案
+                if (track.isLocalFile && !track.url) {
+                    // 提示用戶重新選擇檔案
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                    notification.textContent = '請重新選擇本地檔案';
+                    document.body.appendChild(notification);
+                    
+                    // 3秒後移除提示
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 3000);
+                    
+                    // 自動打開檔案選擇器
+                    document.getElementById('fileInput').click();
+                    
+                    // 設置一個標記，表示用戶正在為這個索引重新選擇檔案
+                    window.pendingTrackIndex = index;
+                    return;
+                }
+                
+                loadMedia(track.url, track.name, track.isLocalFile, track.fileId);
+                updatePlaylistUI();
+            }
+        }
+
+        function removeTrack(index) {
+            // 如果是本地檔案，從存儲中移除檔案對象
+            if (playlist[index].isLocalFile && playlist[index].fileId) {
+                delete localFiles[playlist[index].fileId];
+            }
+            
+            playlist.splice(index, 1);
+            if (currentTrackIndex === index) {
+                currentTrackIndex = -1;
+                document.getElementById('videoPlayer').src = '';
+            } else if (currentTrackIndex > index) {
+                currentTrackIndex--;
+            }
+            savePlaylist();
+            updatePlaylistUI();
+        }
+
+        function clearPlaylist() {
+            // 清除所有本地檔案對象
+            playlist.forEach(track => {
+                if (track.isLocalFile && track.fileId) {
+                    delete localFiles[track.fileId];
+                }
+            });
+            
+            playlist = [];
+            currentTrackIndex = -1;
+            document.getElementById('videoPlayer').src = '';
+            savePlaylist();
+            updatePlaylistUI();
+        }
+
+        function playNextTrack() {
+            if (playlist.length === 0) return;
+            
+            if (playerSettings.shuffle) {
+                playRandomTrack();
+            } else {
+                const nextIndex = (currentTrackIndex + 1) % playlist.length;
+                playTrack(nextIndex);
+            }
+        }
+
+        function playPreviousTrack() {
+            if (playlist.length === 0) return;
+            
+            const prevIndex = currentTrackIndex > 0 ? currentTrackIndex - 1 : playlist.length - 1;
+            playTrack(prevIndex);
+        }
+
+        function playRandomTrack() {
+            if (playlist.length === 0) return;
+            
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * playlist.length);
+            } while (randomIndex === currentTrackIndex && playlist.length > 1);
+            
+            playTrack(randomIndex);
+        }
+
+        function updateCurrentTrack(name) {
+            updatePlaylistUI();
+        }
+
+        // 更新設定
+        function updateSettings() {
+            playerSettings.autoplay = document.getElementById('autoplay').checked;
+            playerSettings.loop = document.getElementById('loop').checked;
+            playerSettings.shuffle = document.getElementById('shuffle').checked;
+            playerSettings.subtitles = document.getElementById('subtitles').checked;
+            
+            // 更新字幕顯示
+            const subtitleContainer = document.getElementById('subtitleContainer');
+            subtitleContainer.style.display = playerSettings.subtitles ? 'block' : 'none';
+            
+            // 更新循環播放
+            const video = document.getElementById('videoPlayer');
+            video.loop = playerSettings.loop;
+            
+            saveSettings();
+        }
+
+        // 全螢幕功能 - 修改為支持音頻模式下的LED顯示
+        function toggleFullscreen() {
+            const video = document.getElementById('videoPlayer');
+            
+            // 檢查是否是音頻模式（沒有視頻軌道）
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                // 音頻模式 - 顯示LED全螢幕效果
+                toggleAudioFullscreen();
+            } else {
+                // 視頻模式 - 正常全螢幕
+                if (!document.fullscreenElement) {
+                    if (video.requestFullscreen) {
+                        video.requestFullscreen();
+                    } else if (video.webkitRequestFullscreen) {
+                        video.webkitRequestFullscreen();
+                    } else if (video.msRequestFullscreen) {
+                        video.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            }
+        }
+
+        // 音頻模式下的全螢幕LED效果
+        function toggleAudioFullscreen() {
+            const visualizerContainer = document.getElementById('visualizerContainer');
+            const ledContainer = document.getElementById('ledContainer');
+            
+            if (!document.fullscreenElement) {
+                // 創建一個新的全螢幕容器
+                const fullscreenContainer = document.createElement('div');
+                fullscreenContainer.id = 'audioFullscreenContainer';
+                
+                // 添加標題和歌曲信息
+                const trackInfo = document.createElement('div');
+                trackInfo.className = 'track-info';
+                
+                if (currentTrackIndex >= 0 && currentTrackIndex < playlist.length) {
+                    trackInfo.innerHTML = `
+                        <h2 style="font-size: 2.5rem; margin-bottom: 10px;">${playlist[currentTrackIndex].name}</h2>
+                        <p style="font-size: 1.2rem; color: var(--text-secondary);">音頻播放模式</p>
+                    `;
+                } else {
+                    trackInfo.innerHTML = `
+                        <h2 style="font-size: 2.5rem; margin-bottom: 10px;">音頻播放器</h2>
+                        <p style="font-size: 1.2rem; color: var(--text-secondary);">音頻播放模式</p>
+                    `;
+                }
+                
+                // 創建放大的LED容器
+                const enlargedLedContainer = document.createElement('div');
+                enlargedLedContainer.className = 'led-container';
+                
+                // 複製原始LED條
+                const originalLedBars = ledContainer.querySelectorAll('.led-bar');
+                originalLedBars.forEach(bar => {
+                    const newBar = document.createElement('div');
+                    newBar.className = 'led-bar';
+                    newBar.style.height = bar.style.height;
+                    newBar.style.background = bar.style.background;
+                    if (bar.classList.contains('glowing')) {
+                        newBar.classList.add('glowing');
+                    }
+                    enlargedLedContainer.appendChild(newBar);
+                });
+                
+                // 添加控制按鈕
+                const controls = document.createElement('div');
+                controls.className = 'controls';
+                
+                controls.innerHTML = `
+                    <button onclick="togglePlay()" class="play-btn">
+                        <i id="fullscreenPlayIcon" class="fas ${document.getElementById('playIcon').className.includes('pause') ? 'fa-pause' : 'fa-play'} text-white text-xl ml-1"></i>
+                    </button>
+                    <button onclick="skipTime(-10)" class="control-btn">
+                        <i class="fas fa-backward text-xl"></i>
+                    </button>
+                    <button onclick="skipTime(10)" class="control-btn">
+                        <i class="fas fa-forward text-xl"></i>
+                    </button>
+                    <button onclick="toggleAudioFullscreen()" class="control-btn">
+                        <i class="fas fa-compress text-xl"></i>
+                    </button>
+                `;
+                
+                // 添加進度條
+                const progressContainer = document.createElement('div');
+                progressContainer.className = 'progress-container';
+                
+                progressContainer.innerHTML = `
+                    <div style="width: 100%; position: relative; margin-bottom: 10px;">
+                        <input type="range" id="fullscreenProgressBar" class="progress-bar w-full" min="0" max="100" value="${document.getElementById('progressBar').value}" style="height: 8px;">
+                        <div class="progress-filled" style="width: ${document.getElementById('progressFilled').style.width}; height: 8px;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; width: 100%; color: var(--text-secondary);">
+                        <span>${document.getElementById('currentTime').textContent}</span>
+                        <span>${document.getElementById('duration').textContent}</span>
+                    </div>
+                `;
+                
+                // 組裝全螢幕元素
+                fullscreenContainer.appendChild(trackInfo);
+                fullscreenContainer.appendChild(enlargedLedContainer);
+                fullscreenContainer.appendChild(controls);
+                fullscreenContainer.appendChild(progressContainer);
+                
+                // 添加到DOM並進入全螢幕
+                document.body.appendChild(fullscreenContainer);
+                
+                if (fullscreenContainer.requestFullscreen) {
+                    fullscreenContainer.requestFullscreen();
+                } else if (fullscreenContainer.webkitRequestFullscreen) {
+                    fullscreenContainer.webkitRequestFullscreen();
+                } else if (fullscreenContainer.msRequestFullscreen) {
+                    fullscreenContainer.msRequestFullscreen();
+                }
+                
+                // 設置全螢幕進度條事件
+                const fullscreenProgressBar = document.getElementById('fullscreenProgressBar');
+                fullscreenProgressBar.addEventListener('input', function() {
+                    const video = document.getElementById('videoPlayer');
+                    const time = (this.value / 100) * video.duration;
+                    video.currentTime = time;
+                });
+                
+                // 監聽全螢幕變化事件
+                document.addEventListener('fullscreenchange', handleFullscreenChange);
+                
+                // 存儲原始LED容器引用，以便更新
+                window.enlargedLedContainer = enlargedLedContainer;
+            } else {
+                // 退出全螢幕
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        // 處理全螢幕變化
+        function handleFullscreenChange() {
+            if (!document.fullscreenElement) {
+                const fullscreenContainer = document.getElementById('audioFullscreenContainer');
+                if (fullscreenContainer) {
+                    document.body.removeChild(fullscreenContainer);
+                    window.enlargedLedContainer = null;
+                }
+                document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            }
+        }
+
+        // 子母畫面功能
+        function togglePictureInPicture() {
+            const video = document.getElementById('videoPlayer');
+            
+            if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+            } else if (document.pictureInPictureEnabled) {
+                video.requestPictureInPicture();
+            }
+        }
+
+        // 鍵盤控制
+        function handleKeyboard(e) {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight':
+                    skipTime(10);
+                    break;
+                case 'ArrowLeft':
+                    skipTime(-10);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    changeVolume(5);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    changeVolume(-5);
+                    break;
+                case 'm':
+                case 'M':
+                    toggleMute();
+                    break;
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+            }
+        }
+
+        // 改變音量
+        function changeVolume(delta) {
+            const volumeSlider = document.getElementById('volumeSlider');
+            const newVolume = Math.max(0, Math.min(100, parseInt(volumeSlider.value) + delta));
+            volumeSlider.value = newVolume;
+            volumeSlider.dispatchEvent(new Event('input'));
+        }
+
+        // 靜音切換
+        function toggleMute() {
+            const video = document.getElementById('videoPlayer');
+            const volumeSlider = document.getElementById('volumeSlider');
+            
+            if (video.muted) {
+                video.muted = false;
+                volumeSlider.value = video.volume * 100;
+            } else {
+                video.muted = true;
+                volumeSlider.value = 0;
+            }
+            volumeSlider.dispatchEvent(new Event('input'));
+        }
+
+        // 顯示幫助
+        function showHelp() {
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+
+        // 關閉幫助
+        function closeHelp() {
+            document.getElementById('helpModal').classList.add('hidden');
+        }
+
+        // 點擊模態框外部關閉
+        document.getElementById('helpModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHelp();
+            }
+        });
+
+        // 修改檔案選擇器，支持重新選擇檔案
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                
+                // 檢查是否有待處理的曲目索引
+                if (window.pendingTrackIndex !== undefined) {
+                    // 更新現有曲目
+                    const index = window.pendingTrackIndex;
+                    const fileId = 'file_' + Date.now();
+                    localFiles[fileId] = file;
+                    
+                    playlist[index].url = url;
+                    playlist[index].fileId = fileId;
+                    
+                    // 載入媒體
+                    loadMedia(url, file.name, true, fileId);
+                    
+                    // 清除待處理索引
+                    window.pendingTrackIndex = undefined;
+                } else {
+                    // 添加新曲目
+                    const fileId = 'file_' + Date.now();
+                    localFiles[fileId] = file;
+                    addToPlaylist(url, file.name, true, fileId);
+                    loadMedia(url, file.name, true, fileId);
+                }
+                
+                // 重置檔案選擇器
+                this.value = '';
+            }
+        });
+    </script>
+</body>
+</html>

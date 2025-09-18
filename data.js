@@ -16,4 +16,6 @@ const linksData = [
   { name: "MQTT教學互動加密版V3", description: "利用MQTT來做教學互動", link: "MQTT教學互動加密版V3.html" },
   { name: "可愛班級聊天室", description: "利用MQTT來做班級聊天室", link: "可愛班級聊天室.html" },
   { name: "教師座位分配V12版", description: "教師座位分配套印XML版本<br><a href='座位配置圖測試.xml' >demo檔案：座位配置圖測試.xml</a>", link: "教師座位分配V12OK版.html" },
+   { name: "專業影音播放器V1", description: "網頁版影音播放器V1", link: "專業影音播放器V1.html" },
+
 ];
