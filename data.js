@@ -22,4 +22,5 @@ const linksData = [
   { name: "PDF專用工具", description: "PDF處理工具集，包含浮水印、頁面管理、合併和格式轉換功能", link: "pdf-tools/index.html" },
   { name: "AutoHotkey 程式產生器V5", description: "自用的AutoHotkey程式產生器，功能不夠完整", link: "AutoHotkey 程式產生器V5.html" },
   { name: "3D太陽軌道動畫", description: "利用three.製作的簡易3D太陽軌道動畫", link: "3D太陽軌道動畫.html" },
+  { name: "影音錄影工具V2", description: "測試利用瀏覽器影音錄影的功能", link: "影音錄影工具V2.html" },
 ];

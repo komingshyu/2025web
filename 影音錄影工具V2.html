@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影音錄影工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: #000;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            height: 450px;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        button:hover::before {
+            transform: translateX(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #5ee7df 0%, #66a6ff 100%);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(94, 231, 223, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .settings {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .settings h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input[type="range"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status.recording {
+            background: #fee;
+            color: #c53030;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status.paused {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.ready {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.preview {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #ff0000;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .timer {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin: 0 10px;
+        }
+
+        .downloads {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .downloads h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .download-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .download-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-info {
+            flex: 1;
+        }
+
+        .download-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .download-meta {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 影音錄影工具</h1>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="status" id="status" style="display: none;"></div>
+        
+        <div class="video-container">
+            <div class="video-placeholder" id="videoPlaceholder">
+                <span>📹 請點擊「開始預覽」啟動攝影機</span>
+            </div>
+            <video id="preview" style="display: none;" autoplay muted></video>
+            <video id="recordedVideo" style="display: none;" controls></video>
+        </div>
+        
+        <div class="controls">
+            <button id="previewBtn" class="btn-info">
+                <span>👁️</span> 開始預覽
+            </button>
+            <button id="stopPreviewBtn" class="btn-danger" disabled>
+                <span>⏹️</span> 停止預覽
+            </button>
+            <button id="startBtn" class="btn-primary" disabled>
+                <span>🎬</span> 開始錄影
+            </button>
+            <button id="pauseBtn" class="btn-danger" disabled>
+                <span>⏸️</span> 暫停
+            </button>
+            <button id="resumeBtn" class="btn-success" disabled style="display: none;">
+                <span>▶️</span> 繼續
+            </button>
+            <button id="stopBtn" class="btn-danger" disabled>
+                <span>⏹️</span> 停止錄影
+            </button>
+            <button id="downloadBtn" class="btn-success" disabled>
+                <span>💾</span> 下載影片
+            </button>
+        </div>
+        
+        <div class="settings">
+            <h2>⚙️ 錄影設定</h2>
+            <div class="setting-group">
+                <label for="videoSource">視訊來源</label>
+                <select id="videoSource">
+                    <option value="">自動選擇</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label for="audioSource">音訊來源</label>
+                <select id="audioSource">
+                    <option value="">自動選擇</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label for="videoQuality">影片品質</label>
+                <select id="videoQuality">
+                    <option value="high">高品質 (1080p)</option>
+                    <option value="medium" selected>標準品質 (720p)</option>
+                    <option value="low">低品質 (480p)</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label for="audioBitrate">音訊位元率: <span class="range-value" id="audioBitrateValue">128</span> kbps</label>
+                <input type="range" id="audioBitrate" min="64" max="320" value="128" step="32">
+            </div>
+        </div>
+        
+        <div class="downloads" id="downloadsSection" style="display: none;">
+            <h2>📥 錄製的影片</h2>
+            <div id="downloadsList"></div>
+        </div>
+    </div>
+
+    <script>
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+        let isPaused = false;
+        let isPreviewing = false;
+        let recordingStartTime = null;
+        let pausedTime = 0;
+        let timerInterval = null;
+        let recordedVideos = [];
+
+        const elements = {
+            preview: document.getElementById('preview'),
+            recordedVideo: document.getElementById('recordedVideo'),
+            videoPlaceholder: document.getElementById('videoPlaceholder'),
+            previewBtn: document.getElementById('previewBtn'),
+            stopPreviewBtn: document.getElementById('stopPreviewBtn'),
+            startBtn: document.getElementById('startBtn'),
+            pauseBtn: document.getElementById('pauseBtn'),
+            resumeBtn: document.getElementById('resumeBtn'),
+            stopBtn: document.getElementById('stopBtn'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            status: document.getElementById('status'),
+            errorMessage: document.getElementById('errorMessage'),
+            videoSource: document.getElementById('videoSource'),
+            audioSource: document.getElementById('audioSource'),
+            videoQuality: document.getElementById('videoQuality'),
+            audioBitrate: document.getElementById('audioBitrate'),
+            audioBitrateValue: document.getElementById('audioBitrateValue'),
+            downloadsSection: document.getElementById('downloadsSection'),
+            downloadsList: document.getElementById('downloadsList')
+        };
+
+        // 初始化
+        async function init() {
+            await getDevices();
+            setupEventListeners();
+        }
+
+        // 獲取可用的音視訊設備
+        async function getDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                
+                // 清空選項
+                elements.videoSource.innerHTML = '<option value="">自動選擇</option>';
+                elements.audioSource.innerHTML = '<option value="">自動選擇</option>';
+                
+                devices.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `${device.kind} ${device.deviceId.slice(0, 5)}`;
+                    
+                    if (device.kind === 'videoinput') {
+                        elements.videoSource.appendChild(option);
+                    } else if (device.kind === 'audioinput') {
+                        elements.audioSource.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                showError('無法獲取設備列表：' + error.message);
+            }
+        }
+
+        // 設置事件監聽器
+        function setupEventListeners() {
+            elements.previewBtn.addEventListener('click', startPreview);
+            elements.stopPreviewBtn.addEventListener('click', stopPreview);
+            elements.startBtn.addEventListener('click', startRecording);
+            elements.pauseBtn.addEventListener('click', pauseRecording);
+            elements.resumeBtn.addEventListener('click', resumeRecording);
+            elements.stopBtn.addEventListener('click', stopRecording);
+            elements.downloadBtn.addEventListener('click', downloadVideo);
+            
+            elements.audioBitrate.addEventListener('input', (e) => {
+                elements.audioBitrateValue.textContent = e.target.value;
+            });
+        }
+
+        // 開始預覽
+        async function startPreview() {
+            try {
+                showError('');
+                
+                // 獲取媒體流
+                const constraints = getMediaConstraints();
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // 顯示預覽
+                elements.preview.srcObject = mediaStream;
+                elements.preview.style.display = 'block';
+                elements.videoPlaceholder.style.display = 'none';
+                
+                isPreviewing = true;
+                
+                // 更新UI
+                updateUI('preview');
+                
+            } catch (error) {
+                showError('無法啟動預覽：' + error.message);
+                console.error('Error starting preview:', error);
+            }
+        }
+
+        // 停止預覽
+        function stopPreview() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            
+            elements.preview.style.display = 'none';
+            elements.videoPlaceholder.style.display = 'flex';
+            elements.videoPlaceholder.innerHTML = '<span>📹 請點擊「開始預覽」啟動攝影機</span>';
+            
+            isPreviewing = false;
+            
+            // 更新UI
+            elements.status.style.display = 'none';
+            elements.previewBtn.disabled = false;
+            elements.stopPreviewBtn.disabled = true;
+            elements.startBtn.disabled = true;
+        }
+
+        // 開始錄影
+        async function startRecording() {
+            try {
+                showError('');
+                
+                // 如果沒有媒體流，則獲取一個
+                if (!mediaStream) {
+                    const constraints = getMediaConstraints();
+                    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    elements.preview.srcObject = mediaStream;
+                    elements.preview.style.display = 'block';
+                    elements.videoPlaceholder.style.display = 'none';
+                }
+                
+                // 設置錄影器
+                const options = getRecorderOptions();
+                mediaRecorder = new MediaRecorder(mediaStream, options);
+                
+                recordedChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    handleRecordingStop();
+                };
+                
+                // 開始錄影
+                mediaRecorder.start();
+                isRecording = true;
+                isPaused = false;
+                recordingStartTime = Date.now();
+                
+                // 更新UI
+                updateUI('recording');
+                startTimer();
+                
+            } catch (error) {
+                showError('無法啟動錄影：' + error.message);
+                console.error('Error starting recording:', error);
+            }
+        }
+
+        // 暫停錄影
+        function pauseRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.pause();
+                isPaused = true;
+                pausedTime = Date.now();
+                updateUI('paused');
+                stopTimer();
+            }
+        }
+
+        // 繼續錄影
+        function resumeRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'paused') {
+                mediaRecorder.resume();
+                isPaused = false;
+                recordingStartTime += (Date.now() - pausedTime);
+                updateUI('recording');
+                startTimer();
+            }
+        }
+
+        // 停止錄影
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                isRecording = false;
+                isPaused = false;
+                stopTimer();
+                updateUI('ready');
+                
+                // 不停止媒體流，以便繼續預覽
+            }
+        }
+
+        // 處理錄影停止
+        function handleRecordingStop() {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            
+            // 顯示錄製的影片
+            elements.recordedVideo.src = url;
+            elements.recordedVideo.style.display = 'block';
+            elements.preview.style.display = 'none';
+            
+            // 啟用下載按鈕
+            elements.downloadBtn.disabled = false;
+            
+            // 保存到錄製列表
+            const videoInfo = {
+                url: url,
+                blob: blob,
+                name: `錄影_${new Date().toLocaleString('zh-TW')}`,
+                duration: formatTime((Date.now() - recordingStartTime) / 1000),
+                size: formatFileSize(blob.size)
+            };
+            
+            recordedVideos.push(videoInfo);
+            updateDownloadsList();
+        }
+
+        // 下載影片
+        function downloadVideo() {
+            if (recordedVideos.length > 0) {
+                const latestVideo = recordedVideos[recordedVideos.length - 1];
+                const a = document.createElement('a');
+                a.href = latestVideo.url;
+                a.download = `${latestVideo.name}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        }
+
+        // 獲取媒體約束
+        function getMediaConstraints() {
+            const videoConstraints = {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            };
+            
+            const quality = elements.videoQuality.value;
+            switch (quality) {
+                case 'high':
+                    videoConstraints.width = { ideal: 1920 };
+                    videoConstraints.height = { ideal: 1080 };
+                    break;
+                case 'medium':
+                    videoConstraints.width = { ideal: 1280 };
+                    videoConstraints.height = { ideal: 720 };
+                    break;
+                case 'low':
+                    videoConstraints.width = { ideal: 854 };
+                    videoConstraints.height = { ideal: 480 };
+                    break;
+            }
+            
+            const constraints = {
+                video: elements.videoSource.value ? 
+                    { deviceId: { exact: elements.videoSource.value }, ...videoConstraints } : 
+                    videoConstraints,
+                audio: elements.audioSource.value ? 
+                    { deviceId: { exact: elements.audioSource.value } } : 
+                    true
+            };
+            
+            return constraints;
+        }
+
+        // 獲取錄影器選項
+        function getRecorderOptions() {
+            return {
+                mimeType: 'video/webm;codecs=vp9,opus',
+                videoBitsPerSecond: 2500000,
+                audioBitsPerSecond: parseInt(elements.audioBitrate.value) * 1000
+            };
+        }
+
+        // 更新UI狀態
+        function updateUI(state) {
+            elements.status.style.display = 'block';
+            
+            switch (state) {
+                case 'preview':
+                    elements.status.className = 'status preview';
+                    elements.status.textContent = '👁️ 預覽模式';
+                    elements.previewBtn.disabled = true;
+                    elements.stopPreviewBtn.disabled = false;
+                    elements.startBtn.disabled = false;
+                    break;
+                case 'recording':
+                    elements.status.className = 'status recording';
+                    elements.status.innerHTML = '<span class="recording-indicator"></span>正在錄影中...';
+                    elements.previewBtn.disabled = true;
+                    elements.stopPreviewBtn.disabled = true;
+                    elements.startBtn.disabled = true;
+                    elements.pauseBtn.disabled = false;
+                    elements.resumeBtn.style.display = 'none';
+                    elements.stopBtn.disabled = false;
+                    break;
+                case 'paused':
+                    elements.status.className = 'status paused';
+                    elements.status.textContent = '⏸️ 錄影已暫停';
+                    elements.pauseBtn.disabled = true;
+                    elements.resumeBtn.style.display = 'inline-flex';
+                    break;
+                case 'ready':
+                    elements.status.className = 'status ready';
+                    elements.status.textContent = '✅ 錄影完成';
+                    elements.previewBtn.disabled = false;
+                    elements.stopPreviewBtn.disabled = true;
+                    elements.startBtn.disabled = false;
+                    elements.pauseBtn.disabled = true;
+                    elements.resumeBtn.style.display = 'none';
+                    elements.stopBtn.disabled = true;
+                    break;
+            }
+        }
+
+        // 開始計時器
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (isRecording && !isPaused) {
+                    const elapsed = (Date.now() - recordingStartTime) / 1000;
+                    const timeStr = formatTime(elapsed);
+                    if (elements.status.classList.contains('recording')) {
+                        elements.status.innerHTML = `<span class="recording-indicator"></span>正在錄影中... <span class="timer">${timeStr}</span>`;
+                    }
+                }
+            }, 100);
+        }
+
+        // 停止計時器
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // 格式化時間
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 更新下載列表
+        function updateDownloadsList() {
+            if (recordedVideos.length > 0) {
+                elements.downloadsSection.style.display = 'block';
+                elements.downloadsList.innerHTML = '';
+                
+                recordedVideos.forEach((video, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'download-item';
+                    item.innerHTML = `
+                        <div class="download-info">
+                            <div class="download-name">${video.name}</div>
+                            <div class="download-meta">時長: ${video.duration} | 大小: ${video.size}</div>
+                        </div>
+                        <button class="btn-success" onclick="downloadSpecificVideo(${index})">
+                            <span>💾</span> 下載
+                        </button>
+                    `;
+                    elements.downloadsList.appendChild(item);
+                });
+            }
+        }
+
+        // 下載特定影片
+        function downloadSpecificVideo(index) {
+            const video = recordedVideos[index];
+            const a = document.createElement('a');
+            a.href = video.url;
+            a.download = `${video.name}.webm`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // 顯示錯誤訊息
+        function showError(message) {
+            if (message) {
+                elements.errorMessage.textContent = message;
+                elements.errorMessage.style.display = 'block';
+            } else {
+                elements.errorMessage.style.display = 'none';
+            }
+        }
+
+        // 初始化應用
+        init();
+    </script>
+</body>
+</html>
