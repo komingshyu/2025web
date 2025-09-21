@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 專用工具</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- pdf-lib for PDF manipulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <h1>PDF 專用工具</h1>
+                    <p>強大的PDF處理工具集，包含浮水印、頁面管理、合併和格式轉換功能</p>
+                </div>
+                <div class="badge">
+                    <i class="fas fa-file-pdf"></i>
+                    專用版
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Tool Selection -->
+            <section class="tool-selection">
+                <h2>選擇工具</h2>
+                <div class="tools-grid">
+                    <div class="tool-card" data-tool="watermark">
+                        <div class="tool-icon blue">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        <h3>浮水印</h3>
+                        <p>為PDF文件添加文字或圖片浮水印</p>
+                    </div>
+                    
+                    <div class="tool-card" data-tool="delete">
+                        <div class="tool-icon red">
+                            <i class="fas fa-trash"></i>
+                        </div>
+                        <h3>頁面刪除</h3>
+                        <p>刪除PDF中不需要的頁面</p>
+                    </div>
+                    
+                    <div class="tool-card" data-tool="split">
+                        <div class="tool-icon green">
+                            <i class="fas fa-cut"></i>
+                        </div>
+                        <h3>頁面切割</h3>
+                        <p>將PDF文件分割成多個文件</p>
+                    </div>
+                    
+                    <div class="tool-card" data-tool="merge">
+                        <div class="tool-icon purple">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <h3>合併</h3>
+                        <p>將多個PDF文件合併為一個</p>
+                    </div>
+                    
+                    <div class="tool-card" data-tool="tojpg">
+                        <div class="tool-icon yellow">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <h3>轉換JPG</h3>
+                        <p>將PDF頁面轉換為JPG圖片</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tool Interface -->
+            <section id="tool-interface" class="tool-interface" style="display: none;">
+                <div class="tool-header">
+                    <div class="tool-title">
+                        <div id="selected-tool-icon" class="tool-icon"></div>
+                        <h2 id="selected-tool-title"></h2>
+                    </div>
+                    <p id="selected-tool-description"></p>
+                </div>
+
+                <div class="tool-content">
+                    <!-- Upload Section -->
+                    <div class="upload-section">
+                        <h3>上傳PDF文件</h3>
+                        <div id="drop-zone" class="drop-zone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖拽PDF文件到這裡或點擊選擇</p>
+                            <p class="small">支持PDF格式，最大50MB</p>
+                            <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                        </div>
+                        
+                        <div id="file-info" class="file-info" style="display: none;">
+                            <div class="file-success">
+                                <i class="fas fa-check-circle"></i>
+                                <span id="file-name"></span>
+                            </div>
+                            <p class="file-size" id="file-size"></p>
+                        </div>
+
+                        <!-- PDF Preview -->
+                        <div id="pdf-preview" class="pdf-preview" style="display: none;">
+                            <h4>PDF預覽</h4>
+                            <div id="pdf-canvas-container" class="pdf-canvas-container">
+                                <canvas id="pdf-canvas"></canvas>
+                            </div>
+                            <div class="pdf-navigation">
+                                <button id="prev-page" disabled><i class="fas fa-chevron-left"></i></button>
+                                <span id="page-info">第 1 頁，共 1 頁</span>
+                                <button id="next-page" disabled><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tool Options -->
+                    <div class="options-section">
+                        <h3>工具選項</h3>
+                        <div id="tool-options" class="tool-options">
+                            <!-- Options will be dynamically inserted here -->
+                        </div>
+                        
+                        <button id="process-btn" class="process-btn" disabled>
+                            開始處理
+                        </button>
+                        
+                        <div id="progress-container" class="progress-container" style="display: none;">
+                            <div class="progress-bar">
+                                <div id="progress-fill" class="progress-fill"></div>
+                            </div>
+                            <p id="progress-text">處理進度: 0%</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section class="features">
+                <h2>功能特色</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h3>快速處理</h3>
+                        <p>先進的處理引擎，確保快速完成PDF操作</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h3>安全保密</h3>
+                        <p>文件處理過程完全保密，保護您的隱私</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <h3>精確控制</h3>
+                        <p>詳細的參數設置，滿足專業需求</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3>高品質輸出</h3>
+                        <p>保持原文件品質，輸出專業級結果</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 PDF 專用工具. 為您提供最優質的PDF處理服務.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

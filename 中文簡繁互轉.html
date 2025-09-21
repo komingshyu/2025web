@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中文簡繁轉換系統 - OpenCC JS</title>
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .file-drop-area {
+            border: 2px dashed #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .file-drop-area.dragover {
+            border-color: #764ba2;
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+        
+        .text-area {
+            min-height: 300px;
+            resize: vertical;
+            white-space: pre-wrap;
+        }
+        
+        .comparison-wrapper {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .comparison-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+        }
+        
+        .comparison-box {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-container {
+                flex-direction: column;
+            }
+        }
+        
+        .text-display {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .tab-active {
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+        
+        .instruction-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .instruction-step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8 fade-in">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">
+                <i class="fas fa-language mr-3"></i>中文簡繁轉換系統
+            </h1>
+            <p class="text-white text-opacity-90 text-lg">使用 OpenCC JS 技術，支援多種轉換模式</p>
+        </header>
+
+        <!-- Main Container -->
+        <div class="glass-morphism p-6 md:p-8 fade-in" id="mainContainer">
+            <!-- Tabs -->
+            <div class="flex border-b mb-6">
+                <button class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-purple-600 transition-colors tab-active" data-tab="input">
+                    <i class="fas fa-keyboard mr-2"></i>文字輸入
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-purple-600 transition-colors" data-tab="file">
+                    <i class="fas fa-file-upload mr-2"></i>檔案上傳
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-purple-600 transition-colors" data-tab="settings">
+                    <i class="fas fa-cog mr-2"></i>轉換設定
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-700 hover:text-purple-600 transition-colors" data-tab="help">
+                    <i class="fas fa-question-circle mr-2"></i>使用說明
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content">
+                <!-- Input Tab -->
+                <div id="input-tab" class="tab-content">
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            <i class="fas fa-edit mr-2"></i>輸入文字
+                        </label>
+                        <textarea id="inputText" class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-area scrollbar-thin" 
+                                  placeholder="請在此輸入要轉換的簡體中文文字..."></textarea>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-4 mb-6">
+                        <button id="convertBtn" class="btn-primary text-white px-6 py-3 rounded-lg font-medium">
+                            <i class="fas fa-exchange-alt mr-2"></i>開始轉換
+                        </button>
+                        <button id="clearBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-eraser mr-2"></i>清空內容
+                        </button>
+                        <button id="swapBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>交換內容
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Upload Tab -->
+                <div id="file-tab" class="tab-content hidden">
+                    <div class="file-drop-area p-8 rounded-lg text-center mb-6" id="dropArea">
+                        <i class="fas fa-cloud-upload-alt text-6xl text-purple-500 mb-4"></i>
+                        <p class="text-xl font-medium mb-2">拖曳檔案到這裡或點擊選擇</p>
+                        <p class="text-gray-600 mb-4">支援 .txt、.csv、.html 格式</p>
+                        <input type="file" id="fileInput" class="hidden" accept=".txt,.csv,.html">
+                        <button class="btn-primary text-white px-6 py-3 rounded-lg font-medium" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-folder-open mr-2"></i>選擇檔案
+                        </button>
+                    </div>
+                    
+                    <div id="fileInfo" class="hidden mb-4 p-4 bg-blue-50 rounded-lg">
+                        <p class="font-medium text-blue-800">
+                            <i class="fas fa-file-alt mr-2"></i>
+                            <span id="fileName"></span>
+                        </p>
+                        <p class="text-sm text-blue-600 mt-1">
+                            <span id="fileSize"></span> | <span id="fileType"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div id="settings-tab" class="tab-content hidden">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="fas fa-cogs mr-2"></i>轉換模式
+                            </label>
+                            <select id="conversionMode" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+                                <option value="s2t">簡體 → 繁體（通用）</option>
+                                <option value="s2tw">簡體 → 台灣正體</option>
+                                <option value="s2hk">簡體 → 香港繁體</option>
+                                <option value="t2s">繁體 → 簡體</option>
+                                <option value="tw2s">台灣正體 → 簡體</option>
+                                <option value="hk2s">香港繁體 → 簡體</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">
+                                <i class="fas fa-magic mr-2"></i>進階選項
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="keepPunctuation" class="mr-2" checked>
+                                    <span class="text-sm">保留標點符號格式</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="convertPhrases" class="mr-2" checked>
+                                    <span class="text-sm">轉換詞組（如：软件 → 軟體）</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="autoDetect" class="mr-2">
+                                    <span class="text-sm">自動檢測輸入格式</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-sm text-yellow-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            提示：不同轉換模式會產生不同的結果，請根據您的需求選擇合適的模式。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Help Tab -->
+                <div id="help-tab" class="tab-content hidden">
+                    <div class="instruction-card">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">
+                            <i class="fas fa-book-open mr-2"></i>使用說明
+                        </h3>
+                        
+                        <div class="instruction-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4 class="font-medium text-gray-700">輸入文字</h4>
+                                <p class="text-sm text-gray-600">您可以直接在文字框中輸入要轉換的內容，或透過檔案上傳功能匯入文字檔案。</p>
+                            </div>
+                        </div>
+                        
+                        <div class="instruction-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4 class="font-medium text-gray-700">選擇轉換模式</h4>
+                                <p class="text-sm text-gray-600">在「轉換設定」頁籤中，選擇您需要的轉換模式，系統提供多種簡繁體轉換選項。</p>
+                            </div>
+                        </div>
+                        
+                        <div class="instruction-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4 class="font-medium text-gray-700">執行轉換</h4>
+                                <p class="text-sm text-gray-600">點擊「開始轉換」按鈕，系統會自動處理並顯示轉換結果。</p>
+                            </div>
+                        </div>
+                        
+                        <div class="instruction-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h4 class="font-medium text-gray-700">查看結果</h4>
+                                <p class="text-sm text-gray-600">轉換完成後，系統會並排顯示轉換前後的內容，保留原始格式和排版。</p>
+                            </div>
+                        </div>
+                        
+                        <div class="instruction-step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <h4 class="font-medium text-gray-700">匯出結果</h4>
+                                <p class="text-sm text-gray-600">您可以複製轉換結果到剪貼簿，或下載為文字檔案保存。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-blue-800 mb-2">
+                                <i class="fas fa-lightbulb mr-2"></i>使用技巧
+                            </h4>
+                            <ul class="text-sm text-blue-700 space-y-1">
+                                <li>• 支援拖曳檔案直接上傳</li>
+                                <li>• 可交換轉換前後內容進行反向轉換</li>
+                                <li>• 系統會自動保留原始文字的換行和空格</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="font-medium text-green-800 mb-2">
+                                <i class="fas fa-check-circle mr-2"></i>支援格式
+                            </h4>
+                            <ul class="text-sm text-green-700 space-y-1">
+                                <li>• 純文字檔案 (.txt)</li>
+                                <li>• CSV 資料檔案 (.csv)</li>
+                                <li>• HTML 網頁檔案 (.html)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Section -->
+            <div id="comparisonSection" class="hidden fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold gradient-text">
+                        <i class="fas fa-columns mr-2"></i>轉換結果比較
+                    </h2>
+                    <div class="flex gap-2">
+                        <button id="copyResultBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                            <i class="fas fa-copy mr-2"></i>複製結果
+                        </button>
+                        <button id="downloadBtn" class="btn-primary text-white px-4 py-2 rounded-lg text-sm">
+                            <i class="fas fa-download mr-2"></i>下載檔案
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="comparison-wrapper">
+                    <div class="comparison-container">
+                        <div class="comparison-box bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-medium text-gray-700 mb-2">
+                                <i class="fas fa-file-alt mr-2"></i>轉換前
+                            </h3>
+                            <div id="beforeText" class="bg-white p-4 rounded border-2 border-gray-200 text-display scrollbar-thin"></div>
+                            <p class="text-sm text-gray-500 mt-2">
+                                字數：<span id="beforeCount">0</span>
+                            </p>
+                        </div>
+                        
+                        <div class="comparison-box bg-purple-50 p-4 rounded-lg">
+                            <h3 class="font-medium text-purple-700 mb-2">
+                                <i class="fas fa-file-alt mr-2"></i>轉換後
+                            </h3>
+                            <div id="afterText" class="bg-white p-4 rounded border-2 border-purple-200 text-display scrollbar-thin"></div>
+                            <p class="text-sm text-purple-500 mt-2">
+                                字數：<span id="afterCount">0</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <i class="fas fa-clock mr-2"></i>
+                        轉換時間：<span id="conversionTime">0</span> 毫秒
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-8 text-white text-opacity-80">
+            <p class="text-sm">
+                <i class="fas fa-code mr-2"></i>
+                Powered by OpenCC JS | 
+                <i class="fas fa-heart mx-1 text-red-400"></i>
+                Design by Koming  2025
+            </p>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-full transition-transform duration-300">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        // Initialize OpenCC
+        const converter = OpenCC.Converter({ from: 'cn', to: 'tw' });
+        
+        // Tab switching
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                // Update active tab
+                tabBtns.forEach(b => b.classList.remove('tab-active'));
+                btn.classList.add('tab-active');
+                
+                // Show corresponding content
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            });
+        });
+        
+        // File drop area
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragover');
+        });
+        
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('dragover');
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        // Handle file upload
+        function handleFile(file) {
+            const allowedTypes = ['text/plain', 'text/csv', 'text/html'];
+            const allowedExtensions = ['.txt', '.csv', '.html'];
+            
+            const isValidType = allowedTypes.includes(file.type) || 
+                              allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+            
+            if (!isValidType) {
+                showToast('不支援的檔案格式，請上傳 .txt、.csv 或 .html 檔案', 'error');
+                return;
+            }
+            
+            // Show file info
+            document.getElementById('fileInfo').classList.remove('hidden');
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('fileType').textContent = file.type || '未知類型';
+            
+            // Read file
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('inputText').value = e.target.result;
+                showToast('檔案讀取成功！', 'success');
+                
+                // Switch to input tab
+                document.querySelector('[data-tab="input"]').click();
+            };
+            reader.readAsText(file);
+        }
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Convert text
+        document.getElementById('convertBtn').addEventListener('click', async () => {
+            const inputText = document.getElementById('inputText').value.trim();
+            
+            if (!inputText) {
+                showToast('請輸入要轉換的文字', 'warning');
+                return;
+            }
+            
+            const startTime = performance.now();
+            const mode = document.getElementById('conversionMode').value;
+            
+            try {
+                // Create converter based on mode
+                let converter;
+                switch(mode) {
+                    case 's2t':
+                        converter = OpenCC.Converter({ from: 'cn', to: 'tw' });
+                        break;
+                    case 's2tw':
+                        converter = OpenCC.Converter({ from: 'cn', to: 'twp' });
+                        break;
+                    case 's2hk':
+                        converter = OpenCC.Converter({ from: 'cn', to: 'hk' });
+                        break;
+                    case 't2s':
+                        converter = OpenCC.Converter({ from: 'tw', to: 'cn' });
+                        break;
+                    case 'tw2s':
+                        converter = OpenCC.Converter({ from: 'twp', to: 'cn' });
+                        break;
+                    case 'hk2s':
+                        converter = OpenCC.Converter({ from: 'hk', to: 'cn' });
+                        break;
+                }
+                
+                const convertedText = await converter(inputText);
+                const endTime = performance.now();
+                const conversionTime = Math.round(endTime - startTime);
+                
+                // Show comparison
+                document.getElementById('beforeText').textContent = inputText;
+                document.getElementById('afterText').textContent = convertedText;
+                document.getElementById('beforeCount').textContent = inputText.length;
+                document.getElementById('afterCount').textContent = convertedText.length;
+                document.getElementById('conversionTime').textContent = conversionTime;
+                
+                document.getElementById('comparisonSection').classList.remove('hidden');
+                showToast('轉換完成！', 'success');
+                
+                // Scroll to comparison
+                document.getElementById('comparisonSection').scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                showToast('轉換失敗：' + error.message, 'error');
+            }
+        });
+        
+        // Clear content
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('inputText').value = '';
+            document.getElementById('comparisonSection').classList.add('hidden');
+            showToast('內容已清空', 'info');
+        });
+        
+        // Swap content
+        document.getElementById('swapBtn').addEventListener('click', () => {
+            const beforeText = document.getElementById('beforeText').textContent;
+            const afterText = document.getElementById('afterText').textContent;
+            
+            if (beforeText) {
+                document.getElementById('inputText').value = afterText;
+                document.getElementById('beforeText').textContent = afterText;
+                document.getElementById('afterText').textContent = beforeText;
+                showToast('內容已交換', 'info');
+            }
+        });
+        
+        // Copy result
+        document.getElementById('copyResultBtn').addEventListener('click', async () => {
+            const afterText = document.getElementById('afterText').textContent;
+            
+            try {
+                await navigator.clipboard.writeText(afterText);
+                showToast('結果已複製到剪貼簿', 'success');
+            } catch (error) {
+                showToast('複製失敗', 'error');
+            }
+        });
+        
+        // Download file
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const afterText = document.getElementById('afterText').textContent;
+            const blob = new Blob([afterText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `converted_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('檔案下載中...', 'success');
+        });
+        
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // Set message
+            toastMessage.textContent = message;
+            
+            // Set color based on type
+            toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300';
+            switch(type) {
+                case 'success':
+                    toast.classList.add('bg-green-600', 'text-white');
+                    break;
+                case 'error':
+                    toast.classList.add('bg-red-600', 'text-white');
+                    break;
+                case 'warning':
+                    toast.classList.add('bg-yellow-600', 'text-white');
+                    break;
+                default:
+                    toast.classList.add('bg-gray-800', 'text-white');
+            }
+            
+            // Show toast
+            toast.classList.remove('translate-y-full');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+            }, 3000);
+        }
+        
+        // Auto-resize textarea
+        const inputText = document.getElementById('inputText');
+        inputText.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+    </script>
+</body>
+</html>

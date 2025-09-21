@@ -1,0 +1,2486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoHotkey 程式產生器 - Blockly 版</title>
+    <script src="https://unpkg.com/blockly@9.2.0/blockly.min.js"></script>
+    <script src="https://unpkg.com/blockly@9.2.0/blocks.min.js"></script>
+    <script src="https://unpkg.com/blockly@9.2.0/javascript.min.js"></script>
+    <script src="https://unpkg.com/blockly@9.2.0/msg/zh-hans.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header p {
+            margin-top: 0.5rem;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 100px);
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .left-panel {
+            width: 280px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .examples-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+        }
+
+        .examples-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .example-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .example-item h4 {
+            font-size: 0.9rem;
+            color: #495057;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .example-item p {
+            font-size: 0.8rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        .category {
+            margin-bottom: 1.5rem;
+        }
+
+        .category h3 {
+            font-size: 1rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .block-item {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .block-item:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .block-item:active {
+            transform: translateY(0);
+        }
+
+        .block-item .icon {
+            font-size: 1.2rem;
+        }
+
+        .workspace-container {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #blocklyDiv {
+            width: 100%;
+            height: 100%;
+        }
+
+        .right-panel {
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .preview-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            background: #667eea;
+            color: white;
+            padding: 1rem;
+            border-radius: 10px 10px 0 0;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            background: #f8f9fa;
+        }
+
+        .preview-content pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #28a745;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .blocklyToolboxDiv {
+            background: #f8f9fa !important;
+        }
+
+        .blocklyTreeSelected .blocklyTreeLabel {
+            color: #667eea !important;
+            font-weight: bold !important;
+        }
+
+        .example-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .example-modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .example-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .example-modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .example-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .example-modal-close:hover {
+            color: #dc3545;
+        }
+
+        .example-code {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+        }
+
+        .example-description {
+            line-height: 1.6;
+            color: #495057;
+            margin-bottom: 1rem;
+        }
+
+        .example-usage {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .example-usage h4 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-load-example {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-right: 0.5rem;
+        }
+
+        .btn-load-example:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 1200px) {
+            .right-panel {
+                width: 350px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .left-panel {
+                width: 100%;
+                height: 200px;
+            }
+            
+            .right-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>AutoHotkey 程式產生器</h1>
+        <p>使用拖曳積木的方式快速產生 AutoHotkey 腳本</p>
+    </header>
+
+    <div class="container">
+        <div class="left-panel">
+            <div class="examples-section">
+                <div class="examples-title">
+                    <span>📚</span>
+                    <span>範例教學</span>
+                </div>
+                
+                <div class="example-item" onclick="showExample('hello-world')">
+                    <h4><span>👋</span> Hello World</h4>
+                    <p>最基礎的 AutoHotkey 腳本，顯示訊息框</p>
+                </div>
+                
+                <div class="example-item" onclick="showExample('hotkey-basic')">
+                    <h4><span>🔑</span> 基礎熱鍵</h4>
+                    <p>設定簡單的熱鍵來執行動作</p>
+                </div>
+                
+                <div class="example-item" onclick="showExample('auto-typing')">
+                    <h4><span>⌨️</span> 自動輸入</h4>
+                    <p>自動輸入文字和按鍵組合</p>
+                </div>
+                
+                <div class="example-item" onclick="showExample('mouse-automation')">
+                    <h4><span>🖱️</span> 滑鼠自動化</h4>
+                    <p>控制滑鼠移動和點擊</p>
+                </div>
+                
+                <div class="example-item" onclick="showExample('window-control')">
+                    <h4><span>🪟</span> 視窗控制</h4>
+                    <p>自動化視窗操作和管理</p>
+                </div>
+                
+                <div class="example-item" onclick="showExample('file-operations')">
+                    <h4><span>📁</span> 檔案操作</h4>
+                    <p>讀取、寫入和處理檔案</p>
+                </div>
+                
+                <div class="example-item" onclick="showExample('game-macro')">
+                    <h4><span>🎮</span> 遊戲巨集</h4>
+                    <p>簡單的遊戲自動化腳本</p>
+                </div>
+                
+                <div class="example-item" onclick="showExample('productivity')">
+                    <h4><span>⚡</span> 效率工具</h4>
+                    <p>提升工作效率的實用腳本</p>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3>🔤 輸入/輸出</h3>
+                <div class="block-item" data-type="ahk_send">
+                    <span class="icon">⌨️</span>
+                    <span>Send 按鍵</span>
+                </div>
+                <div class="block-item" data-type="ahk_sendkeys">
+                    <span class="icon">🎹</span>
+                    <span>SendKeys 按鍵設定</span>
+                </div>
+                <div class="block-item" data-type="ahk_sendraw">
+                    <span class="icon">📝</span>
+                    <span>SendRaw 原始文字</span>
+                </div>
+                <div class="block-item" data-type="ahk_msgbox">
+                    <span class="icon">💬</span>
+                    <span>MsgBox 訊息框</span>
+                </div>
+                <div class="block-item" data-type="ahk_inputbox">
+                    <span class="icon">📝</span>
+                    <span>InputBox 輸入框</span>
+                </div>
+                <div class="block-item" data-type="ahk_tooltip">
+                    <span class="icon">💡</span>
+                    <span>ToolTip 提示</span>
+                </div>
+            </div>
+            
+            <div class="category">
+                <h3>⏱️ 延遲與等待</h3>
+                <div class="block-item" data-type="ahk_sleep">
+                    <span class="icon">⏳</span>
+                    <span>Sleep 延遲</span>
+                </div>
+                <div class="block-item" data-type="ahk_settimer">
+                    <span class="icon">⏰</span>
+                    <span>SetTimer 計時器</span>
+                </div>
+                <div class="block-item" data-type="ahk_wait">
+                    <span class="icon">⏸️</span>
+                    <span>Wait 等待</span>
+                </div>
+            </div>
+            
+            <div class="category">
+                <h3>🖱️ 滑鼠控制</h3>
+                <div class="block-item" data-type="ahk_mousemove">
+                    <span class="icon">🖱️</span>
+                    <span>MouseMove 移動</span>
+                </div>
+                <div class="block-item" data-type="ahk_mouseclick">
+                    <span class="icon">👆</span>
+                    <span>MouseClick 點擊</span>
+                </div>
+                <div class="block-item" data-type="ahk_mousedrag">
+                    <span class="icon">✋</span>
+                    <span>MouseDrag 拖曳</span>
+                </div>
+                <div class="block-item" data-type="ahk_mousegetpos">
+                    <span class="icon">📍</span>
+                    <span>MouseGetPos 取得位置</span>
+                </div>
+            </div>
+            
+            <div class="category">
+                <h3>⌨️ 鍵盤控制</h3>
+                <div class="block-item" data-type="ahk_hotkey">
+                    <span class="icon">🔑</span>
+                    <span>HotKey 熱鍵</span>
+                </div>
+                <div class="block-item" data-type="ahk_keywait">
+                    <span class="icon">⏳</span>
+                    <span>KeyWait 等待按鍵</span>
+                </div>
+                <div class="block-item" data-type="ahk_getkeystate">
+                    <span class="icon">🔍</span>
+                    <span>GetKeyState 按鍵狀態</span>
+                </div>
+            </div>
+            
+            <div class="category">
+                <h3>🔄 流程控制</h3>
+                <div class="block-item" data-type="ahk_loop">
+                    <span class="icon">🔄</span>
+                    <span>Loop 迴圈</span>
+                </div>
+                <div class="block-item" data-type="ahk_while">
+                    <span class="icon">🔄</span>
+                    <span>While 迴圈</span>
+                </div>
+                <div class="block-item" data-type="ahk_for">
+                    <span class="icon">🔢</span>
+                    <span>For 迴圈</span>
+                </div>
+                <div class="block-item" data-type="ahk_if">
+                    <span class="icon">❓</span>
+                    <span>If 條件判斷</span>
+                </div>
+                <div class="block-item" data-type="ahk_else">
+                    <span class="icon">❔</span>
+                    <span>Else 否則</span>
+                </div>
+                <div class="block-item" data-type="ahk_break">
+                    <span class="icon">⏹️</span>
+                    <span>Break 中斷</span>
+                </div>
+                <div class="block-item" data-type="ahk_continue">
+                    <span class="icon">⏭️</span>
+                    <span>Continue 繼續</span>
+                </div>
+            </div>
+            
+            <div class="category">
+                <h3>📁 檔案操作</h3>
+                <div class="block-item" data-type="ahk_run">
+                    <span class="icon">🚀</span>
+                    <span>Run 執行程式</span>
+                </div>
+                <div class="block-item" data-type="ahk_runwait">
+                    <span class="icon">⏳</span>
+                    <span>RunWait 等待執行</span>
+                </div>
+                <div class="block-item" data-type="ahk_fileexist">
+                    <span class="icon">📄</span>
+                    <span>FileExist 檢查檔案</span>
+                </div>
+                <div class="block-item" data-type="ahk_fileread">
+                    <span class="icon">📖</span>
+                    <span>FileRead 讀取檔案</span>
+                </div>
+                <div class="block-item" data-type="ahk_filewrite">
+                    <span class="icon">✍️</span>
+                    <span>FileWrite 寫入檔案</span>
+                </div>
+                <div class="block-item" data-type="ahk_fileappend">
+                    <span class="icon">📝</span>
+                    <span>FileAppend 附加檔案</span>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3>🔧 系統操作</h3>
+                <div class="block-item" data-type="ahk_winactivate">
+                    <span class="icon">🪟</span>
+                    <span>WinActivate 啟動視窗</span>
+                </div>
+                <div class="block-item" data-type="ahk_winclose">
+                    <span class="icon">❌</span>
+                    <span>WinClose 關閉視窗</span>
+                </div>
+                <div class="block-item" data-type="ahk_winmove">
+                    <span class="icon">📍</span>
+                    <span>WinMove 移動視窗</span>
+                </div>
+                <div class="block-item" data-type="ahk_process">
+                    <span class="icon">⚙️</span>
+                    <span>Process 程序操作</span>
+                </div>
+                <div class="block-item" data-type="ahk_regread">
+                    <span class="icon">📋</span>
+                    <span>RegRead 讀取登錄</span>
+                </div>
+                <div class="block-item" data-type="ahk_regwrite">
+                    <span class="icon">✍️</span>
+                    <span>RegWrite 寫入登錄</span>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3>📊 變數與資料</h3>
+                <div class="block-item" data-type="ahk_varassign">
+                    <span class="icon">📦</span>
+                    <span>變數賦值</span>
+                </div>
+                <div class="block-item" data-type="ahk_varincrement">
+                    <span class="icon">➕</span>
+                    <span>變數遞增</span>
+                </div>
+                <div class="block-item" data-type="ahk_array">
+                    <span class="icon">📚</span>
+                    <span>陣列操作</span>
+                </div>
+                <div class="block-item" data-type="ahk_strlen">
+                    <span class="icon">📏</span>
+                    <span>StrLen 字串長度</span>
+                </div>
+                <div class="block-item" data-type="ahk_substr">
+                    <span class="icon">✂️</span>
+                    <span>SubStr 子字串</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="workspace-container">
+            <div id="blocklyDiv"></div>
+        </div>
+
+        <div class="right-panel">
+            <div class="preview-container">
+                <div class="preview-header">
+                    <span>📄 腳本預覽</span>
+                    <span id="codeLength">0 行</span>
+                </div>
+                <div class="preview-content">
+                    <pre id="generatedCode">; 將積木拖曳到左側編輯區開始建立您的 AutoHotkey 腳本</pre>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" onclick="downloadScript()">
+                    💾 下載 .AHK 檔案
+                </button>
+                <button class="btn btn-secondary" onclick="copyToClipboard()">
+                    📋 複製到剪貼簿
+                </button>
+                <button class="btn-danger" onclick="clearWorkspace()">
+                    🗑️ 清空編輯區
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <!-- 範例模態框 -->
+    <div class="example-modal" id="exampleModal">
+        <div class="example-modal-content">
+            <div class="example-modal-header">
+                <div class="example-modal-title" id="exampleTitle">範例標題</div>
+                <button class="example-modal-close" onclick="closeExample()">&times;</button>
+            </div>
+            <div id="exampleContent">
+                <!-- 範例內容將動態插入 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let workspace = null;
+        let isInitialized = false;
+
+        // 範例資料
+        const examples = {
+            'hello-world': {
+                title: 'Hello World - 基礎範例',
+                description: '這是最基礎的 AutoHotkey 腳本，展示如何顯示訊息框和執行簡單的動作。',
+                code: `; Hello World 基礎範例
+MsgBox, 歡迎使用 AutoHotkey！
+Sleep, 1000
+MsgBox, 這是一個簡單的訊息框
+ToolTip, 腳本執行中...
+Sleep, 2000`,
+                usage: '這個範例適合初學者了解 AutoHotkey 的基本語法和工作方式。',
+                blocks: [
+                    { type: 'ahk_msgbox', values: { MESSAGE: '"歡迎使用 AutoHotkey！"' } },
+                    { type: 'ahk_sleep', values: { TIME: '1000' } },
+                    { type: 'ahk_msgbox', values: { MESSAGE: '"這是一個簡單的訊息框"' } },
+                    { type: 'ahk_tooltip', values: { TEXT: '"腳本執行中..."' } },
+                    { type: 'ahk_sleep', values: { TIME: '2000' } }
+                ]
+            },
+            'hotkey-basic': {
+                title: '基礎熱鍵設定',
+                description: '學習如何設定熱鍵來執行特定的動作，這是 AutoHotkey 最常用的功能之一。',
+                code: `; 基礎熱鍵範例
+F1::
+    MsgBox, 您按下了 F1 鍵
+Return
+
+^j::
+    Send, Hello World!
+    Send, {Enter}
+Return
+
+!n::
+    Run, notepad.exe
+Return`,
+                usage: 'F1 顯示訊息框，Ctrl+J 輸入文字，Alt+N 開啟記事本。',
+                blocks: [
+                    { type: 'ahk_hotkey', values: { KEY: '"F1"' }, statements: { DO: [
+                        { type: 'ahk_msgbox', values: { MESSAGE: '"您按下了 F1 鍵"' } }
+                    ]}},
+                    { type: 'ahk_hotkey', values: { KEY: '"^j"' }, statements: { DO: [
+                        { type: 'ahk_send', values: { TEXT: '"Hello World!"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: '{Enter}', REPEAT: '1' } }
+                    ]}},
+                    { type: 'ahk_hotkey', values: { KEY: '"!n"' }, statements: { DO: [
+                        { type: 'ahk_run', values: { PROGRAM: '"notepad.exe"' } }
+                    ]}}
+                ]
+            },
+            'auto-typing': {
+                title: '自動輸入文字',
+                description: '示範如何自動輸入文字、填寫表單和執行按鍵組合。',
+                code: `; 自動輸入範例
+F2::
+    Send, 這是自動輸入的文字
+    Send, {Enter}
+    Send, 第二行文字
+    Send, {Tab}
+    Send, 填寫表單內容
+    SendKeys, Ctrl+Home 次數 1
+    Send, 移動到文件開頭
+Return`,
+                usage: '按 F2 自動輸入多行文字並模擬表單填寫。',
+                blocks: [
+                    { type: 'ahk_hotkey', values: { KEY: '"F2"' }, statements: { DO: [
+                        { type: 'ahk_send', values: { TEXT: '"這是自動輸入的文字"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: '{Enter}', REPEAT: '1' } },
+                        { type: 'ahk_send', values: { TEXT: '"第二行文字"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: '{Tab}', REPEAT: '1' } },
+                        { type: 'ahk_send', values: { TEXT: '"填寫表單內容"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: 'Ctrl+Home', REPEAT: '1' } },
+                        { type: 'ahk_send', values: { TEXT: '"移動到文件開頭"' } }
+                    ]}}
+                ]
+            },
+            'mouse-automation': {
+                title: '滑鼠自動化控制',
+                description: '學習如何控制滑鼠移動、點擊和拖曳等操作。',
+                code: `; 滑鼠自動化範例
+F3::
+    MouseMove, 100, 100
+    Sleep, 500
+    MouseClick, L
+    Sleep, 300
+    MouseMove, 200, 200
+    MouseClick, R
+    MouseGetPos, mouseX, mouseY
+    MsgBox, 滑鼠位置: X=%mouseX%, Y=%mouseY%
+Return`,
+                usage: '按 F3 執行滑鼠移動、點擊並取得當前位置。',
+                blocks: [
+                    { type: 'ahk_hotkey', values: { KEY: '"F3"' }, statements: { DO: [
+                        { type: 'ahk_mousemove', values: { X: '100', Y: '100' } },
+                        { type: 'ahk_sleep', values: { TIME: '500' } },
+                        { type: 'ahk_mouseclick', values: { BUTTON: 'L' } },
+                        { type: 'ahk_sleep', values: { TIME: '300' } },
+                        { type: 'ahk_mousemove', values: { X: '200', Y: '200' } },
+                        { type: 'ahk_mouseclick', values: { BUTTON: 'R' } },
+                        { type: 'ahk_mousegetpos', values: { XVAR: '"mouseX"', YVAR: '"mouseY"' } },
+                        { type: 'ahk_msgbox', values: { MESSAGE: '"滑鼠位置: X=%mouseX%, Y=%mouseY%"' } }
+                    ]}}
+                ]
+            },
+            'window-control': {
+                title: '視窗控制與管理',
+                description: '示範如何自動化視窗操作，包括啟動、移動、關閉視窗等。',
+                code: `; 視窗控制範例
+F4::
+    Run, notepad.exe
+    WinWait, Untitled
+    Sleep, 1000
+    WinMove, Untitled, , 100, 100
+    Send, 這是在移動後的視窗中輸入的文字
+    Sleep, 2000
+    WinClose, Untitled
+Return`,
+                usage: '按 F4 開啟記事本，移動視窗位置，輸入文字後關閉。',
+                blocks: [
+                    { type: 'ahk_hotkey', values: { KEY: '"F4"' }, statements: { DO: [
+                        { type: 'ahk_run', values: { PROGRAM: '"notepad.exe"' } },
+                        { type: 'ahk_winactivate', values: { TITLE: '"Untitled"' } },
+                        { type: 'ahk_sleep', values: { TIME: '1000' } },
+                        { type: 'ahk_winmove', values: { TITLE: '"Untitled"', X: '100', Y: '100' } },
+                        { type: 'ahk_send', values: { TEXT: '"這是在移動後的視窗中輸入的文字"' } },
+                        { type: 'ahk_sleep', values: { TIME: '2000' } },
+                        { type: 'ahk_winclose', values: { TITLE: '"Untitled"' } }
+                    ]}}
+                ]
+            },
+            'file-operations': {
+                title: '檔案讀寫操作',
+                description: '學習如何讀取、寫入和處理檔案內容。',
+                code: `; 檔案操作範例
+F5::
+    If FileExist("test.txt")
+    {
+        FileRead, content, test.txt
+        MsgBox, 檔案內容: %content%
+    }
+    Else
+    {
+        FileWrite, test.txt, 這是新建立的檔案內容
+        MsgBox, 檔案已建立
+    }
+    FileAppend, test.txt, %A_Now% - 腳本執行時間
+Return`,
+                usage: '按 F5 檢查檔案是否存在，讀取內容或建立新檔案。',
+                blocks: [
+                    { type: 'ahk_hotkey', values: { KEY: '"F5"' }, statements: { DO: [
+                        { type: 'ahk_if', values: { CONDITION: 'FileExist("test.txt")' }, statements: { DO: [
+                            { type: 'ahk_fileread', values: { VARIABLE: '"content"', FILE: '"test.txt"' } },
+                            { type: 'ahk_msgbox', values: { MESSAGE: '"檔案內容: %content%"' } }
+                        ]}},
+                        { type: 'ahk_else', statements: { DO: [
+                            { type: 'ahk_filewrite', values: { CONTENT: '"這是新建立的檔案內容"', FILE: '"test.txt"' } },
+                            { type: 'ahk_msgbox', values: { MESSAGE: '"檔案已建立"' } }
+                        ]}},
+                        { type: 'ahk_fileappend', values: { CONTENT: 'A_Now . " - 腳本執行時間"', FILE: '"test.txt"' } }
+                    ]}}
+                ]
+            },
+            'game-macro': {
+                title: '遊戲自動化巨集',
+                description: '簡單的遊戲自動化腳本，示範連續按鍵和迴圈操作。',
+                code: `; 遊戲巨集範例
+F6::
+    Loop, 10
+    {
+        Send, 1
+        Sleep, 100
+        Send, 2
+        Sleep, 100
+        Send, 3
+        Sleep, 500
+    }
+Return
+
+F7::
+    While GetKeyState("F7", "P")
+    {
+        MouseClick, L
+        Sleep, 50
+    }
+Return`,
+                usage: 'F6 執行技能連擊，按住 F7 連續點擊滑鼠。',
+                blocks: [
+                    { type: 'ahk_hotkey', values: { KEY: '"F6"' }, statements: { DO: [
+                        { type: 'ahk_loop', values: { TIMES: '10' }, statements: { DO: [
+                            { type: 'ahk_send', values: { TEXT: '"1"' } },
+                            { type: 'ahk_sleep', values: { TIME: '100' } },
+                            { type: 'ahk_send', values: { TEXT: '"2"' } },
+                            { type: 'ahk_sleep', values: { TIME: '100' } },
+                            { type: 'ahk_send', values: { TEXT: '"3"' } },
+                            { type: 'ahk_sleep', values: { TIME: '500' } }
+                        ]}}
+                    ]}},
+                    { type: 'ahk_hotkey', values: { KEY: '"F7"' }, statements: { DO: [
+                        { type: 'ahk_while', values: { CONDITION: 'GetKeyState("F7", "P")' }, statements: { DO: [
+                            { type: 'ahk_mouseclick', values: { BUTTON: 'L' } },
+                            { type: 'ahk_sleep', values: { TIME: '50' } }
+                        ]}}
+                    ]}}
+                ]
+            },
+            'productivity': {
+                title: '效率提升工具',
+                description: '實用的辦公室自動化工具，提升工作效率。',
+                code: `; 效率工具範例
+^!s::
+    Send, Sincerely,
+    Send, {Enter}
+    Send, Your Name
+    Send, {Enter}
+    Send, your.email@example.com
+Return
+
+#t::
+    FormatTime, timestamp, , yyyy-MM-dd HH:mm:ss
+    Send, %timestamp%
+Return
+
+^+d::
+    WinActivate, ahk_class Notepad
+    Send, ^a
+    Send, ^c
+    WinActivate, ahk_class Chrome_WidgetWin_1
+    Send, ^v
+Return`,
+                usage: 'Ctrl+Alt+S 插入簽名檔，Win+T 插入時間戳，Ctrl+Shift+D 複製貼上。',
+                blocks: [
+                    { type: 'ahk_hotkey', values: { KEY: '"^!s"' }, statements: { DO: [
+                        { type: 'ahk_send', values: { TEXT: '"Sincerely,"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: '{Enter}', REPEAT: '1' } },
+                        { type: 'ahk_send', values: { TEXT: '"Your Name"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: '{Enter}', REPEAT: '1' } },
+                        { type: 'ahk_send', values: { TEXT: '"your.email@example.com"' } }
+                    ]}},
+                    { type: 'ahk_hotkey', values: { KEY: '"#t"' }, statements: { DO: [
+                        { type: 'ahk_varassign', values: { VARIABLE: '"timestamp"', VALUE: 'A_Now' } },
+                        { type: 'ahk_send', values: { TEXT: 'timestamp' } }
+                    ]}},
+                    { type: 'ahk_hotkey', values: { KEY: '"^+d"' }, statements: { DO: [
+                        { type: 'ahk_winactivate', values: { TITLE: '"ahk_class Notepad"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: 'Ctrl+A', REPEAT: '1' } },
+                        { type: 'ahk_sendkeys', values: { KEY: 'Ctrl+C', REPEAT: '1' } },
+                        { type: 'ahk_winactivate', values: { TITLE: '"ahk_class Chrome_WidgetWin_1"' } },
+                        { type: 'ahk_sendkeys', values: { KEY: 'Ctrl+V', REPEAT: '1' } }
+                    ]}}
+                ]
+            }
+        };
+
+        // 等待 Blockly 載入完成
+        function waitForBlockly(callback, attempts = 0) {
+            if (typeof Blockly !== 'undefined' && 
+                Blockly.Blocks && 
+                Blockly.JavaScript && 
+                Blockly.inject &&
+                Blockly.Xml &&
+                Blockly.utils &&
+                Blockly.utils.Coordinate) {
+                console.log('Blockly 已載入，開始初始化');
+                callback();
+            } else if (attempts < 30) {
+                console.log('等待 Blockly 載入...', attempts);
+                setTimeout(() => waitForBlockly(callback, attempts + 1), 300);
+            } else {
+                console.error('Blockly 載入超時');
+                showNotification('系統載入失敗，請重新整理頁面', 'error');
+            }
+        }
+
+        // 定義 AutoHotkey 積木
+        function defineBlocks() {
+            console.log('定義 AutoHotkey 積木...');
+
+            // 輸入/輸出類積木
+            Blockly.Blocks['ahk_send'] = {
+                init: function() {
+                    this.appendValueInput("TEXT")
+                        .setCheck("String")
+                        .appendField("Send");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(230);
+                    this.setTooltip("發送按鍵或文字");
+                }
+            };
+
+            // SendKeys 按鍵設定積木
+            Blockly.Blocks['ahk_sendkeys'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("SendKeys")
+                        .appendField(new Blockly.FieldDropdown([
+                            ["Enter", "{Enter}"],
+                            ["Tab", "{Tab}"],
+                            ["Esc", "{Esc}"],
+                            ["Space", "{Space}"],
+                            ["Backspace", "{Backspace}"],
+                            ["Delete", "{Delete}"],
+                            ["Insert", "{Insert}"],
+                            ["Home", "{Home}"],
+                            ["End", "{End}"],
+                            ["PgUp", "{PgUp}"],
+                            ["PgDn", "{PgDn}"],
+                            ["Up", "{Up}"],
+                            ["Down", "{Down}"],
+                            ["Left", "{Left}"],
+                            ["Right", "{Right}"],
+                            ["F1", "{F1}"],
+                            ["F2", "{F2}"],
+                            ["F3", "{F3}"],
+                            ["F4", "{F4}"],
+                            ["F5", "{F5}"],
+                            ["F6", "{F6}"],
+                            ["F7", "{F7}"],
+                            ["F8", "{F8}"],
+                            ["F9", "{F9}"],
+                            ["F10", "{F10}"],
+                            ["F11", "{F11}"],
+                            ["F12", "{F12}"],
+                            ["Ctrl+C", "^c"],
+                            ["Ctrl+V", "^v"],
+                            ["Ctrl+X", "^x"],
+                            ["Ctrl+Z", "^z"],
+                            ["Ctrl+A", "^a"],
+                            ["Ctrl+S", "^s"],
+                            ["Alt+Tab", "!{Tab}"],
+                            ["Alt+F4", "!{F4}"],
+                            ["Win+R", "#r"],
+                            ["Win+E", "#e"],
+                            ["Win+D", "#d"],
+                            ["Shift+Tab", "+{Tab}"],
+                            ["Ctrl+Shift+Esc", "^+{Esc}"],
+                            ["PrintScreen", "{PrintScreen}"],
+                            ["ScrollLock", "{ScrollLock}"],
+                            ["CapsLock", "{CapsLock}"],
+                            ["NumLock", "{NumLock}"],
+                            ["Ctrl+Alt+Del", "^!{Delete}"],
+                            ["Ctrl+Home", "^{Home}"],
+                            ["Ctrl+End", "^{End}"],
+                            ["Shift+Home", "+{Home}"],
+                            ["Shift+End", "+{End}"],
+                            ["Ctrl+Left", "^{Left}"],
+                            ["Ctrl+Right", "^{Right}"],
+                            ["Ctrl+Up", "^{Up}"],
+                            ["Ctrl+Down", "^{Down}"]
+                        ]), "KEY");
+                    this.appendValueInput("REPEAT")
+                        .setCheck("Number")
+                        .appendField("次數");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(230);
+                    this.setTooltip("發送預設的按鍵組合");
+                }
+            };
+
+            Blockly.Blocks['ahk_sendraw'] = {
+                init: function() {
+                    this.appendValueInput("TEXT")
+                        .setCheck("String")
+                        .appendField("SendRaw");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(230);
+                    this.setTooltip("發送原始文字，不解釋特殊字元");
+                }
+            };
+
+            Blockly.Blocks['ahk_msgbox'] = {
+                init: function() {
+                    this.appendValueInput("MESSAGE")
+                        .setCheck("String")
+                        .appendField("MsgBox");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(230);
+                    this.setTooltip("顯示訊息框");
+                }
+            };
+
+            Blockly.Blocks['ahk_inputbox'] = {
+                init: function() {
+                    this.appendValueInput("PROMPT")
+                        .setCheck("String")
+                        .appendField("InputBox");
+                    this.appendValueInput("VARIABLE")
+                        .setCheck("String")
+                        .appendField("儲存到");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(230);
+                    this.setTooltip("顯示輸入框並儲存結果");
+                }
+            };
+
+            Blockly.Blocks['ahk_tooltip'] = {
+                init: function() {
+                    this.appendValueInput("TEXT")
+                        .setCheck("String")
+                        .appendField("ToolTip");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(230);
+                    this.setTooltip("顯示工具提示");
+                }
+            };
+
+            // 延遲與等待類積木
+            Blockly.Blocks['ahk_sleep'] = {
+                init: function() {
+                    this.appendValueInput("TIME")
+                        .setCheck("Number")
+                        .appendField("Sleep");
+                    this.appendDummyInput()
+                        .appendField("毫秒");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(120);
+                    this.setTooltip("延遲指定的毫秒數");
+                }
+            };
+
+            Blockly.Blocks['ahk_settimer'] = {
+                init: function() {
+                    this.appendValueInput("LABEL")
+                        .setCheck("String")
+                        .appendField("SetTimer");
+                    this.appendValueInput("INTERVAL")
+                        .setCheck("Number")
+                        .appendField("間隔");
+                    this.appendDummyInput()
+                        .appendField("毫秒");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(120);
+                    this.setTooltip("設定計時器");
+                }
+            };
+
+            Blockly.Blocks['ahk_wait'] = {
+                init: function() {
+                    this.appendValueInput("TIME")
+                        .setCheck("Number")
+                        .appendField("Wait");
+                    this.appendDummyInput()
+                        .appendField("毫秒");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(120);
+                    this.setTooltip("等待指定的時間");
+                }
+            };
+
+            // 滑鼠控制類積木
+            Blockly.Blocks['ahk_mousemove'] = {
+                init: function() {
+                    this.appendValueInput("X")
+                        .setCheck("Number")
+                        .appendField("MouseMove");
+                    this.appendValueInput("Y")
+                        .setCheck("Number")
+                        .appendField(",");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(290);
+                    this.setTooltip("移動滑鼠到指定座標");
+                }
+            };
+
+            Blockly.Blocks['ahk_mouseclick'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("MouseClick")
+                        .appendField(new Blockly.FieldDropdown([["左鍵", "L"], ["右鍵", "R"], ["中鍵", "M"]]), "BUTTON");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(290);
+                    this.setTooltip("點擊滑鼠按鍵");
+                }
+            };
+
+            Blockly.Blocks['ahk_mousedrag'] = {
+                init: function() {
+                    this.appendValueInput("X1")
+                        .setCheck("Number")
+                        .appendField("MouseDrag");
+                    this.appendValueInput("Y1")
+                        .setCheck("Number")
+                        .appendField(",");
+                    this.appendValueInput("X2")
+                        .setCheck("Number")
+                        .appendField("到");
+                    this.appendValueInput("Y2")
+                        .setCheck("Number")
+                        .appendField(",");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(290);
+                    this.setTooltip("拖曳滑鼠從一個位置到另一個位置");
+                }
+            };
+
+            Blockly.Blocks['ahk_mousegetpos'] = {
+                init: function() {
+                    this.appendValueInput("XVAR")
+                        .setCheck("String")
+                        .appendField("MouseGetPos");
+                    this.appendValueInput("YVAR")
+                        .setCheck("String")
+                        .appendField("儲存到");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(290);
+                    this.setTooltip("取得滑鼠位置");
+                }
+            };
+
+            // 鍵盤控制類積木
+            Blockly.Blocks['ahk_hotkey'] = {
+                init: function() {
+                    this.appendValueInput("KEY")
+                        .setCheck("String")
+                        .appendField("HotKey");
+                    this.appendStatementInput("DO")
+                        .setCheck(null)
+                        .appendField("執行");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(20);
+                    this.setTooltip("設定熱鍵");
+                }
+            };
+
+            Blockly.Blocks['ahk_keywait'] = {
+                init: function() {
+                    this.appendValueInput("KEY")
+                        .setCheck("String")
+                        .appendField("KeyWait");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(20);
+                    this.setTooltip("等待按鍵按下");
+                }
+            };
+
+            Blockly.Blocks['ahk_getkeystate'] = {
+                init: function() {
+                    this.appendValueInput("KEY")
+                        .setCheck("String")
+                        .appendField("GetKeyState");
+                    this.setOutput(true, "Boolean");
+                    this.setColour(20);
+                    this.setTooltip("取得按鍵狀態");
+                }
+            };
+
+            // 流程控制類積木
+            Blockly.Blocks['ahk_loop'] = {
+                init: function() {
+                    this.appendValueInput("TIMES")
+                        .setCheck("Number")
+                        .appendField("Loop");
+                    this.appendStatementInput("DO")
+                        .setCheck(null)
+                        .appendField("次數");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(160);
+                    this.setTooltip("執行指定次數的迴圈");
+                }
+            };
+
+            Blockly.Blocks['ahk_while'] = {
+                init: function() {
+                    this.appendValueInput("CONDITION")
+                        .setCheck("Boolean")
+                        .appendField("While");
+                    this.appendStatementInput("DO")
+                        .setCheck(null)
+                        .appendField("執行");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(160);
+                    this.setTooltip("當條件為真時執行迴圈");
+                }
+            };
+
+            Blockly.Blocks['ahk_for'] = {
+                init: function() {
+                    this.appendValueInput("VARIABLE")
+                        .setCheck("String")
+                        .appendField("For");
+                    this.appendValueInput("START")
+                        .setCheck("Number")
+                        .appendField("從");
+                    this.appendValueInput("END")
+                        .setCheck("Number")
+                        .appendField("到");
+                    this.appendStatementInput("DO")
+                        .setCheck(null)
+                        .appendField("執行");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(160);
+                    this.setTooltip("For 迴圈");
+                }
+            };
+
+            Blockly.Blocks['ahk_if'] = {
+                init: function() {
+                    this.appendValueInput("CONDITION")
+                        .setCheck("Boolean")
+                        .appendField("If");
+                    this.appendStatementInput("DO")
+                        .setCheck(null)
+                        .appendField("則");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(210);
+                    this.setTooltip("條件判斷");
+                }
+            };
+
+            Blockly.Blocks['ahk_else'] = {
+                init: function() {
+                    this.appendStatementInput("DO")
+                        .setCheck(null)
+                        .appendField("Else");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(210);
+                    this.setTooltip("否則執行");
+                }
+            };
+
+            Blockly.Blocks['ahk_break'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("Break");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(210);
+                    this.setTooltip("中斷迴圈");
+                }
+            };
+
+            Blockly.Blocks['ahk_continue'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("Continue");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(210);
+                    this.setTooltip("繼續下一次迴圈");
+                }
+            };
+
+            // 檔案操作類積木
+            Blockly.Blocks['ahk_run'] = {
+                init: function() {
+                    this.appendValueInput("PROGRAM")
+                        .setCheck("String")
+                        .appendField("Run");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(330);
+                    this.setTooltip("執行程式");
+                }
+            };
+
+            Blockly.Blocks['ahk_runwait'] = {
+                init: function() {
+                    this.appendValueInput("PROGRAM")
+                        .setCheck("String")
+                        .appendField("RunWait");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(330);
+                    this.setTooltip("執行程式並等待完成");
+                }
+            };
+
+            Blockly.Blocks['ahk_fileexist'] = {
+                init: function() {
+                    this.appendValueInput("FILE")
+                        .setCheck("String")
+                        .appendField("FileExist");
+                    this.setOutput(true, "Boolean");
+                    this.setColour(330);
+                    this.setTooltip("檢查檔案是否存在");
+                }
+            };
+
+            Blockly.Blocks['ahk_fileread'] = {
+                init: function() {
+                    this.appendValueInput("VARIABLE")
+                        .setCheck("String")
+                        .appendField("FileRead");
+                    this.appendValueInput("FILE")
+                        .setCheck("String")
+                        .appendField("從檔案");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(330);
+                    this.setTooltip("讀取檔案內容");
+                }
+            };
+
+            Blockly.Blocks['ahk_filewrite'] = {
+                init: function() {
+                    this.appendValueInput("CONTENT")
+                        .setCheck("String")
+                        .appendField("FileWrite");
+                    this.appendValueInput("FILE")
+                        .setCheck("String")
+                        .appendField("到檔案");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(330);
+                    this.setTooltip("寫入內容到檔案");
+                }
+            };
+
+            Blockly.Blocks['ahk_fileappend'] = {
+                init: function() {
+                    this.appendValueInput("CONTENT")
+                        .setCheck("String")
+                        .appendField("FileAppend");
+                    this.appendValueInput("FILE")
+                        .setCheck("String")
+                        .appendField("附加到檔案");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(330);
+                    this.setTooltip("附加內容到檔案");
+                }
+            };
+
+            // 系統操作類積木
+            Blockly.Blocks['ahk_winactivate'] = {
+                init: function() {
+                    this.appendValueInput("TITLE")
+                        .setCheck("String")
+                        .appendField("WinActivate");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(45);
+                    this.setTooltip("啟動指定視窗");
+                }
+            };
+
+            Blockly.Blocks['ahk_winclose'] = {
+                init: function() {
+                    this.appendValueInput("TITLE")
+                        .setCheck("String")
+                        .appendField("WinClose");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(45);
+                    this.setTooltip("關閉指定視窗");
+                }
+            };
+
+            Blockly.Blocks['ahk_winmove'] = {
+                init: function() {
+                    this.appendValueInput("TITLE")
+                        .setCheck("String")
+                        .appendField("WinMove");
+                    this.appendValueInput("X")
+                        .setCheck("Number")
+                        .appendField("到");
+                    this.appendValueInput("Y")
+                        .setCheck("Number")
+                        .appendField(",");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(45);
+                    this.setTooltip("移動視窗到指定位置");
+                }
+            };
+
+            Blockly.Blocks['ahk_process'] = {
+                init: function() {
+                    this.appendDummyInput()
+                        .appendField("Process")
+                        .appendField(new Blockly.FieldDropdown([["關閉", "Close"], ["等待", "Wait"], ["存在", "Exist"]]), "ACTION");
+                    this.appendValueInput("NAME")
+                        .setCheck("String")
+                        .appendField("");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(45);
+                    this.setTooltip("程序操作");
+                }
+            };
+
+            Blockly.Blocks['ahk_regread'] = {
+                init: function() {
+                    this.appendValueInput("VARIABLE")
+                        .setCheck("String")
+                        .appendField("RegRead");
+                    this.appendValueInput("KEY")
+                        .setCheck("String")
+                        .appendField("從登錄鍵");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(45);
+                    this.setTooltip("讀取登錄值");
+                }
+            };
+
+            Blockly.Blocks['ahk_regwrite'] = {
+                init: function() {
+                    this.appendValueInput("VALUE")
+                        .setCheck("String")
+                        .appendField("RegWrite");
+                    this.appendValueInput("KEY")
+                        .setCheck("String")
+                        .appendField("到登錄鍵");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(45);
+                    this.setTooltip("寫入登錄值");
+                }
+            };
+
+            // 變數與資料類積木
+            Blockly.Blocks['ahk_varassign'] = {
+                init: function() {
+                    this.appendValueInput("VARIABLE")
+                        .setCheck("String")
+                        .appendField("設定");
+                    this.appendValueInput("VALUE")
+                        .setCheck(null)
+                        .appendField("為");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(260);
+                    this.setTooltip("變數賦值");
+                }
+            };
+
+            Blockly.Blocks['ahk_varincrement'] = {
+                init: function() {
+                    this.appendValueInput("VARIABLE")
+                        .setCheck("String")
+                        .appendField("遞增");
+                    this.appendValueInput("VALUE")
+                        .setCheck("Number")
+                        .appendField("");
+                    this.setPreviousStatement(true, null);
+                    this.setNextStatement(true, null);
+                    this.setColour(260);
+                    this.setTooltip("變數遞增");
+                }
+            };
+
+            Blockly.Blocks['ahk_array'] = {
+                init: function() {
+                    this.appendValueInput("ARRAY")
+                        .setCheck("String")
+                        .appendField("陣列");
+                    this.appendValueInput("INDEX")
+                        .setCheck("Number")
+                        .appendField("[");
+                    this.appendDummyInput()
+                        .appendField("]");
+                    this.setOutput(true, null);
+                    this.setColour(260);
+                    this.setTooltip("陣列元素存取");
+                }
+            };
+
+            Blockly.Blocks['ahk_strlen'] = {
+                init: function() {
+                    this.appendValueInput("TEXT")
+                        .setCheck("String")
+                        .appendField("StrLen");
+                    this.setOutput(true, "Number");
+                    this.setColour(260);
+                    this.setTooltip("取得字串長度");
+                }
+            };
+
+            Blockly.Blocks['ahk_substr'] = {
+                init: function() {
+                    this.appendValueInput("TEXT")
+                        .setCheck("String")
+                        .appendField("SubStr");
+                    this.appendValueInput("START")
+                        .setCheck("Number")
+                        .appendField("從位置");
+                    this.appendValueInput("LENGTH")
+                        .setCheck("Number")
+                        .appendField("長度");
+                    this.setOutput(true, "String");
+                    this.setColour(260);
+                    this.setTooltip("取得子字串");
+                }
+            };
+
+            console.log('積木定義完成');
+        }
+
+        // 定義程式碼生成器
+        function defineGenerators() {
+            console.log('定義程式碼生成器...');
+
+            // 輸入/輸出類生成器
+            Blockly.JavaScript['ahk_send'] = function(block) {
+                var text = Blockly.JavaScript.valueToCode(block, 'TEXT', Blockly.JavaScript.ORDER_ATOMIC) || '"Hello"';
+                // 移除引號
+                text = text.replace(/^["']|["']$/g, '');
+                return 'Send, ' + text + '\n';
+            };
+
+            // SendKeys 按鍵設定生成器
+            Blockly.JavaScript['ahk_sendkeys'] = function(block) {
+                var key = block.getFieldValue('KEY');
+                var repeat = Blockly.JavaScript.valueToCode(block, 'REPEAT', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+                var code = 'Loop, ' + repeat + '\n{\n';
+                code += '    Send, ' + key + '\n';
+                code += '}\n';
+                return code;
+            };
+
+            Blockly.JavaScript['ahk_sendraw'] = function(block) {
+                var text = Blockly.JavaScript.valueToCode(block, 'TEXT', Blockly.JavaScript.ORDER_ATOMIC) || '"Hello"';
+                // 移除引號
+                text = text.replace(/^["']|["']$/g, '');
+                return 'SendRaw, ' + text + '\n';
+            };
+
+            Blockly.JavaScript['ahk_msgbox'] = function(block) {
+                var message = Blockly.JavaScript.valueToCode(block, 'MESSAGE', Blockly.JavaScript.ORDER_ATOMIC) || '"Hello World"';
+                // 移除引號
+                message = message.replace(/^["']|["']$/g, '');
+                return 'MsgBox, ' + message + '\n';
+            };
+
+            Blockly.JavaScript['ahk_inputbox'] = function(block) {
+                var prompt = Blockly.JavaScript.valueToCode(block, 'PROMPT', Blockly.JavaScript.ORDER_ATOMIC) || '"請輸入內容"';
+                var variable = Blockly.JavaScript.valueToCode(block, 'VARIABLE', Blockly.JavaScript.ORDER_ATOMIC) || '"result"';
+                // 移除引號
+                prompt = prompt.replace(/^["']|["']$/g, '');
+                variable = variable.replace(/^["']|["']$/g, '');
+                return 'InputBox, ' + variable + ', ' + prompt + '\n';
+            };
+
+            Blockly.JavaScript['ahk_tooltip'] = function(block) {
+                var text = Blockly.JavaScript.valueToCode(block, 'TEXT', Blockly.JavaScript.ORDER_ATOMIC) || '"提示"';
+                // 移除引號
+                text = text.replace(/^["']|["']$/g, '');
+                return 'ToolTip, ' + text + '\n';
+            };
+
+            // 延遲與等待類生成器
+            Blockly.JavaScript['ahk_sleep'] = function(block) {
+                var time = Blockly.JavaScript.valueToCode(block, 'TIME', Blockly.JavaScript.ORDER_ATOMIC) || '1000';
+                return 'Sleep, ' + time + '\n';
+            };
+
+            Blockly.JavaScript['ahk_settimer'] = function(block) {
+                var label = Blockly.JavaScript.valueToCode(block, 'LABEL', Blockly.JavaScript.ORDER_ATOMIC) || '"Timer"';
+                var interval = Blockly.JavaScript.valueToCode(block, 'INTERVAL', Blockly.JavaScript.ORDER_ATOMIC) || '1000';
+                // 移除引號
+                label = label.replace(/^["']|["']$/g, '');
+                return 'SetTimer, ' + label + ', ' + interval + '\n';
+            };
+
+            Blockly.JavaScript['ahk_wait'] = function(block) {
+                var time = Blockly.JavaScript.valueToCode(block, 'TIME', Blockly.JavaScript.ORDER_ATOMIC) || '1000';
+                return 'Wait, ' + time + '\n';
+            };
+
+            // 滑鼠控制類生成器
+            Blockly.JavaScript['ahk_mousemove'] = function(block) {
+                var x = Blockly.JavaScript.valueToCode(block, 'X', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+                var y = Blockly.JavaScript.valueToCode(block, 'Y', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+                return 'MouseMove, ' + x + ', ' + y + '\n';
+            };
+
+            Blockly.JavaScript['ahk_mouseclick'] = function(block) {
+                var button = block.getFieldValue('BUTTON');
+                return 'MouseClick, ' + button + '\n';
+            };
+
+            Blockly.JavaScript['ahk_mousedrag'] = function(block) {
+                var x1 = Blockly.JavaScript.valueToCode(block, 'X1', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+                var y1 = Blockly.JavaScript.valueToCode(block, 'Y1', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+                var x2 = Blockly.JavaScript.valueToCode(block, 'X2', Blockly.JavaScript.ORDER_ATOMIC) || '100';
+                var y2 = Blockly.JavaScript.valueToCode(block, 'Y2', Blockly.JavaScript.ORDER_ATOMIC) || '100';
+                return 'MouseClickDrag, L, ' + x1 + ', ' + y1 + ', ' + x2 + ', ' + y2 + '\n';
+            };
+
+            Blockly.JavaScript['ahk_mousegetpos'] = function(block) {
+                var xvar = Blockly.JavaScript.valueToCode(block, 'XVAR', Blockly.JavaScript.ORDER_ATOMIC) || '"MouseX"';
+                var yvar = Blockly.JavaScript.valueToCode(block, 'YVAR', Blockly.JavaScript.ORDER_ATOMIC) || '"MouseY"';
+                // 移除引號
+                xvar = xvar.replace(/^["']|["']$/g, '');
+                yvar = yvar.replace(/^["']|["']$/g, '');
+                return 'MouseGetPos, ' + xvar + ', ' + yvar + '\n';
+            };
+
+            // 鍵盤控制類生成器
+            Blockly.JavaScript['ahk_hotkey'] = function(block) {
+                var key = Blockly.JavaScript.valueToCode(block, 'KEY', Blockly.JavaScript.ORDER_ATOMIC) || '"F1"';
+                var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+                // 移除引號
+                key = key.replace(/^["']|["']$/g, '');
+                var code = key + '::\n';
+                if (statements_do) {
+                    code += statements_do;
+                }
+                code += 'Return\n';
+                return code;
+            };
+
+            Blockly.JavaScript['ahk_keywait'] = function(block) {
+                var key = Blockly.JavaScript.valueToCode(block, 'KEY', Blockly.JavaScript.ORDER_ATOMIC) || '"Enter"';
+                // 移除引號
+                key = key.replace(/^["']|["']$/g, '');
+                return 'KeyWait, ' + key + '\n';
+            };
+
+            Blockly.JavaScript['ahk_getkeystate'] = function(block) {
+                var key = Blockly.JavaScript.valueToCode(block, 'KEY', Blockly.JavaScript.ORDER_ATOMIC) || '"Shift"';
+                // 移除引號
+                key = key.replace(/^["']|["']$/g, '');
+                return ['GetKeyState(' + key + ')', Blockly.JavaScript.ORDER_FUNCTION_CALL];
+            };
+
+            // 流程控制類生成器
+            Blockly.JavaScript['ahk_loop'] = function(block) {
+                var times = Blockly.JavaScript.valueToCode(block, 'TIMES', Blockly.JavaScript.ORDER_ATOMIC) || '5';
+                var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+                var code = 'Loop, ' + times + '\n{\n';
+                if (statements_do) {
+                    code += statements_do;
+                }
+                code += '}\n';
+                return code;
+            };
+
+            Blockly.JavaScript['ahk_while'] = function(block) {
+                var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+                var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+                var code = 'While ' + condition + '\n{\n';
+                if (statements_do) {
+                    code += statements_do;
+                }
+                code += '}\n';
+                return code;
+            };
+
+            Blockly.JavaScript['ahk_for'] = function(block) {
+                var variable = Blockly.JavaScript.valueToCode(block, 'VARIABLE', Blockly.JavaScript.ORDER_ATOMIC) || '"i"';
+                var start = Blockly.JavaScript.valueToCode(block, 'START', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+                var end = Blockly.JavaScript.valueToCode(block, 'END', Blockly.JavaScript.ORDER_ATOMIC) || '10';
+                var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+                var code = 'For ' + variable + ', ' + start + ', ' + end + '\n{\n';
+                if (statements_do) {
+                    code += statements_do;
+                }
+                code += '}\n';
+                return code;
+            };
+
+            Blockly.JavaScript['ahk_if'] = function(block) {
+                var condition = Blockly.JavaScript.valueToCode(block, 'CONDITION', Blockly.JavaScript.ORDER_ATOMIC) || 'true';
+                var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+                var code = 'If (' + condition + ')\n{\n';
+                if (statements_do) {
+                    code += statements_do;
+                }
+                code += '}\n';
+                return code;
+            };
+
+            Blockly.JavaScript['ahk_else'] = function(block) {
+                var statements_do = Blockly.JavaScript.statementToCode(block, 'DO');
+                var code = 'Else\n{\n';
+                if (statements_do) {
+                    code += statements_do;
+                }
+                code += '}\n';
+                return code;
+            };
+
+            Blockly.JavaScript['ahk_break'] = function(block) {
+                return 'Break\n';
+            };
+
+            Blockly.JavaScript['ahk_continue'] = function(block) {
+                return 'Continue\n';
+            };
+
+            // 檔案操作類生成器
+            Blockly.JavaScript['ahk_run'] = function(block) {
+                var program = Blockly.JavaScript.valueToCode(block, 'PROGRAM', Blockly.JavaScript.ORDER_ATOMIC) || '"notepad.exe"';
+                // 移除引號
+                program = program.replace(/^["']|["']$/g, '');
+                return 'Run, ' + program + '\n';
+            };
+
+            Blockly.JavaScript['ahk_runwait'] = function(block) {
+                var program = Blockly.JavaScript.valueToCode(block, 'PROGRAM', Blockly.JavaScript.ORDER_ATOMIC) || '"notepad.exe"';
+                // 移除引號
+                program = program.replace(/^["']|["']$/g, '');
+                return 'RunWait, ' + program + '\n';
+            };
+
+            Blockly.JavaScript['ahk_fileexist'] = function(block) {
+                var file = Blockly.JavaScript.valueToCode(block, 'FILE', Blockly.JavaScript.ORDER_ATOMIC) || '"test.txt"';
+                // 移除引號
+                file = file.replace(/^["']|["']$/g, '');
+                return ['FileExist(' + file + ')', Blockly.JavaScript.ORDER_FUNCTION_CALL];
+            };
+
+            Blockly.JavaScript['ahk_fileread'] = function(block) {
+                var variable = Blockly.JavaScript.valueToCode(block, 'VARIABLE', Blockly.JavaScript.ORDER_ATOMIC) || '"content"';
+                var file = Blockly.JavaScript.valueToCode(block, 'FILE', Blockly.JavaScript.ORDER_ATOMIC) || '"test.txt"';
+                // 移除引號
+                variable = variable.replace(/^["']|["']$/g, '');
+                file = file.replace(/^["']|["']$/g, '');
+                return 'FileRead, ' + variable + ', ' + file + '\n';
+            };
+
+            Blockly.JavaScript['ahk_filewrite'] = function(block) {
+                var content = Blockly.JavaScript.valueToCode(block, 'CONTENT', Blockly.JavaScript.ORDER_ATOMIC) || '"Hello"';
+                var file = Blockly.JavaScript.valueToCode(block, 'FILE', Blockly.JavaScript.ORDER_ATOMIC) || '"test.txt"';
+                // 移除引號
+                content = content.replace(/^["']|["']$/g, '');
+                file = file.replace(/^["']|["']$/g, '');
+                return 'FileWrite, ' + file + ', ' + content + '\n';
+            };
+
+            Blockly.JavaScript['ahk_fileappend'] = function(block) {
+                var content = Blockly.JavaScript.valueToCode(block, 'CONTENT', Blockly.JavaScript.ORDER_ATOMIC) || '"Hello"';
+                var file = Blockly.JavaScript.valueToCode(block, 'FILE', Blockly.JavaScript.ORDER_ATOMIC) || '"test.txt"';
+                // 移除引號
+                content = content.replace(/^["']|["']$/g, '');
+                file = file.replace(/^["']|["']$/g, '');
+                return 'FileAppend, ' + content + ', ' + file + '\n';
+            };
+
+            // 系統操作類生成器
+            Blockly.JavaScript['ahk_winactivate'] = function(block) {
+                var title = Blockly.JavaScript.valueToCode(block, 'TITLE', Blockly.JavaScript.ORDER_ATOMIC) || '"Untitled"';
+                // 移除引號
+                title = title.replace(/^["']|["']$/g, '');
+                return 'WinActivate, ' + title + '\n';
+            };
+
+            Blockly.JavaScript['ahk_winclose'] = function(block) {
+                var title = Blockly.JavaScript.valueToCode(block, 'TITLE', Blockly.JavaScript.ORDER_ATOMIC) || '"Untitled"';
+                // 移除引號
+                title = title.replace(/^["']|["']$/g, '');
+                return 'WinClose, ' + title + '\n';
+            };
+
+            Blockly.JavaScript['ahk_winmove'] = function(block) {
+                var title = Blockly.JavaScript.valueToCode(block, 'TITLE', Blockly.JavaScript.ORDER_ATOMIC) || '"Untitled"';
+                var x = Blockly.JavaScript.valueToCode(block, 'X', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+                var y = Blockly.JavaScript.valueToCode(block, 'Y', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+                // 移除引號
+                title = title.replace(/^["']|["']$/g, '');
+                return 'WinMove, ' + title + ', , ' + x + ', ' + y + '\n';
+            };
+
+            Blockly.JavaScript['ahk_process'] = function(block) {
+                var action = block.getFieldValue('ACTION');
+                var name = Blockly.JavaScript.valueToCode(block, 'NAME', Blockly.JavaScript.ORDER_ATOMIC) || '"notepad.exe"';
+                // 移除引號
+                name = name.replace(/^["']|["']$/g, '');
+                return 'Process, ' + action + ', ' + name + '\n';
+            };
+
+            Blockly.JavaScript['ahk_regread'] = function(block) {
+                var variable = Blockly.JavaScript.valueToCode(block, 'VARIABLE', Blockly.JavaScript.ORDER_ATOMIC) || '"value"';
+                var key = Blockly.JavaScript.valueToCode(block, 'KEY', Blockly.JavaScript.ORDER_ATOMIC) || '"HKEY_LOCAL_MACHINE\\Software\\MyApp"';
+                // 移除引號
+                variable = variable.replace(/^["']|["']$/g, '');
+                key = key.replace(/^["']|["']$/g, '');
+                return 'RegRead, ' + variable + ', ' + key + '\n';
+            };
+
+            Blockly.JavaScript['ahk_regwrite'] = function(block) {
+                var value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ATOMIC) || '"data"';
+                var key = Blockly.JavaScript.valueToCode(block, 'KEY', Blockly.JavaScript.ORDER_ATOMIC) || '"HKEY_LOCAL_MACHINE\\Software\\MyApp"';
+                // 移除引號
+                value = value.replace(/^["']|["']$/g, '');
+                key = key.replace(/^["']|["']$/g, '');
+                return 'RegWrite, REG_SZ, ' + key + ', , ' + value + '\n';
+            };
+
+            // 變數與資料類生成器
+            Blockly.JavaScript['ahk_varassign'] = function(block) {
+                var variable = Blockly.JavaScript.valueToCode(block, 'VARIABLE', Blockly.JavaScript.ORDER_ATOMIC) || '"myVar"';
+                var value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ATOMIC) || '0';
+                // 移除引號
+                variable = variable.replace(/^["']|["']$/g, '');
+                return variable + ' := ' + value + '\n';
+            };
+
+            Blockly.JavaScript['ahk_varincrement'] = function(block) {
+                var variable = Blockly.JavaScript.valueToCode(block, 'VARIABLE', Blockly.JavaScript.ORDER_ATOMIC) || '"myVar"';
+                var value = Blockly.JavaScript.valueToCode(block, 'VALUE', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+                // 移除引號
+                variable = variable.replace(/^["']|["']$/g, '');
+                return variable + ' += ' + value + '\n';
+            };
+
+            Blockly.JavaScript['ahk_array'] = function(block) {
+                var array = Blockly.JavaScript.valueToCode(block, 'ARRAY', Blockly.JavaScript.ORDER_ATOMIC) || '"myArray"';
+                var index = Blockly.JavaScript.valueToCode(block, 'INDEX', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+                // 移除引號
+                array = array.replace(/^["']|["']$/g, '');
+                return [array + '[' + index + ']', Blockly.JavaScript.ORDER_MEMBER];
+            };
+
+            Blockly.JavaScript['ahk_strlen'] = function(block) {
+                var text = Blockly.JavaScript.valueToCode(block, 'TEXT', Blockly.JavaScript.ORDER_ATOMIC) || '"Hello"';
+                return ['StrLen(' + text + ')', Blockly.JavaScript.ORDER_FUNCTION_CALL];
+            };
+
+            Blockly.JavaScript['ahk_substr'] = function(block) {
+                var text = Blockly.JavaScript.valueToCode(block, 'TEXT', Blockly.JavaScript.ORDER_ATOMIC) || '"Hello"';
+                var start = Blockly.JavaScript.valueToCode(block, 'START', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+                var length = Blockly.JavaScript.valueToCode(block, 'LENGTH', Blockly.JavaScript.ORDER_ATOMIC) || '1';
+                return ['SubStr(' + text + ', ' + start + ', ' + length + ')', Blockly.JavaScript.ORDER_FUNCTION_CALL];
+            };
+
+            console.log('程式碼生成器定義完成');
+        }
+
+        // 初始化工作區
+        function initWorkspace() {
+            console.log('初始化工作區...');
+
+            try {
+                // 建立工具箱 XML
+                const toolboxXml = `
+                    <xml id="toolbox" style="display: none">
+                        <category name="AutoHotkey" colour="#667eea">
+                            <block type="ahk_send"></block>
+                            <block type="ahk_sendkeys"></block>
+                            <block type="ahk_sendraw"></block>
+                            <block type="ahk_msgbox"></block>
+                            <block type="ahk_inputbox"></block>
+                            <block type="ahk_tooltip"></block>
+                            <block type="ahk_sleep"></block>
+                            <block type="ahk_settimer"></block>
+                            <block type="ahk_wait"></block>
+                            <block type="ahk_mousemove"></block>
+                            <block type="ahk_mouseclick"></block>
+                            <block type="ahk_mousedrag"></block>
+                            <block type="ahk_mousegetpos"></block>
+                            <block type="ahk_hotkey"></block>
+                            <block type="ahk_keywait"></block>
+                            <block type="ahk_getkeystate"></block>
+                            <block type="ahk_loop"></block>
+                            <block type="ahk_while"></block>
+                            <block type="ahk_for"></block>
+                            <block type="ahk_if"></block>
+                            <block type="ahk_else"></block>
+                            <block type="ahk_break"></block>
+                            <block type="ahk_continue"></block>
+                            <block type="ahk_run"></block>
+                            <block type="ahk_runwait"></block>
+                            <block type="ahk_fileexist"></block>
+                            <block type="ahk_fileread"></block>
+                            <block type="ahk_filewrite"></block>
+                            <block type="ahk_fileappend"></block>
+                            <block type="ahk_winactivate"></block>
+                            <block type="ahk_winclose"></block>
+                            <block type="ahk_winmove"></block>
+                            <block type="ahk_process"></block>
+                            <block type="ahk_regread"></block>
+                            <block type="ahk_regwrite"></block>
+                            <block type="ahk_varassign"></block>
+                            <block type="ahk_varincrement"></block>
+                            <block type="ahk_array"></block>
+                            <block type="ahk_strlen"></block>
+                            <block type="ahk_substr"></block>
+                        </category>
+                        <category name="邏輯" colour="#5C81A6">
+                            <block type="controls_if"></block>
+                            <block type="logic_compare"></block>
+                            <block type="logic_operation"></block>
+                            <block type="logic_boolean"></block>
+                            <block type="logic_null"></block>
+                        </category>
+                        <category name="迴圈" colour="#5CA65C">
+                            <block type="controls_repeat_ext"></block>
+                            <block type="controls_for"></block>
+                        </category>
+                        <category name="數學" colour="#5C68D6">
+                            <block type="math_number"></block>
+                            <block type="math_arithmetic"></block>
+                            <block type="math_single"></block>
+                        </category>
+                        <category name="文字" colour="#5CA68D">
+                            <block type="text"></block>
+                            <block type="text_join"></block>
+                            <block type="text_length"></block>
+                            <block type="text_isEmpty"></block>
+                        </category>
+                        <category name="變數" colour="#A65C81" custom="VARIABLE"></category>
+                    </xml>
+                `;
+
+                workspace = Blockly.inject('blocklyDiv', {
+                    toolbox: toolboxXml,
+                    grid: {
+                        spacing: 20,
+                        length: 3,
+                        colour: '#ccc',
+                        snap: true
+                    },
+                    zoom: {
+                        controls: true,
+                        wheel: true,
+                        startScale: 1.0,
+                        maxScale: 3,
+                        minScale: 0.3,
+                        scaleSpeed: 1.2
+                    },
+                    trashcan: true,
+                    scrollbars: true,
+                    sounds: false,
+                    oneBasedIndex: false,
+                    move: {
+                        scrollbars: true,
+                        drag: true,
+                        wheel: true
+                    }
+                });
+
+                // 添加事件監聽器
+                workspace.addChangeListener(function(event) {
+                    setTimeout(updateCode, 150);
+                });
+
+                isInitialized = true;
+                console.log('工作區初始化成功');
+                updateCode();
+                
+            } catch (error) {
+                console.error('工作區初始化失敗:', error);
+                showNotification('初始化失敗，請重新整理頁面', 'error');
+            }
+        }
+
+        // 更新程式碼預覽
+        function updateCode() {
+            if (!workspace || !isInitialized) {
+                return;
+            }
+            
+            try {
+                var code = Blockly.JavaScript.workspaceToCode(workspace);
+                var codeElement = document.getElementById('generatedCode');
+                var lengthElement = document.getElementById('codeLength');
+                
+                if (code && code.trim()) {
+                    // 修復轉義字符問題
+                    code = code.replace(/\\\\n/g, '\n');
+                    
+                    // 移除文字積木的多餘引號
+                    // 處理 Send, "text" -> Send, text
+                    code = code.replace(/Send,\s*"([^"]*)"/g, 'Send, $1');
+                    code = code.replace(/SendRaw,\s*"([^"]*)"/g, 'SendRaw, $1');
+                    code = code.replace(/MsgBox,\s*"([^"]*)"/g, 'MsgBox, $1');
+                    code = code.replace(/InputBox,\s*"([^"]*)",\s*"([^"]*)"/g, 'InputBox, $1, $2');
+                    code = code.replace(/ToolTip,\s*"([^"]*)"/g, 'ToolTip, $1');
+                    
+                    // 處理 Run, "program" -> Run, program
+                    code = code.replace(/Run,\s*"([^"]*)"/g, 'Run, $1');
+                    code = code.replace(/RunWait,\s*"([^"]*)"/g, 'RunWait, $1');
+                    
+                    // 處理 FileExist("file") -> FileExist(file)
+                    code = code.replace(/FileExist\("([^"]*)"\)/g, 'FileExist($1)');
+                    code = code.replace(/FileRead,\s*"([^"]*)",\s*"([^"]*)"/g, 'FileRead, $1, $2');
+                    code = code.replace(/FileWrite,\s*"([^"]*)",\s*"([^"]*)"/g, 'FileWrite, $1, $2');
+                    code = code.replace(/FileAppend,\s*"([^"]*)",\s*"([^"]*)"/g, 'FileAppend, $1, $2');
+                    
+                    // 處理 WinActivate, "title" -> WinActivate, title
+                    code = code.replace(/WinActivate,\s*"([^"]*)"/g, 'WinActivate, $1');
+                    code = code.replace(/WinClose,\s*"([^"]*)"/g, 'WinClose, $1');
+                    code = code.replace(/WinMove,\s*"([^"]*)",\s*,\s*"([^"]*)",\s*"([^"]*)"/g, 'WinMove, $1, , $2, $3');
+                    
+                    // 處理 Process, action, "name" -> Process, action, name
+                    code = code.replace(/Process,\s*(\w+),\s*"([^"]*)"/g, 'Process, $1, $2');
+                    
+                    // 處理 RegRead, var, "key" -> RegRead, var, key
+                    code = code.replace(/RegRead,\s*"([^"]*)",\s*"([^"]*)"/g, 'RegRead, $1, $2');
+                    code = code.replace(/RegWrite,\s*REG_SZ,\s*"([^"]*)",\s*,\s*"([^"]*)"/g, 'RegWrite, REG_SZ, $1, , $2');
+                    
+                    // 處理 HotKey, "key" -> HotKey, key
+                    code = code.replace(/(\w+)::\n/g, '$1::\n');
+                    
+                    // 處理變數賦值
+                    code = code.replace(/"([^"]*)"\s*:=/g, '$1 :=');
+                    
+                    // 處理 MouseGetPos, "xvar", "yvar" -> MouseGetPos, xvar, yvar
+                    code = code.replace(/MouseGetPos,\s*"([^"]*)",\s*"([^"]*)"/g, 'MouseGetPos, $1, $2');
+                    
+                    // 處理 KeyWait, "key" -> KeyWait, key
+                    code = code.replace(/KeyWait,\s*"([^"]*)"/g, 'KeyWait, $1');
+                    
+                    // 處理 GetKeyState("key") -> GetKeyState(key)
+                    code = code.replace(/GetKeyState\("([^"]*)"\)/g, 'GetKeyState($1)');
+                    
+                    codeElement.textContent = code;
+                    var lines = code.split('\n').filter(line => line.trim()).length;
+                    lengthElement.textContent = lines + ' 行';
+                } else {
+                    codeElement.textContent = '; 將積木拖曳到左側編輯區開始建立您的 AutoHotkey 腳本';
+                    lengthElement.textContent = '0 行';
+                }
+            } catch (e) {
+                console.error('程式碼生成錯誤:', e);
+                document.getElementById('generatedCode').textContent = '; 程式碼生成錯誤: ' + e.message;
+            }
+        }
+
+        // 添加積木到工作區
+        function addBlockToWorkspace(blockType) {
+            if (!workspace || !isInitialized) {
+                showNotification('系統未準備就緒', 'error');
+                return;
+            }
+            
+            try {
+                const block = workspace.newBlock(blockType);
+                if (!block) {
+                    throw new Error('無法創建積木: ' + blockType);
+                }
+                
+                block.initSvg();
+                block.render();
+                
+                const metrics = workspace.getMetrics();
+                if (metrics && metrics.viewWidth && metrics.viewHeight) {
+                    const x = (metrics.viewWidth / 2) - 100;
+                    const y = (metrics.viewHeight / 2) - 50;
+                    const xy = block.getRelativeToSurfaceXY();
+                    block.moveBy(x - xy.x, y - xy.y);
+                }
+                
+                block.select();
+                setTimeout(updateCode, 200);
+                
+                console.log('成功添加積木:', blockType);
+                
+            } catch (e) {
+                console.error('添加積木錯誤:', e);
+                showNotification('添加積木失敗', 'error');
+            }
+        }
+
+        // 點擊添加積木功能
+        document.querySelectorAll('.block-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const blockType = this.dataset.type;
+                if (blockType) {
+                    addBlockToWorkspace(blockType);
+                }
+            });
+        });
+
+        // 顯示範例
+        function showExample(exampleId) {
+            const example = examples[exampleId];
+            if (!example) return;
+
+            const modal = document.getElementById('exampleModal');
+            const title = document.getElementById('exampleTitle');
+            const content = document.getElementById('exampleContent');
+
+            title.textContent = example.title;
+            
+            content.innerHTML = `
+                <div class="example-description">
+                    <strong>說明：</strong>${example.description}
+                </div>
+                
+                <div class="example-usage">
+                    <h4>📋 使用方式</h4>
+                    <p>${example.usage}</p>
+                </div>
+                
+                <div class="example-code">
+                    <strong>📝 生成的程式碼：</strong>
+                    <pre>${example.code}</pre>
+                </div>
+                
+                <div style="margin-top: 1.5rem;">
+                    <button class="btn-load-example" onclick="loadExample('${exampleId}')">
+                        📥 載入此範例到編輯區
+                    </button>
+                    <button class="btn-secondary" onclick="closeExample()">
+                        關閉
+                    </button>
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        // 關閉範例
+        function closeExample() {
+            const modal = document.getElementById('exampleModal');
+            modal.style.display = 'none';
+        }
+
+        // 載入範例到工作區
+        function loadExample(exampleId) {
+            const example = examples[exampleId];
+            if (!example) return;
+
+            // 清空工作區
+            workspace.clear();
+
+            // 建立範例積木
+            let previousBlock = null;
+            
+            function createBlock(blockData) {
+                const block = workspace.newBlock(blockData.type);
+                if (!block) {
+                    console.error('無法創建積木:', blockData.type);
+                    return null;
+                }
+                
+                block.initSvg();
+                block.render();
+
+                // 設定值
+                if (blockData.values) {
+                    Object.keys(blockData.values).forEach(inputName => {
+                        const input = block.getInput(inputName);
+                        if (input) {
+                            const value = blockData.values[inputName];
+                            
+                            // 判斷是否為數字
+                            if (typeof value === 'number' || 
+                                (typeof value === 'string' && !isNaN(value) && value.trim() !== '')) {
+                                // 創建數字塊
+                                const numberBlock = workspace.newBlock('math_number');
+                                const numValue = typeof value === 'string' ? parseFloat(value) : value;
+                                numberBlock.setFieldValue(numValue, 'NUM');
+                                numberBlock.initSvg();
+                                numberBlock.render();
+                                
+                                // 確保連接存在
+                                if (input.connection && numberBlock.outputConnection) {
+                                    input.connection.connect(numberBlock.outputConnection);
+                                }
+                            } else {
+                                // 創建文本塊
+                                const textBlock = workspace.newBlock('text');
+                                // 移除外層引號（如果有）
+                                const textValue = typeof value === 'string' ? 
+                                    value.replace(/^["']|["']$/g, '') : value;
+                                textBlock.setFieldValue(textValue, 'TEXT');
+                                textBlock.initSvg();
+                                textBlock.render();
+                                
+                                // 確保連接存在
+                                if (input.connection && textBlock.outputConnection) {
+                                    input.connection.connect(textBlock.outputConnection);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 設定欄位值
+                if (blockData.fields) {
+                    Object.keys(blockData.fields).forEach(fieldName => {
+                        const field = block.getField(fieldName);
+                        if (field) {
+                            field.setValue(blockData.fields[fieldName]);
+                        }
+                    });
+                }
+
+                // 處理語句塊
+                if (blockData.statements && blockData.statements.DO) {
+                    const statementInput = block.getInput('DO');
+                    if (statementInput && statementInput.connection) {
+                        let lastStatementBlock = null;
+                        blockData.statements.DO.forEach(statementData => {
+                            const statementBlock = createBlock(statementData);
+                            if (statementBlock) {
+                                if (lastStatementBlock && 
+                                    lastStatementBlock.nextConnection && 
+                                    statementBlock.previousConnection) {
+                                    lastStatementBlock.nextConnection.connect(statementBlock.previousConnection);
+                                } else if (statementInput.connection && statementBlock.previousConnection) {
+                                    statementInput.connection.connect(statementBlock.previousConnection);
+                                }
+                                lastStatementBlock = statementBlock;
+                            }
+                        });
+                    }
+                }
+
+                return block;
+            }
+
+            // 創建所有積木
+            example.blocks.forEach((blockData, index) => {
+                const block = createBlock(blockData);
+                if (!block) return;
+                
+                // 設定位置 - 使用簡單的遞增位置
+                const x = 50;
+                const y = 50 + (index * 150);
+                
+                // 確保位置是有效數字
+                if (!isNaN(x) && !isNaN(y)) {
+                    block.moveTo(new Blockly.utils.Coordinate(x, y));
+                }
+
+                // 連接積木
+                if (previousBlock && 
+                    previousBlock.nextConnection && 
+                    block.previousConnection) {
+                    previousBlock.nextConnection.connect(block.previousConnection);
+                }
+                
+                previousBlock = block;
+            });
+
+            // 更新程式碼預覽
+            setTimeout(updateCode, 200);
+
+            // 關閉模態框
+            closeExample();
+
+            showNotification('範例已載入到編輯區', 'success');
+        }
+
+        // 下載腳本
+        function downloadScript() {
+            if (!workspace || !isInitialized) {
+                showNotification('系統未準備就緒', 'error');
+                return;
+            }
+            
+            const code = Blockly.JavaScript.workspaceToCode(workspace).replace(/\\\\n/g, '\n');
+            if (!code || !code.trim()) {
+                showNotification('請先建立一些積木！', 'error');
+                return;
+            }
+            
+            try {
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'script.ahk';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('腳本已下載！', 'success');
+            } catch (e) {
+                showNotification('下載失敗', 'error');
+            }
+        }
+
+        // 複製到剪貼簿
+        function copyToClipboard() {
+            if (!workspace || !isInitialized) {
+                showNotification('系統未準備就緒', 'error');
+                return;
+            }
+            
+            const code = Blockly.JavaScript.workspaceToCode(workspace).replace(/\\\\n/g, '\n');
+            if (!code || !code.trim()) {
+                showNotification('請先建立一些積木！', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(code).then(() => {
+                showNotification('已複製到剪貼簿！', 'success');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('已複製到剪貼簿！', 'success');
+            });
+        }
+
+        // 清空工作區
+        function clearWorkspace() {
+            if (!workspace || !isInitialized) {
+                showNotification('系統未準備就緒', 'error');
+                return;
+            }
+            
+            if (confirm('確定要清空所有積木嗎？')) {
+                try {
+                    workspace.clear();
+                    updateCode();
+                    showNotification('工作區已清空', 'info');
+                } catch (e) {
+                    showNotification('清空失敗', 'error');
+                }
+            }
+        }
+
+        // 顯示通知
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification show';
+            
+            if (type === 'error') {
+                notification.style.background = '#dc3545';
+            } else if (type === 'info') {
+                notification.style.background = '#17a2b8';
+            } else {
+                notification.style.background = '#28a745';
+            }
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 鍵盤快捷鍵
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        downloadScript();
+                        break;
+                    case 'c':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            copyToClipboard();
+                        }
+                        break;
+                }
+            }
+        });
+
+        // 點擊模態框外部關閉
+        document.getElementById('exampleModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeExample();
+            }
+        });
+
+        // 頁面載入完成後初始化
+        window.addEventListener('load', function() {
+            console.log('頁面載入完成');
+            waitForBlockly(function() {
+                defineBlocks();
+                defineGenerators();
+                setTimeout(initWorkspace, 500);
+            });
+        });
+
+        // 視窗大小改變時重新調整
+        window.addEventListener('resize', function() {
+            if (workspace) {
+                Blockly.svgResize(workspace);
+            }
+        });
+    </script>
+</body>
+</html>
