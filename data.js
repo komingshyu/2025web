@@ -1,5 +1,7 @@
 const linksData = [
-   { name: "教學組專用課表查詢V1.5", description: "本程式加入全校教師節次任課一覽表，顯示教師節次有無課務，功能更完整<br><a href='課表測試資料.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "班級課表查詢V1.5.html" },
+   { name: "教學組專用課表查詢V1.6", description: "比上一版加入同班教師無課調課查詢，功能更強<br><a href='課表測試資料.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "班級課表查詢V1.6.html" },
+    { name: "教學組專用課表查詢V1.5", description: "本程式加入全校教師節次任課一覽表，顯示教師節次有無課務，功能更完整<br><a href='課表測試資料.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "班級課表查詢V1.5.html" },
+
     { name: "教學組專用課表查詢V1.3", description: "本程式主要將課表試算表檔轉換成多功能課表查詢網頁，提供教學組離線查詢專用<br><a href='課表測試資料.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "班級課表查詢V1.3.html" },
 
    { name: "試算表轉為網頁查詢系統V1.5", description: "V1.5版新增顯示結果方式與預設欄位名稱的修改<br><a href='網頁測試用.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "試算表轉出查詢網頁V1.5.html" },
