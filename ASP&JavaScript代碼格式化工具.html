@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASP & JavaScript 代碼格式化工具 - CodeFormatter Pro</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-vbscript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .code-editor {
+            width: 100%;
+            min-height: 400px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            tab-size: 4;
+        }
+        
+        .code-editor:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .language-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .editor-container {
+            position: relative;
+        }
+        
+        .syntax-highlighted {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .js-support-badge {
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-code text-3xl float-animation"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">ASP & JavaScript 代碼格式化工具</h1>
+                        <p class="text-sm opacity-90">CodeFormatter Pro - 讓您的代碼更整潔專業</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="showInstructions()" class="glass-effect px-4 py-2 rounded-lg hover-scale">
+                        <i class="fas fa-info-circle mr-2"></i>使用說明
+                    </button>
+                    <button onclick="showSettings()" class="glass-effect px-4 py-2 rounded-lg hover-scale">
+                        <i class="fas fa-cog mr-2"></i>設定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Feature Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6 hover-scale">
+                <div class="text-purple-600 text-3xl mb-3">
+                    <i class="fas fa-file-code"></i>
+                </div>
+                <h3 class="font-semibold mb-2">多語言支援</h3>
+                <p class="text-sm text-gray-600">ASP、JavaScript、HTML</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 hover-scale">
+                <div class="text-purple-600 text-3xl mb-3">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <h3 class="font-semibold mb-2">語法高亮</h3>
+                <p class="text-sm text-gray-600">即時語法顏色標示</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 hover-scale">
+                <div class="text-purple-600 text-3xl mb-3">
+                    <i class="fas fa-magic"></i>
+                </div>
+                <h3 class="font-semibold mb-2">智慧格式化</h3>
+                <p class="text-sm text-gray-600">自動調整縮排與格式</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 hover-scale">
+                <div class="text-purple-600 text-3xl mb-3">
+                    <i class="fas fa-download"></i>
+                </div>
+                <h3 class="font-semibold mb-2">快速匯出</h3>
+                <p class="text-sm text-gray-600">一鍵下載格式化檔案</p>
+            </div>
+        </div>
+
+        <!-- Language Selection -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h3 class="font-semibold text-gray-800">
+                        <i class="fas fa-language mr-2 text-purple-600"></i>選擇程式語言
+                    </h3>
+                    <div class="flex space-x-2">
+                        <button onclick="setLanguage('asp')" id="lang-asp" class="lang-btn px-4 py-2 rounded-lg bg-purple-600 text-white font-medium">
+                            <i class="fas fa-file-code mr-2"></i>ASP
+                        </button>
+                        <button onclick="setLanguage('javascript')" id="lang-javascript" class="lang-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300">
+                            <i class="fab fa-js-square mr-2"></i>JavaScript
+                        </button>
+                        <button onclick="setLanguage('html')" id="lang-html" class="lang-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300">
+                            <i class="fab fa-html5 mr-2"></i>HTML
+                        </button>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    <i class="fas fa-lightbulb text-yellow-500 mr-1"></i>
+                    自動偵測語言類型
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Editor Area -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <!-- Tabs -->
+            <div class="flex space-x-1 mb-6">
+                <button onclick="switchTab('upload')" id="tab-upload" class="tab-btn px-6 py-3 rounded-t-lg font-medium tab-active transition-all">
+                    <i class="fas fa-file-upload mr-2"></i>上傳檔案
+                </button>
+                <button onclick="switchTab('editor')" id="tab-editor" class="tab-btn px-6 py-3 rounded-t-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                    <i class="fas fa-edit mr-2"></i>直接編輯
+                </button>
+                <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-6 py-3 rounded-t-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all">
+                    <i class="fas fa-sliders-h mr-2"></i>格式化設定
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="upload-content" class="tab-content">
+                <!-- File Upload Area -->
+                <div id="drop-zone" class="border-2 border-dashed border-purple-300 rounded-lg p-12 text-center bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-6xl text-purple-400 mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">拖拽檔案到這裡</h3>
+                    <p class="text-gray-600 mb-4">支援 .asp, .js, .html 檔案</p>
+                    <input type="file" id="file-input" accept=".asp,.asa,.js,.html,.htm" class="hidden">
+                    <button onclick="document.getElementById('file-input').click()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>選擇檔案
+                    </button>
+                </div>
+
+                <!-- File Info -->
+                <div id="file-info" class="hidden mt-4 p-4 bg-gray-100 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-file-code text-2xl text-purple-600"></i>
+                            <div>
+                                <p class="font-semibold" id="file-name"></p>
+                                <p class="text-sm text-gray-600" id="file-size"></p>
+                            </div>
+                        </div>
+                        <button onclick="removeFile()" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-times-circle text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="editor-content" class="tab-content hidden">
+                <!-- Code Editor -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        貼上您的代碼
+                        <span id="current-lang-badge" class="js-support-badge">ASP</span>
+                    </label>
+                    <div class="editor-container">
+                        <textarea id="code-editor" class="code-editor" placeholder="在此貼上您的代碼..."></textarea>
+                        <div id="language-badge" class="language-badge">ASP</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-content" class="tab-content hidden">
+                <!-- Formatting Options -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-semibold mb-4">
+                            <i class="fas fa-indent mr-2 text-purple-600"></i>縮排設定
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">縮排類型</label>
+                                <select id="indent-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="spaces">空格</option>
+                                    <option value="tabs">Tab</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">縮排大小</label>
+                                <input type="number" id="indent-size" value="4" min="1" max="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold mb-4">
+                            <i class="fas fa-code-branch mr-2 text-purple-600"></i>語言特定設定
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">JavaScript 格式</label>
+                                <select id="js-style" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="standard">標準</option>
+                                    <option value="prettier">Prettier 風格</option>
+                                    <option value="compact">緊湊</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">引號類型</label>
+                                <select id="quote-style" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="preserve">保持原樣</option>
+                                    <option value="single">單引號</option>
+                                    <option value="double">雙引號</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-4">
+                        <i class="fas fa-tools mr-2 text-purple-600"></i>其他選項
+                    </h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="remove-comments" class="mr-2 text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm">移除註解</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="sort-attributes" class="mr-2 text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm">排序HTML屬性</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="preserve-blank" class="mr-2 text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm">保留空白行</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="js-semicolons" class="mr-2 text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm">JavaScript 強制分號</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-6 bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>JavaScript 支援說明：</strong>本工具現在完整支援JavaScript代碼格式化，包括ES6+語法、箭頭函數、解構賦值等現代JavaScript特性。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-6 flex flex-wrap gap-3">
+                <button onclick="formatCode()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-purple-800 transition-all hover-scale">
+                    <i class="fas fa-magic mr-2"></i>格式化代碼
+                </button>
+                <button onclick="previewResult()" class="bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700 transition-all hover-scale">
+                    <i class="fas fa-eye mr-2"></i>預覽結果
+                </button>
+                <button onclick="copyCode()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-all hover-scale">
+                    <i class="fas fa-copy mr-2"></i>複製代碼
+                </button>
+                <button onclick="downloadFile()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-all hover-scale">
+                    <i class="fas fa-download mr-2"></i>下載檔案
+                </button>
+                <button onclick="clearAll()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-all hover-scale">
+                    <i class="fas fa-trash mr-2"></i>清除全部
+                </button>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="hidden mt-6 flex items-center justify-center">
+                <div class="loader"></div>
+                <span class="ml-3 text-gray-600">正在格式化...</span>
+            </div>
+
+            <!-- Result Area -->
+            <div id="result-area" class="hidden mt-6">
+                <h3 class="font-semibold mb-3">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>格式化結果
+                </h3>
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-gray-100 px-4 py-2 flex items-center justify-between">
+                        <span class="text-sm font-medium">格式化後的代碼</span>
+                        <div class="flex space-x-2">
+                            <button onclick="copyResult()" class="text-gray-600 hover:text-gray-800">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button onclick="toggleFullscreen()" class="text-gray-600 hover:text-gray-800">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-container">
+                        <textarea id="result-editor" class="code-editor" rows="10" readonly></textarea>
+                        <div id="result-lang-badge" class="language-badge">ASP</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">原始代碼行數</p>
+                        <p class="text-2xl font-bold text-purple-600" id="original-lines">0</p>
+                    </div>
+                    <i class="fas fa-file-alt text-3xl text-purple-200"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">格式化後行數</p>
+                        <p class="text-2xl font-bold text-green-600" id="formatted-lines">0</p>
+                    </div>
+                    <i class="fas fa-check-double text-3xl text-green-200"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">壓縮率</p>
+                        <p class="text-2xl font-bold text-blue-600" id="compression-rate">0%</p>
+                    </div>
+                    <i class="fas fa-compress-alt text-3xl text-blue-200"></i>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="gradient-bg text-white mt-12 py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">
+                <i class="fas fa-heart text-red-400"></i> 
+                CodeFormatter Pro - 支援 ASP & JavaScript
+            </p>
+            <p class="text-sm opacity-75">© 2024 代碼格式化工具. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="modal">
+        <div class="modal-content p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-info-circle text-purple-600 mr-2"></i>使用說明
+                </h2>
+                <button onclick="hideInstructions()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-purple-800 mb-2">
+                        <i class="fas fa-language mr-2"></i>多語言支援
+                    </h3>
+                    <p class="text-gray-700">本工具支援ASP、JavaScript和HTML三種語言的格式化。您可以選擇特定語言或讓工具自動偵測。</p>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-2">
+                        <i class="fas fa-upload mr-2"></i>檔案上傳
+                    </h3>
+                    <p class="text-gray-700">點擊「選擇檔案」按鈕或直接將檔案拖拽到上傳區域。支援 .asp、.js、.html 等多種檔案格式。</p>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-green-800 mb-2">
+                        <i class="fas fa-edit mr-2"></i>直接編輯
+                    </h3>
+                    <p class="text-gray-700">切換到「直接編輯」標籤頁，將您的代碼貼上到編輯器中。編輯器會自動偵測語言類型並顯示對應的語法標示。</p>
+                </div>
+                
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-yellow-800 mb-2">
+                        <i class="fas fa-sliders-h mr-2"></i>格式化設定
+                    </h3>
+                    <p class="text-gray-700">在「格式化設定」中，您可以自訂各種語言的格式化選項，包括縮排、引號類型、JavaScript特定設定等。</p>
+                </div>
+                
+                <div class="bg-indigo-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-indigo-800 mb-2">
+                        <i class="fas fa-magic mr-2"></i>格式化功能
+                    </h3>
+                    <p class="text-gray-700">點擊「格式化代碼」按鈕，系統會根據語言類型和您的設定自動整理代碼格式，使其更整潔易讀。</p>
+                </div>
+                
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-red-800 mb-2">
+                        <i class="fas fa-download mr-2"></i>匯出結果
+                    </h3>
+                    <p class="text-gray-700">格式化完成後，您可以預覽結果、複製代碼到剪貼簿，或直接下載格式化後的檔案。</p>
+                </div>
+            </div>
+            
+            <div class="mt-8 flex justify-end">
+                <button onclick="hideInstructions()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                    我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLanguage = 'asp';
+        let currentFileName = '';
+        
+        // Initialize when page loads
+        window.onload = function() {
+            console.log('Initializing application...');
+            initializeFileUpload();
+            initializeSimpleEditors();
+            updateStats();
+            console.log('Application initialized successfully');
+        };
+
+        function initializeSimpleEditors() {
+            const codeEditor = document.getElementById('code-editor');
+            const resultEditor = document.getElementById('result-editor');
+            
+            // Add input event listeners
+            codeEditor.addEventListener('input', function() {
+                detectLanguage(this.value);
+                updateStats();
+            });
+            
+            resultEditor.addEventListener('input', function() {
+                updateStats();
+            });
+            
+            // Initialize language detection
+            detectLanguage(codeEditor.value);
+        }
+
+        function detectLanguage(code) {
+            if (!code.trim()) return;
+            
+            let detectedLang = 'asp';
+            
+            // Simple language detection
+            if (code.includes('<%') || code.includes('%>') || code.includes('@LANGUAGE')) {
+                detectedLang = 'asp';
+            } else if (code.includes('function') && code.includes('{') || code.includes('=>') || code.includes('const ') || code.includes('let ')) {
+                detectedLang = 'javascript';
+            } else if (code.includes('<!DOCTYPE') || code.includes('<html') || code.includes('<div')) {
+                detectedLang = 'html';
+            }
+            
+            setLanguage(detectedLang, false);
+        }
+
+        function setLanguage(lang, updateUI = true) {
+            currentLanguage = lang;
+            
+            if (updateUI) {
+                // Update language buttons
+                document.querySelectorAll('.lang-btn').forEach(btn => {
+                    btn.classList.remove('bg-purple-600', 'text-white');
+                    btn.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                
+                const activeBtn = document.getElementById('lang-' + lang);
+                if (activeBtn) {
+                    activeBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                    activeBtn.classList.add('bg-purple-600', 'text-white');
+                }
+                
+                // Update language badges
+                const badges = ['current-lang-badge', 'language-badge', 'result-lang-badge'];
+                badges.forEach(badgeId => {
+                    const badge = document.getElementById(badgeId);
+                    if (badge) {
+                        badge.textContent = lang.toUpperCase();
+                    }
+                });
+            }
+        }
+
+        function initializeFileUpload() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+            
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            // Highlight drop zone when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            // Handle dropped files
+            dropZone.addEventListener('drop', handleDrop, false);
+            
+            // Handle file input change
+            fileInput.addEventListener('change', handleFileSelect, false);
+        }
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        function highlight() {
+            document.getElementById('drop-zone').classList.add('border-purple-500', 'bg-purple-200');
+        }
+        
+        function unhighlight() {
+            document.getElementById('drop-zone').classList.remove('border-purple-500', 'bg-purple-200');
+        }
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+        
+        function handleFile(file) {
+            console.log('Handling file:', file.name);
+            
+            // Detect language from file extension
+            const extension = file.name.split('.').pop().toLowerCase();
+            let lang = 'asp';
+            
+            switch(extension) {
+                case 'js':
+                    lang = 'javascript';
+                    break;
+                case 'html':
+                case 'htm':
+                    lang = 'html';
+                    break;
+                case 'asp':
+                case 'asa':
+                    lang = 'asp';
+                    break;
+            }
+            
+            setLanguage(lang);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    console.log('File content loaded, length:', content.length);
+                    
+                    const codeEditor = document.getElementById('code-editor');
+                    if (codeEditor) {
+                        codeEditor.value = content;
+                        currentFileName = file.name;
+                        document.getElementById('file-name').textContent = file.name;
+                        document.getElementById('file-size').textContent = formatFileSize(file.size);
+                        document.getElementById('file-info').classList.remove('hidden');
+                        detectLanguage(content);
+                        updateStats();
+                        showNotification('檔案載入成功！', 'success');
+                    } else {
+                        console.error('Code editor not found');
+                        showNotification('編輯器未找到，請重新整理頁面', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    showNotification('檔案處理失敗', 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                console.error('Error reading file');
+                showNotification('檔案讀取失敗', 'error');
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function switchTab(tabName) {
+            // Update tab buttons
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => {
+                tab.classList.remove('tab-active');
+                tab.classList.add('bg-gray-100', 'text-gray-700');
+            });
+            document.getElementById('tab-' + tabName).classList.add('tab-active');
+            document.getElementById('tab-' + tabName).classList.remove('bg-gray-100', 'text-gray-700');
+            
+            // Show/hide content
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(tabName + '-content').classList.remove('hidden');
+        }
+        
+        function removeFile() {
+            document.getElementById('file-info').classList.add('hidden');
+            document.getElementById('file-input').value = '';
+            const codeEditor = document.getElementById('code-editor');
+            if (codeEditor) {
+                codeEditor.value = '';
+            }
+            currentFileName = '';
+            updateStats();
+        }
+        
+        function formatCode() {
+            const codeEditor = document.getElementById('code-editor');
+            if (!codeEditor) {
+                showNotification('編輯器未找到', 'error');
+                return;
+            }
+            
+            const code = codeEditor.value;
+            if (!code.trim()) {
+                showNotification('請先輸入或上傳代碼', 'error');
+                return;
+            }
+            
+            const loading = document.getElementById('loading');
+            loading.classList.remove('hidden');
+            
+            setTimeout(() => {
+                try {
+                    let formatted;
+                    switch(currentLanguage) {
+                        case 'javascript':
+                            formatted = formatJavaScript(code);
+                            break;
+                        case 'html':
+                            formatted = formatHTML(code);
+                            break;
+                        default:
+                            formatted = formatASPCode(code);
+                    }
+                    
+                    const resultEditor = document.getElementById('result-editor');
+                    if (resultEditor) {
+                        resultEditor.value = formatted;
+                        document.getElementById('result-area').classList.remove('hidden');
+                        loading.classList.add('hidden');
+                        updateStats();
+                        showNotification(`${currentLanguage.toUpperCase()} 代碼格式化完成！`, 'success');
+                    }
+                } catch (error) {
+                    console.error('Error formatting code:', error);
+                    loading.classList.add('hidden');
+                    showNotification('格式化失敗', 'error');
+                }
+            }, 1000);
+        }
+        
+        function formatJavaScript(code) {
+            // Get settings
+            const indentType = document.getElementById('indent-type').value;
+            const indentSize = parseInt(document.getElementById('indent-size').value);
+            const jsStyle = document.getElementById('js-style').value;
+            const quoteStyle = document.getElementById('quote-style').value;
+            const removeComments = document.getElementById('remove-comments').checked;
+            const forceSemicolons = document.getElementById('js-semicolons').checked;
+            const preserveBlank = document.getElementById('preserve-blank').checked;
+            
+            // Create indent string
+            const indent = indentType === 'spaces' ? ' '.repeat(indentSize) : '\t';
+            
+            let formatted = code;
+            
+            // Remove comments if selected
+            if (removeComments) {
+                formatted = formatted.replace(/\/\/.*$/gm, '');
+                formatted = formatted.replace(/\/\*[\s\S]*?\*\//g, '');
+            }
+            
+            // Basic formatting
+            formatted = formatted.replace(/\s+$/gm, ''); // Remove trailing spaces
+            
+            // Handle different JavaScript styles
+            if (jsStyle === 'prettier') {
+                // Prettier-like formatting
+                formatted = formatted.replace(/(\s)?\{/g, ' {'); // Space before {
+                formatted = formatted.replace(/\}(\s)?/g, '}'); // No space after }
+                formatted = formatted.replace(/;(\s)?/g, ';\n'); // New line after semicolon
+            } else if (jsStyle === 'compact') {
+                // Compact formatting
+                formatted = formatted.replace(/\s*\n\s*/g, ' '); // Remove new lines
+                formatted = formatted.replace(/\s*\{\s*/g, '{'); // Remove spaces around {
+                formatted = formatted.replace(/\s*\}\s*/g, '}'); // Remove spaces around }
+            }
+            
+            // Handle quote style
+            if (quoteStyle !== 'preserve') {
+                const quoteChar = quoteStyle === 'single' ? "'" : '"';
+                formatted = formatted.replace(/['"]/g, quoteChar);
+            }
+            
+            // Force semicolons
+            if (forceSemicolons) {
+                formatted = formatted.replace(/([a-zA-Z0-9_])\s*$/gm, '$1;');
+                formatted = formatted.replace(/}\s*$/gm, '};');
+            }
+            
+            // Basic indentation
+            if (!preserveBlank) {
+                formatted = formatted.replace(/^\s*$/gm, ''); // Remove empty lines
+            }
+            
+            // Add proper indentation for blocks
+            let lines = formatted.split('\n');
+            let indentLevel = 0;
+            let result = [];
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                
+                // Decrease indent for closing braces
+                if (line.includes('}')) {
+                    indentLevel = Math.max(0, indentLevel - 1);
+                }
+                
+                // Add indented line
+                result.push(indent.repeat(indentLevel) + line);
+                
+                // Increase indent for opening braces
+                if (line.includes('{')) {
+                    indentLevel++;
+                }
+            }
+            
+            return result.join('\n');
+        }
+        
+        function formatHTML(code) {
+            // Get settings
+            const indentType = document.getElementById('indent-type').value;
+            const indentSize = parseInt(document.getElementById('indent-size').value);
+            const sortAttributes = document.getElementById('sort-attributes').checked;
+            const removeComments = document.getElementById('remove-comments').checked;
+            
+            // Create indent string
+            const indent = indentType === 'spaces' ? ' '.repeat(indentSize) : '\t';
+            
+            let formatted = code;
+            
+            // Remove comments if selected
+            if (removeComments) {
+                formatted = formatted.replace(/<!--[\s\S]*?-->/g, '');
+            }
+            
+            // Basic formatting
+            formatted = formatted.replace(/\s+$/gm, ''); // Remove trailing spaces
+            
+            // Format HTML tags
+            formatted = formatted.replace(/(<\/?\w+)([^>]*>)/g, (match, tag, attrs) => {
+                if (sortAttributes && attrs.length > 1) {
+                    // Simple attribute sorting
+                    const attrRegex = /(\w+)="([^"]*)"/g;
+                    const attributes = [];
+                    let attrMatch;
+                    while ((attrMatch = attrRegex.exec(attrs)) !== null) {
+                        attributes.push(attrMatch[0]);
+                    }
+                    if (attributes.length > 0) {
+                        return tag + ' ' + attributes.sort().join(' ') + '>';
+                    }
+                }
+                return match;
+            });
+            
+            // Add line breaks for better readability
+            formatted = formatted.replace(/><(?!\/)/g, '>\n<');
+            
+            return formatted;
+        }
+        
+        function formatASPCode(code) {
+            // Get settings
+            const indentType = document.getElementById('indent-type').value;
+            const indentSize = parseInt(document.getElementById('indent-size').value);
+            const removeComments = document.getElementById('remove-comments').checked;
+            const sortAttributes = document.getElementById('sort-attributes').checked;
+            const preserveBlank = document.getElementById('preserve-blank').checked;
+            
+            // Create indent string
+            const indent = indentType === 'spaces' ? ' '.repeat(indentSize) : '\t';
+            
+            let formatted = code;
+            
+            // Remove comments if selected
+            if (removeComments) {
+                formatted = formatted.replace(/<!--[\s\S]*?-->/g, '');
+                formatted = formatted.replace(/'.*$/gm, '');
+            }
+            
+            // Basic formatting
+            formatted = formatted.replace(/\s+$/gm, ''); // Remove trailing spaces
+            formatted = formatted.replace(/^\s+/gm, (match) => {
+                // Replace indentation
+                const level = Math.floor(match.length / (indentType === 'spaces' ? 4 : 1));
+                return indent.repeat(level);
+            });
+            
+            // Format HTML tags
+            formatted = formatted.replace(/(<\/?\w+)([^>]*>)/g, (match, tag, attrs) => {
+                if (sortAttributes && attrs.length > 1) {
+                    // Simple attribute sorting
+                    const attrRegex = /(\w+)="([^"]*)"/g;
+                    const attributes = [];
+                    let attrMatch;
+                    while ((attrMatch = attrRegex.exec(attrs)) !== null) {
+                        attributes.push(attrMatch[0]);
+                    }
+                    if (attributes.length > 0) {
+                        return tag + ' ' + attributes.sort().join(' ') + '>';
+                    }
+                }
+                return match;
+            });
+            
+            // Add line breaks for better readability
+            formatted = formatted.replace(/><(?!\/)/g, '>\n<');
+            
+            return formatted;
+        }
+        
+        function previewResult() {
+            const codeEditor = document.getElementById('code-editor');
+            if (!codeEditor) {
+                showNotification('編輯器未找到', 'error');
+                return;
+            }
+            
+            const code = codeEditor.value;
+            if (!code.trim()) {
+                showNotification('請先輸入或上傳代碼', 'error');
+                return;
+            }
+            
+            try {
+                let formatted;
+                switch(currentLanguage) {
+                    case 'javascript':
+                        formatted = formatJavaScript(code);
+                        break;
+                    case 'html':
+                        formatted = formatHTML(code);
+                        break;
+                    default:
+                        formatted = formatASPCode(code);
+                }
+                
+                const resultEditor = document.getElementById('result-editor');
+                if (resultEditor) {
+                    resultEditor.value = formatted;
+                    document.getElementById('result-area').classList.remove('hidden');
+                    updateStats();
+                }
+            } catch (error) {
+                console.error('Error previewing result:', error);
+                showNotification('預覽失敗', 'error');
+            }
+        }
+        
+        function copyCode() {
+            const codeEditor = document.getElementById('code-editor');
+            if (!codeEditor) {
+                showNotification('編輯器未找到', 'error');
+                return;
+            }
+            
+            const code = codeEditor.value;
+            if (!code.trim()) {
+                showNotification('沒有可複製的代碼', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(code).then(() => {
+                showNotification('代碼已複製到剪貼簿', 'success');
+            }).catch(() => {
+                showNotification('複製失敗，請手動複製', 'error');
+            });
+        }
+        
+        function copyResult() {
+            const resultEditor = document.getElementById('result-editor');
+            if (!resultEditor) {
+                showNotification('結果編輯器未找到', 'error');
+                return;
+            }
+            
+            const result = resultEditor.value;
+            if (!result.trim()) {
+                showNotification('沒有可複製的結果', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(result).then(() => {
+                showNotification('結果已複製到剪貼簿', 'success');
+            }).catch(() => {
+                showNotification('複製失敗，請手動複製', 'error');
+            });
+        }
+        
+        function downloadFile() {
+            const resultEditor = document.getElementById('result-editor');
+            const codeEditor = document.getElementById('code-editor');
+            const content = resultEditor ? resultEditor.value : (codeEditor ? codeEditor.value : '');
+            
+            if (!content.trim()) {
+                showNotification('沒有可下載的內容', 'error');
+                return;
+            }
+            
+            try {
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // Set appropriate file extension
+                let extension = '.asp';
+                switch(currentLanguage) {
+                    case 'javascript':
+                        extension = '.js';
+                        break;
+                    case 'html':
+                        extension = '.html';
+                        break;
+                }
+                
+                a.download = 'formatted_' + (currentFileName || 'code' + extension);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showNotification('檔案下載中...', 'success');
+            } catch (error) {
+                console.error('Error downloading file:', error);
+                showNotification('下載失敗', 'error');
+            }
+        }
+        
+        function clearAll() {
+            if (confirm('確定要清除所有內容嗎？')) {
+                const codeEditor = document.getElementById('code-editor');
+                const resultEditor = document.getElementById('result-editor');
+                
+                if (codeEditor) {
+                    codeEditor.value = '';
+                }
+                if (resultEditor) {
+                    resultEditor.value = '';
+                }
+                document.getElementById('result-area').classList.add('hidden');
+                document.getElementById('file-info').classList.add('hidden');
+                document.getElementById('file-input').value = '';
+                currentFileName = '';
+                updateStats();
+                showNotification('已清除所有內容', 'success');
+            }
+        }
+        
+        function toggleFullscreen() {
+            const resultArea = document.getElementById('result-area');
+            if (!document.fullscreenElement) {
+                resultArea.requestFullscreen().catch(err => {
+                    showNotification('無法進入全螢幕模式', 'error');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function updateStats() {
+            const codeEditor = document.getElementById('code-editor');
+            const resultEditor = document.getElementById('result-editor');
+            
+            const original = codeEditor ? codeEditor.value : '';
+            const formatted = resultEditor ? resultEditor.value : '';
+            
+            const originalLines = original ? original.split('\n').length : 0;
+            const formattedLines = formatted ? formatted.split('\n').length : 0;
+            
+            document.getElementById('original-lines').textContent = originalLines;
+            document.getElementById('formatted-lines').textContent = formattedLines;
+            
+            if (originalLines > 0) {
+                const compression = Math.round((1 - formattedLines / originalLines) * 100);
+                document.getElementById('compression-rate').textContent = compression + '%';
+            } else {
+                document.getElementById('compression-rate').textContent = '0%';
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 notification ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+                    ${message}
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        function showInstructions() {
+            document.getElementById('instructions-modal').classList.add('show');
+        }
+        
+        function hideInstructions() {
+            document.getElementById('instructions-modal').classList.remove('show');
+        }
+        
+        function showSettings() {
+            switchTab('settings');
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('instructions-modal');
+            if (event.target === modal) {
+                hideInstructions();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手勢控制迷宮遊戲</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: white;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-container {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .camera-section {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-section {
+            flex: 2;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #videoElement {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transform: scaleX(-1);
+        }
+
+        #canvasElement {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            transform: scaleX(-1);
+        }
+
+        .video-container {
+            position: relative;
+            display: inline-block;
+            margin: 0 auto;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 500px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls-info {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .controls-info h3 {
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .gesture-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .gesture-item.active {
+            background: rgba(255, 215, 0, 0.3);
+            transform: translateX(5px);
+        }
+
+        .gesture-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .start-button {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .start-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1.1em;
+            min-height: 30px;
+        }
+
+        .direction-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+        }
+
+        .maze-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .maze-button {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .maze-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎮 手勢控制迷宮遊戲</h1>
+        <p>使用手掌方向來控制角色走迷宮！</p>
+    </header>
+
+    <main class="game-container">
+        <section class="camera-section">
+            <h2>📷 攝影機畫面</h2>
+            <div class="video-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <canvas id="canvasElement"></canvas>
+                <div class="direction-indicator" id="directionIndicator">⬆️</div>
+            </div>
+            <button id="startButton" class="start-button">開始遊戲</button>
+            <div class="status-message" id="statusMessage">請點擊開始按鈕啟動攝影機</div>
+            
+            <div class="controls-info">
+                <h3>🎯 手勢控制說明</h3>
+                <div class="gesture-item" id="gesture-up">
+                    <span class="gesture-icon">✋</span>
+                    <span>手掌向上 - 向上移動</span>
+                </div>
+                <div class="gesture-item" id="gesture-down">
+                    <span class="gesture-icon">✋</span>
+                    <span>手掌向下 - 向下移動</span>
+                </div>
+                <div class="gesture-item" id="gesture-left">
+                    <span class="gesture-icon">✋</span>
+                    <span>手掌向左 - 向左移動</span>
+                </div>
+                <div class="gesture-item" id="gesture-right">
+                    <span class="gesture-icon">✋</span>
+                    <span>手掌向右 - 向右移動</span>
+                </div>
+            </div>
+
+            <div class="maze-controls">
+                <button class="maze-button" onclick="generateNewMaze()">🔄 新迷宮</button>
+                <button class="maze-button" onclick="resetPlayer()">🏠 重置位置</button>
+            </div>
+        </section>
+
+        <section class="game-section">
+            <div class="game-stats">
+                <div class="stat-item">
+                    <span>👣 步數:</span>
+                    <span class="stat-value" id="steps">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>⏱️ 時間:</span>
+                    <span class="stat-value" id="timer">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>🏁 關卡:</span>
+                    <span class="stat-value" id="level">1</span>
+                </div>
+            </div>
+            <canvas id="gameCanvas"></canvas>
+        </section>
+    </main>
+
+    <script>
+        // 遊戲變數
+        let gameStarted = false;
+        let steps = 0;
+        let timeElapsed = 0;
+        let level = 1;
+        let player = {
+            gridX: 1,
+            gridY: 1,
+            size: 15,
+            moveSpeed: 0.15, // 移動速度（每幀移動的格子數量）
+            targetX: 1,
+            targetY: 1,
+            actualX: 1,
+            actualY: 1
+        };
+        let maze = [];
+        let cellSize = 30;
+        let mazeWidth = 15;
+        let mazeHeight = 15;
+        let currentGesture = null;
+        let gestureThreshold = 0.1;
+        let lastMoveTime = 0;
+        let moveCooldown = 150; // 移動冷卻時間（毫秒）
+
+        // MediaPipe Hands 設置
+        const videoElement = document.getElementById('videoElement');
+        const canvasElement = document.getElementById('canvasElement');
+        const canvasCtx = canvasElement.getContext('2d');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const gameCtx = gameCanvas.getContext('2d');
+        const directionIndicator = document.getElementById('directionIndicator');
+
+        // 設置遊戲畫布大小
+        function resizeGameCanvas() {
+            gameCanvas.width = gameCanvas.offsetWidth;
+            gameCanvas.height = gameCanvas.offsetHeight;
+            cellSize = Math.min(
+                (gameCanvas.width - 40) / mazeWidth,
+                (gameCanvas.height - 40) / mazeHeight
+            );
+            // 如果迷宮已生成，重新渲染
+            if (maze.length > 0) {
+                render();
+            }
+        }
+        resizeGameCanvas();
+        window.addEventListener('resize', resizeGameCanvas);
+
+        // 初始化 MediaPipe Hands
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        // 手勢偵測結果處理
+        hands.onResults(onResults);
+
+        function onResults(results) {
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.scale(-1, 1); // 只水平翻轉
+            canvasCtx.drawImage(results.image, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+            
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // 繪製手部骨架
+                canvasCtx.scale(-1, 1); // 翻轉回來繪製骨架
+                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 5});
+                drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2});
+                
+                // 偵測手勢
+                detectPalmGesture(landmarks);
+            } else {
+                clearGestures();
+                currentGesture = null;
+            }
+            
+            canvasCtx.restore();
+        }
+
+        // 手掌手勢偵測 - 使用手腕和手掌中心
+        function detectPalmGesture(landmarks) {
+            // 使用手腕(0)和手掌中心(landmark 9，中指根部)來計算方向
+            const wrist = landmarks[0];
+            const palmCenter = landmarks[9];
+            
+            // 計算方向向量（只處理左右鏡像，上下不變）
+            const dx = palmCenter.x - wrist.x; // X軸：手掌中心相對於手腕的位置
+            const dy = wrist.y - palmCenter.y; // Y軸：手腕相對於手掌中心的位置（保持原方向）
+            
+            // 計算角度
+            const angle = Math.atan2(dy, dx);
+            const degrees = angle * (180 / Math.PI);
+            
+            // 更新方向指示器
+            updateDirectionIndicator(degrees);
+            
+            // 判斷手掌方向
+            clearGestures();
+            
+            // 根據向量長度和方向判斷手勢
+            const vectorLength = Math.sqrt(dx * dx + dy * dy);
+            
+            if (vectorLength > gestureThreshold) {
+                if (Math.abs(dy) > Math.abs(dx)) {
+                    if (dy > 0) {
+                        // 向上
+                        document.getElementById('gesture-up').classList.add('active');
+                        currentGesture = 'up';
+                    } else {
+                        // 向下
+                        document.getElementById('gesture-down').classList.add('active');
+                        currentGesture = 'down';
+                    }
+                } else {
+                    if (dx > 0) {
+                        // 向右（使用者看到的是向左）
+                        document.getElementById('gesture-left').classList.add('active');
+                        currentGesture = 'left';
+                    } else {
+                        // 向左（使用者看到的是向右）
+                        document.getElementById('gesture-right').classList.add('active');
+                        currentGesture = 'right';
+                    }
+                }
+            } else {
+                currentGesture = null;
+            }
+        }
+
+        // 更新方向指示器
+        function updateDirectionIndicator(degrees) {
+            let emoji = '⬆️';
+            
+            if (degrees >= -45 && degrees < 45) {
+                emoji = '➡️'; // 右
+            } else if (degrees >= 45 && degrees < 135) {
+                emoji = '⬇️'; // 下
+            } else if (degrees >= -135 && degrees < -45) {
+                emoji = '⬆️'; // 上
+            } else {
+                emoji = '⬅️'; // 左
+            }
+            
+            directionIndicator.textContent = emoji;
+        }
+
+        function clearGestures() {
+            document.querySelectorAll('.gesture-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        // 生成迷宮
+        function generateMaze() {
+            // 初始化迷宮（全部為牆）
+            maze = Array(mazeHeight).fill().map(() => Array(mazeWidth).fill(1));
+            
+            // 使用深度優先搜索生成迷宮
+            const stack = [];
+            const startX = 1;
+            const startY = 1;
+            
+            maze[startY][startX] = 0;
+            stack.push([startX, startY]);
+            
+            const directions = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+            
+            while (stack.length > 0) {
+                const [x, y] = stack[stack.length - 1];
+                const neighbors = [];
+                
+                for (const [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    
+                    if (nx > 0 && nx < mazeWidth - 1 && ny > 0 && ny < mazeHeight - 1 && maze[ny][nx] === 1) {
+                        neighbors.push([nx, ny, x + dx/2, y + dy/2]);
+                    }
+                }
+                
+                if (neighbors.length > 0) {
+                    const [nx, ny, wx, wy] = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    maze[ny][nx] = 0;
+                    maze[wy][wx] = 0;
+                    stack.push([nx, ny]);
+                } else {
+                    stack.pop();
+                }
+            }
+            
+            // 設置起點和終點
+            maze[1][1] = 2; // 起點
+            maze[mazeHeight - 2][mazeWidth - 2] = 3; // 終點
+            
+            // 確保終點周圍有路徑
+            maze[mazeHeight - 2][mazeWidth - 3] = 0;
+            maze[mazeHeight - 3][mazeWidth - 2] = 0;
+            
+            // 立即渲染迷宮
+            render();
+        }
+
+        // 玩家移動
+        function movePlayer(direction) {
+            let newX = player.targetX;
+            let newY = player.targetY;
+            
+            switch(direction) {
+                case 'up':
+                    newY--;
+                    break;
+                case 'down':
+                    newY++;
+                    break;
+                case 'left':
+                    newX--;
+                    break;
+                case 'right':
+                    newX++;
+                    break;
+            }
+            
+            // 檢查邊界和牆壁
+            if (newX >= 0 && newX < mazeWidth && newY >= 0 && newY < mazeHeight && maze[newY][newX] !== 1) {
+                player.targetX = newX;
+                player.targetY = newY;
+                
+                // 如果是新位置，增加步數
+                if (player.gridX !== newX || player.gridY !== newY) {
+                    steps++;
+                    updateStats();
+                }
+                
+                // 檢查是否到達終點
+                if (maze[newY][newX] === 3) {
+                    levelComplete();
+                }
+            }
+        }
+
+        // 更新玩家位置（平滑移動）
+        function updatePlayerPosition() {
+            // 平滑移動到目標位置
+            const dx = player.targetX - player.actualX;
+            const dy = player.targetY - player.actualY;
+            
+            if (Math.abs(dx) > 0.01) {
+                player.actualX += dx * player.moveSpeed;
+            } else {
+                player.actualX = player.targetX;
+            }
+            
+            if (Math.abs(dy) > 0.01) {
+                player.actualY += dy * player.moveSpeed;
+            } else {
+                player.actualY = player.targetY;
+            }
+            
+            // 更新網格位置（當實際位置接近目標時）
+            if (Math.abs(player.actualX - player.targetX) < 0.1 && Math.abs(player.actualY - player.targetY) < 0.1) {
+                player.gridX = player.targetX;
+                player.gridY = player.targetY;
+            }
+        }
+
+        // 關卡完成
+        function levelComplete() {
+            level++;
+            document.getElementById('statusMessage').textContent = `🎉 恭喜通過第 ${level - 1} 關！`;
+            
+            // 生成新迷宮
+            generateMaze();
+            resetPlayer();
+            
+            // 增加難度
+            if (level % 3 === 0) {
+                mazeWidth = Math.min(21, mazeWidth + 2);
+                mazeHeight = Math.min(21, mazeHeight + 2);
+                resizeGameCanvas();
+                generateMaze();
+            }
+        }
+
+        // 重置玩家位置
+        function resetPlayer() {
+            player.gridX = 1;
+            player.gridY = 1;
+            player.targetX = 1;
+            player.targetY = 1;
+            player.actualX = 1;
+            player.actualY = 1;
+            steps = 0;
+            updateStats();
+            // 立即渲染
+            render();
+        }
+
+        // 生成新迷宮
+        function generateNewMaze() {
+            generateMaze();
+            resetPlayer();
+            document.getElementById('statusMessage').textContent = '新迷宮已生成！';
+        }
+
+        // 遊戲渲染
+        function render() {
+            // 確保畫布已正確設置
+            if (gameCanvas.width === 0 || gameCanvas.height === 0) {
+                resizeGameCanvas();
+                return;
+            }
+            
+            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            // 如果迷宮還沒有生成，顯示提示文字
+            if (maze.length === 0) {
+                gameCtx.fillStyle = '#fff';
+                gameCtx.font = '24px Arial';
+                gameCtx.textAlign = 'center';
+                gameCtx.fillText('遊戲已啟動，請使用手勢控制', gameCanvas.width / 2, gameCanvas.height / 2);
+                return;
+            }
+            
+            // 計算偏移量使迷宮居中
+            const offsetX = (gameCanvas.width - mazeWidth * cellSize) / 2;
+            const offsetY = (gameCanvas.height - mazeHeight * cellSize) / 2;
+            
+            // 繪製迷宮
+            for (let y = 0; y < mazeHeight; y++) {
+                for (let x = 0; x < mazeWidth; x++) {
+                    const cellX = offsetX + x * cellSize;
+                    const cellY = offsetY + y * cellSize;
+                    
+                    if (maze[y][x] === 1) {
+                        // 牆壁
+                        gameCtx.fillStyle = '#444';
+                        gameCtx.fillRect(cellX, cellY, cellSize, cellSize);
+                        gameCtx.strokeStyle = '#666';
+                        gameCtx.strokeRect(cellX, cellY, cellSize, cellSize);
+                    } else if (maze[y][x] === 2) {
+                        // 起點
+                        gameCtx.fillStyle = '#4ecdc4';
+                        gameCtx.fillRect(cellX, cellY, cellSize, cellSize);
+                    } else if (maze[y][x] === 3) {
+                        // 終點
+                        gameCtx.fillStyle = '#ffd700';
+                        gameCtx.fillRect(cellX, cellY, cellSize, cellSize);
+                        
+                        // 繪製星形
+                        gameCtx.save();
+                        gameCtx.translate(cellX + cellSize/2, cellY + cellSize/2);
+                        gameCtx.rotate(Date.now() * 0.002);
+                        gameCtx.fillStyle = '#fff';
+                        gameCtx.beginPath();
+                        for (let i = 0; i < 5; i++) {
+                            const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                            const r = cellSize * 0.3;
+                            const px = Math.cos(angle) * r;
+                            const py = Math.sin(angle) * r;
+                            if (i === 0) gameCtx.moveTo(px, py);
+                            else gameCtx.lineTo(px, py);
+                        }
+                        gameCtx.closePath();
+                        gameCtx.fill();
+                        gameCtx.restore();
+                    } else {
+                        // 路徑
+                        gameCtx.fillStyle = '#222';
+                        gameCtx.fillRect(cellX, cellY, cellSize, cellSize);
+                    }
+                }
+            }
+            
+            // 繪製玩家（使用實際位置進行平滑移動）
+            const playerX = offsetX + player.actualX * cellSize + cellSize / 2;
+            const playerY = offsetY + player.actualY * cellSize + cellSize / 2;
+            
+            gameCtx.fillStyle = '#ff6b6b';
+            gameCtx.beginPath();
+            gameCtx.arc(playerX, playerY, player.size, 0, Math.PI * 2);
+            gameCtx.fill();
+            
+            // 玩家眼睛
+            gameCtx.fillStyle = '#fff';
+            gameCtx.beginPath();
+            gameCtx.arc(playerX - 5, playerY - 3, 3, 0, Math.PI * 2);
+            gameCtx.arc(playerX + 5, playerY - 3, 3, 0, Math.PI * 2);
+            gameCtx.fill();
+            
+            // 玩家嘴巴
+            gameCtx.strokeStyle = '#fff';
+            gameCtx.lineWidth = 2;
+            gameCtx.beginPath();
+            gameCtx.arc(playerX, playerY + 2, 5, 0, Math.PI);
+            gameCtx.stroke();
+        }
+
+        // 更新統計數據
+        function updateStats() {
+            document.getElementById('steps').textContent = steps;
+            document.getElementById('timer').textContent = Math.floor(timeElapsed / 1000);
+            document.getElementById('level').textContent = level;
+        }
+
+        // 遊戲循環
+        function gameLoop() {
+            if (gameStarted) {
+                timeElapsed += 16;
+                
+                // 更新玩家位置
+                updatePlayerPosition();
+                
+                // 處理手勢移動
+                if (currentGesture) {
+                    const currentTime = Date.now();
+                    if (currentTime - lastMoveTime > moveCooldown) {
+                        movePlayer(currentGesture);
+                        lastMoveTime = currentTime;
+                    }
+                }
+                
+                render();
+                updateStats();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // 開始遊戲
+        function startGame() {
+            if (!gameStarted) {
+                gameStarted = true;
+                steps = 0;
+                timeElapsed = 0;
+                level = 1;
+                mazeWidth = 15;
+                mazeHeight = 15;
+                resizeGameCanvas();
+                generateMaze();
+                resetPlayer();
+                updateStats();
+                gameLoop();
+                document.getElementById('statusMessage').textContent = '遊戲進行中...';
+            }
+        }
+
+        // 攝影機設置
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+
+        // 開始按鈕事件
+        document.getElementById('startButton').addEventListener('click', async () => {
+            const button = document.getElementById('startButton');
+            button.disabled = true;
+            button.textContent = '初始化中...';
+            
+            try {
+                await camera.start();
+                document.getElementById('statusMessage').textContent = '攝影機已啟動，遊戲開始！';
+                
+                // 直接啟動遊戲，而不需要第二次點擊
+                startGame();
+                
+                // 改變按鈕為重新開始
+                button.textContent = '重新開始';
+                button.disabled = false;
+                button.onclick = () => {
+                    location.reload(); // 重新載入頁面以重新開始
+                };
+            } catch (error) {
+                console.error('無法啟動攝影機:', error);
+                document.getElementById('statusMessage').textContent = '無法啟動攝影機，請檢查權限設定';
+                button.disabled = false;
+                button.textContent = '重新嘗試';
+            }
+        });
+
+        // 初始化時顯示提示
+        window.addEventListener('load', () => {
+            render();
+        });
+    </script>
+</body>
+</html>
