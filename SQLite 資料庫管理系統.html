@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLite 資料庫管理系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/sql-wasm.js"></script>
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            overflow: hidden;
+        }
+
+        /* Header Styles */
+        .app-header {
+            height: var(--header-height);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .app-header .navbar-brand {
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 1rem;
+            z-index: 999;
+        }
+
+        .db-tree {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .db-tree li {
+            margin: 2px 0;
+        }
+
+        .db-tree .tree-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .db-tree .tree-item:hover {
+            background: #f0f2f5;
+        }
+
+        .db-tree .tree-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .db-tree .tree-item i {
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 1.5rem;
+            height: calc(100vh - var(--header-height));
+            overflow-y: auto;
+        }
+
+        /* Cards */
+        .custom-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Table Styles */
+        .data-table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .data-table td {
+            vertical-align: middle;
+        }
+
+        /* SQL Editor */
+        .sql-editor {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 200px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .sql-editor:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Buttons */
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        /* File Upload Area */
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-badge.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Tabs */
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 12px 24px;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Modal */
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-dark h-100">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-database-fill-gear"></i> SQLite Manager
+                </a>
+                <div class="d-flex align-items-center gap-3">
+                    <span id="dbStatus" class="status-badge disconnected">
+                        <i class="bi bi-circle-fill"></i> 未連接
+                    </span>
+                    <button class="btn btn-light btn-sm" onclick="showHelp()">
+                        <i class="bi bi-question-circle"></i> 說明
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="mb-3">
+            <h6 class="text-muted mb-3">資料庫結構</h6>
+            <ul class="db-tree" id="dbTree">
+                <li class="text-muted text-center py-4">
+                    <i class="bi bi-database-x" style="font-size: 2rem;"></i>
+                    <p class="mt-2">請先載入資料庫</p>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Upload Area (shown when no database is loaded) -->
+        <div id="uploadSection" class="custom-card">
+            <div class="upload-area" id="uploadArea">
+                <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #667eea;"></i>
+                <h4 class="mt-3">上傳 SQLite 資料庫</h4>
+                <p class="text-muted">拖放 .db 檔案到這裡，或點擊選擇檔案</p>
+                <input type="file" id="dbFileInput" accept=".db,.sqlite,.sqlite3" style="display: none;">
+                <button class="btn btn-gradient mt-3" onclick="document.getElementById('dbFileInput').click()">
+                    <i class="bi bi-folder-open"></i> 選擇檔案
+                </button>
+            </div>
+        </div>
+
+        <!-- Database Content (shown when database is loaded) -->
+        <div id="dbContent" style="display: none;">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#tablePanel" type="button">
+                        <i class="bi bi-table"></i> 資料表
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#queryPanel" type="button">
+                        <i class="bi bi-code-slash"></i> SQL 查詢
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="schema-tab" data-bs-toggle="tab" data-bs-target="#schemaPanel" type="button">
+                        <i class="bi bi-diagram-3"></i> 結構
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="export-tab" data-bs-toggle="tab" data-bs-target="#exportPanel" type="button">
+                        <i class="bi bi-download"></i> 匯出
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabContent">
+                <!-- Table Panel -->
+                <div class="tab-pane fade show active" id="tablePanel">
+                    <div class="custom-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-table"></i> 
+                                <span id="currentTableName">選擇一個資料表</span>
+                            </h5>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="refreshTable()">
+                                    <i class="bi bi-arrow-clockwise"></i> 重新整理
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="showAddRowModal()">
+                                    <i class="bi bi-plus-circle"></i> 新增資料
+                                </button>
+                            </div>
+                        </div>
+                        <div id="tableContent">
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-table" style="font-size: 3rem;"></i>
+                                <p class="mt-3">請從左側選擇一個資料表</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Query Panel -->
+                <div class="tab-pane fade" id="queryPanel">
+                    <div class="custom-card">
+                        <h5 class="mb-3"><i class="bi bi-code-slash"></i> SQL 查詢編輯器</h5>
+                        <textarea id="sqlEditor" class="form-control sql-editor" placeholder="輸入 SQL 查詢語句...&#10;例如: SELECT * FROM table_name LIMIT 10;"></textarea>
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-gradient" onclick="executeSQL()">
+                                <i class="bi bi-play-fill"></i> 執行查詢
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearSQLEditor()">
+                                <i class="bi bi-x-circle"></i> 清空
+                            </button>
+                        </div>
+                        <div id="queryResult" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <!-- Schema Panel -->
+                <div class="tab-pane fade" id="schemaPanel">
+                    <div class="custom-card">
+                        <h5 class="mb-3"><i class="bi bi-diagram-3"></i> 資料庫結構</h5>
+                        <div id="schemaContent"></div>
+                    </div>
+                </div>
+
+                <!-- Export Panel -->
+                <div class="tab-pane fade" id="exportPanel">
+                    <div class="custom-card">
+                        <h5 class="mb-3"><i class="bi bi-download"></i> 匯出資料</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">選擇資料表</label>
+                                    <select id="exportTableSelect" class="form-select">
+                                        <option value="">所有資料表</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">匯出格式</label>
+                                    <select id="exportFormat" class="form-select">
+                                        <option value="json">JSON</option>
+                                        <option value="csv">CSV</option>
+                                        <option value="sql">SQL</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-gradient" onclick="exportData()">
+                                    <i class="bi bi-download"></i> 開始匯出
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-info-circle"></i> 匯出說明</h6>
+                                    <ul class="mb-0">
+                                        <li>JSON: 適合程式開發使用</li>
+                                        <li>CSV: 適合 Excel 開啟</li>
+                                        <li>SQL: 可用於重建資料庫</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Row Modal -->
+    <div class="modal fade" id="rowModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rowModalTitle">新增資料</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="rowForm">
+                        <div id="rowFormFields"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-gradient" onclick="saveRow()">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">使用說明</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>基本操作</h6>
+                    <ul>
+                        <li>上傳 .db 檔案開始使用</li>
+                        <li>左側邊欄顯示所有資料表</li>
+                        <li>點擊資料表名稱查看內容</li>
+                    </ul>
+                    <h6>功能說明</h6>
+                    <ul>
+                        <li><strong>資料表:</strong> 瀏覽、編輯、新增、刪除資料</li>
+                        <li><strong>SQL 查詢:</strong> 執行自訂 SQL 語句</li>
+                        <li><strong>結構:</strong> 查看資料庫結構和索引</li>
+                        <li><strong>匯出:</strong> 將資料匯出為各種格式</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let db = null;
+        let currentTable = null;
+        let tableSchemas = {};
+        let currentEditIndex = null;
+        let currentTableData = null;
+
+        // Initialize SQL.js
+        let sqlPromise = initSqlJs({
+            locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/${file}`
+        });
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const dbFileInput = document.getElementById('dbFileInput');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        dbFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            if (!file.name.match(/\.(db|sqlite|sqlite3)$/i)) {
+                showNotification('請選擇有效的 SQLite 資料庫檔案', 'error');
+                return;
+            }
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const uInt8Array = new Uint8Array(arrayBuffer);
+                const SQL = await sqlPromise;
+                db = new SQL.Database(uInt8Array);
+                
+                updateConnectionStatus(true);
+                await loadDatabaseStructure();
+                showDatabaseContent();
+                showNotification(`成功載入資料庫: ${file.name}`, 'success');
+            } catch (error) {
+                console.error('Error loading database:', error);
+                showNotification('載入資料庫失敗: ' + error.message, 'error');
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusBadge = document.getElementById('dbStatus');
+            if (connected) {
+                statusBadge.className = 'status-badge connected';
+                statusBadge.innerHTML = '<i class="bi bi-circle-fill"></i> 已連接';
+            } else {
+                statusBadge.className = 'status-badge disconnected';
+                statusBadge.innerHTML = '<i class="bi bi-circle-fill"></i> 未連接';
+            }
+        }
+
+        async function loadDatabaseStructure() {
+            try {
+                const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                const dbTree = document.getElementById('dbTree');
+                dbTree.innerHTML = '';
+
+                if (tables.length === 0) {
+                    dbTree.innerHTML = '<li class="text-muted text-center py-4">沒有找到資料表</li>';
+                    return;
+                }
+
+                // Load schemas for all tables
+                for (const [tableName] of tables[0].values) {
+                    try {
+                        const schemaResult = db.exec(`PRAGMA table_info(${tableName})`);
+                        if (schemaResult.length > 0) {
+                            tableSchemas[tableName] = schemaResult[0].values;
+                        }
+                    } catch (e) {
+                        console.warn('Error loading schema for table ' + tableName, e);
+                    }
+                }
+
+                tables[0].values.forEach(([tableName]) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="tree-item" onclick="selectTable('${tableName}')">
+                            <i class="bi bi-table"></i>
+                            <span>${tableName}</span>
+                        </div>
+                    `;
+                    dbTree.appendChild(li);
+                });
+
+                // Update export table select
+                const exportSelect = document.getElementById('exportTableSelect');
+                exportSelect.innerHTML = '<option value="">所有資料表</option>';
+                tables[0].values.forEach(([tableName]) => {
+                    const option = document.createElement('option');
+                    option.value = tableName;
+                    option.textContent = tableName;
+                    exportSelect.appendChild(option);
+                });
+
+                // Load schema display
+                loadSchema();
+            } catch (error) {
+                console.error('Error loading structure:', error);
+                showNotification('載入資料庫結構失敗', 'error');
+            }
+        }
+
+        function selectTable(tableName) {
+            currentTable = tableName;
+            currentEditIndex = null;
+            
+            // Update active state in sidebar
+            document.querySelectorAll('.tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Switch to table tab
+            const tableTab = document.getElementById('table-tab');
+            const tab = new bootstrap.Tab(tableTab);
+            tab.show();
+
+            // Load table data
+            loadTableData(tableName);
+        }
+
+        function loadTableData(tableName) {
+            try {
+                // Get table data
+                const dataResult = db.exec(`SELECT * FROM ${tableName}`);
+                currentTableData = dataResult[0] || { columns: [], values: [] };
+                
+                document.getElementById('currentTableName').textContent = tableName;
+                
+                if (currentTableData.values.length === 0) {
+                    document.getElementById('tableContent').innerHTML = `
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-3">資料表是空的</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const columns = currentTableData.columns;
+                const values = currentTableData.values;
+
+                let html = `
+                    <div class="table-responsive">
+                        <table class="table table-hover data-table">
+                            <thead>
+                                <tr>
+                `;
+
+                columns.forEach(col => {
+                    html += `<th>${col}</th>`;
+                });
+                html += `<th>操作</th></tr></thead><tbody>`;
+
+                values.forEach((row, index) => {
+                    html += '<tr>';
+                    row.forEach(cell => {
+                        html += `<td>${cell !== null ? escapeHtml(cell.toString()) : '<span class="text-muted">NULL</span>'}</td>`;
+                    });
+                    html += `
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editRow(${index})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteRow(${index})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+                
+                html += '<div class="alert alert-info mt-3">顯示 ' + values.length + ' 筆資料</div>';
+
+                document.getElementById('tableContent').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading table data:', error);
+                showNotification('載入資料失敗: ' + error.message, 'error');
+            }
+        }
+
+        function refreshTable() {
+            if (currentTable) {
+                loadTableData(currentTable);
+            }
+        }
+
+        function showAddRowModal() {
+            if (!currentTable) {
+                showNotification('請先選擇一個資料表', 'warning');
+                return;
+            }
+
+            currentEditIndex = null;
+            const schema = tableSchemas[currentTable];
+            
+            if (!schema || !Array.isArray(schema)) {
+                showNotification('無法取得資料表結構', 'error');
+                return;
+            }
+
+            let formHtml = '';
+
+            schema.forEach(col => {
+                const cid = col[0];
+                const name = col[1];
+                const type = col[2];
+                const notNull = col[3] === 1;
+                const pk = col[5] === 1;
+
+                if (pk) return; // Skip primary key for insert
+
+                formHtml += `
+                    <div class="mb-3">
+                        <label class="form-label">${name} ${notNull ? '<span class="text-danger">*</span>' : ''}</label>
+                        <input type="text" class="form-control" name="${name}" ${notNull ? 'required' : ''}>
+                        <small class="text-muted">類型: ${type}</small>
+                    </div>
+                `;
+            });
+
+            document.getElementById('rowFormFields').innerHTML = formHtml;
+            document.getElementById('rowModalTitle').textContent = `新增資料到 ${currentTable}`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('rowModal'));
+            modal.show();
+        }
+
+        function editRow(index) {
+            if (!currentTable || !currentTableData || index >= currentTableData.values.length) {
+                showNotification('無法編輯資料', 'error');
+                return;
+            }
+
+            currentEditIndex = index;
+            const schema = tableSchemas[currentTable];
+            
+            if (!schema || !Array.isArray(schema)) {
+                showNotification('無法取得資料表結構', 'error');
+                return;
+            }
+
+            const row = currentTableData.values[index];
+            let formHtml = '';
+
+            schema.forEach((col, i) => {
+                const name = col[1];
+                const type = col[2];
+                const pk = col[5] === 1;
+                const value = row[i];
+
+                formHtml += `
+                    <div class="mb-3">
+                        <label class="form-label">${name} ${pk ? '<span class="text-primary">(主鍵)</span>' : ''}</label>
+                        <input type="text" class="form-control" name="${name}" value="${value !== null ? escapeHtml(value.toString()) : ''}" ${pk ? 'readonly' : ''}>
+                        <small class="text-muted">類型: ${type}</small>
+                    </div>
+                `;
+            });
+
+            document.getElementById('rowFormFields').innerHTML = formHtml;
+            document.getElementById('rowModalTitle').textContent = `編輯 ${currentTable} 的資料`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('rowModal'));
+            modal.show();
+        }
+
+        function saveRow() {
+            const form = document.getElementById('rowForm');
+            const formData = new FormData(form);
+            const schema = tableSchemas[currentTable];
+            
+            if (!schema || !Array.isArray(schema)) {
+                showNotification('無法取得資料表結構', 'error');
+                return;
+            }
+            
+            try {
+                if (currentEditIndex !== null) {
+                    // Update existing row
+                    const row = currentTableData.values[currentEditIndex];
+                    let setClause = [];
+                    let whereClause = [];
+
+                    schema.forEach((col, i) => {
+                        const name = col[1];
+                        const pk = col[5] === 1;
+                        const value = formData.get(name);
+                        
+                        if (pk) {
+                            whereClause.push(`${name} = ${row[i] === null ? 'NULL' : `'${escapeSql(row[i].toString())}'`}`);
+                        } else {
+                            setClause.push(`${name} = ${value === null || value === '' ? 'NULL' : `'${escapeSql(value)}'`}`);
+                        }
+                    });
+
+                    const sql = `UPDATE ${currentTable} SET ${setClause.join(', ')} WHERE ${whereClause.join(' AND ')}`;
+                    db.run(sql);
+                    showNotification('資料更新成功', 'success');
+                } else {
+                    // Insert new row
+                    let columns = [];
+                    let values = [];
+
+                    schema.forEach(col => {
+                        const name = col[1];
+                        const pk = col[5] === 1;
+                        
+                        if (!pk) {
+                            columns.push(name);
+                            const value = formData.get(name);
+                            values.push(value === null || value === '' ? 'NULL' : `'${escapeSql(value)}'`);
+                        }
+                    });
+
+                    const sql = `INSERT INTO ${currentTable} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+                    db.run(sql);
+                    showNotification('資料新增成功', 'success');
+                }
+                
+                bootstrap.Modal.getInstance(document.getElementById('rowModal')).hide();
+                refreshTable();
+            } catch (error) {
+                console.error('Error saving row:', error);
+                showNotification('儲存失敗: ' + error.message, 'error');
+            }
+        }
+
+        function deleteRow(index) {
+            if (!confirm('確定要刪除這筆資料嗎？')) return;
+
+            try {
+                if (!currentTableData || index >= currentTableData.values.length) {
+                    showNotification('無法刪除資料', 'error');
+                    return;
+                }
+
+                const row = currentTableData.values[index];
+                const schema = tableSchemas[currentTable];
+                
+                if (!schema || !Array.isArray(schema)) {
+                    showNotification('無法取得資料表結構', 'error');
+                    return;
+                }
+                
+                // Build WHERE clause using primary key
+                let whereClause = [];
+                schema.forEach((col, i) => {
+                    if (col[5] === 1) { // Primary key
+                        whereClause.push(`${col[1]} = ${row[i] === null ? 'NULL' : `'${escapeSql(row[i].toString())}'`}`);
+                    }
+                });
+
+                if (whereClause.length === 0) {
+                    // If no primary key, use all columns
+                    schema.forEach((col, i) => {
+                        whereClause.push(`${col[1]} = ${row[i] === null ? 'NULL' : `'${escapeSql(row[i].toString())}'`}`);
+                    });
+                }
+
+                const sql = `DELETE FROM ${currentTable} WHERE ${whereClause.join(' AND ')}`;
+                db.run(sql);
+                
+                refreshTable();
+                showNotification('資料刪除成功', 'success');
+            } catch (error) {
+                console.error('Error deleting row:', error);
+                showNotification('刪除資料失敗: ' + error.message, 'error');
+            }
+        }
+
+        function executeSQL() {
+            const sql = document.getElementById('sqlEditor').value.trim();
+            if (!sql) {
+                showNotification('請輸入 SQL 查詢', 'warning');
+                return;
+            }
+
+            try {
+                const result = db.exec(sql);
+                const resultDiv = document.getElementById('queryResult');
+                
+                if (result.length === 0) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> 查詢執行成功（沒有返回資料）
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<h6 class="mb-3">查詢結果</h6>';
+                html += '<div class="table-responsive"><table class="table table-bordered">';
+                
+                result.forEach(resultSet => {
+                    html += '<thead><tr>';
+                    resultSet.columns.forEach(col => {
+                        html += `<th>${col}</th>`;
+                    });
+                    html += '</tr></thead><tbody>';
+                    
+                    resultSet.values.forEach(row => {
+                        html += '<tr>';
+                        row.forEach(cell => {
+                            html += `<td>${cell !== null ? escapeHtml(cell.toString()) : '<span class="text-muted">NULL</span>'}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                });
+                
+                html += '</tbody></table></div>';
+                resultDiv.innerHTML = html;
+                
+                showNotification('查詢執行成功', 'success');
+            } catch (error) {
+                console.error('SQL Error:', error);
+                document.getElementById('queryResult').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>SQL 錯誤:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function clearSQLEditor() {
+            document.getElementById('sqlEditor').value = '';
+            document.getElementById('queryResult').innerHTML = '';
+        }
+
+        function loadSchema() {
+            try {
+                const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                let html = '';
+
+                if (tables.length === 0) {
+                    document.getElementById('schemaContent').innerHTML = '<p class="text-muted">沒有資料表</p>';
+                    return;
+                }
+
+                tables[0].values.forEach(([tableName]) => {
+                    const schema = tableSchemas[tableName];
+                    
+                    if (!schema || !Array.isArray(schema)) {
+                        html += `
+                            <div class="mb-4">
+                                <h6><i class="bi bi-table"></i> ${tableName}</h6>
+                                <p class="text-muted">無法載入結構</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const indexes = db.exec(`PRAGMA index_list(${tableName})`);
+                    
+                    html += `
+                        <div class="mb-4">
+                            <h6><i class="bi bi-table"></i> ${tableName}</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>欄位名稱</th>
+                                            <th>類型</th>
+                                            <th>非空</th>
+                                            <th>預設值</th>
+                                            <th>主鍵</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    schema.forEach(row => {
+                        html += `
+                            <tr>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                                <td>${row[3] ? '是' : '否'}</td>
+                                <td>${row[4] || '-'}</td>
+                                <td>${row[5] ? '是' : '否'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    
+                    if (indexes.length > 0) {
+                        html += '<h6 class="mt-3">索引</h6>';
+                        html += '<ul>';
+                        indexes[0].values.forEach(index => {
+                            html += `<li>${index[1]} (${index[2] === 1 ? '唯一' : '非唯一'})</li>`;
+                        });
+                        html += '</ul>';
+                    }
+                    
+                    html += '</div>';
+                });
+
+                document.getElementById('schemaContent').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading schema:', error);
+                document.getElementById('schemaContent').innerHTML = '<p class="text-danger">載入結構失敗</p>';
+            }
+        }
+
+        function exportData() {
+            const tableName = document.getElementById('exportTableSelect').value;
+            const format = document.getElementById('exportFormat').value;
+            
+            try {
+                let content = '';
+                let filename = '';
+                
+                if (tableName) {
+                    // Export single table
+                    const result = db.exec(`SELECT * FROM ${tableName}`);
+                    if (result.length > 0) {
+                        const data = result[0];
+                        filename = `${tableName}.${format}`;
+                        
+                        switch(format) {
+                            case 'json':
+                                content = JSON.stringify({
+                                    table: tableName,
+                                    columns: data.columns,
+                                    data: data.values
+                                }, null, 2);
+                                break;
+                            case 'csv':
+                                content = arrayToCSV(data);
+                                break;
+                            case 'sql':
+                                content = generateInsertSQL(tableName, data);
+                                break;
+                        }
+                    } else {
+                        showNotification('資料表沒有資料', 'warning');
+                        return;
+                    }
+                } else {
+                    // Export all tables
+                    const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                    let allData = {};
+                    
+                    tables[0].values.forEach(([name]) => {
+                        try {
+                            const result = db.exec(`SELECT * FROM ${name}`);
+                            if (result.length > 0) {
+                                allData[name] = result[0];
+                            }
+                        } catch (e) {
+                            console.warn('Error exporting table ' + name, e);
+                        }
+                    });
+                    
+                    filename = `database_export.${format}`;
+                    
+                    switch(format) {
+                        case 'json':
+                            content = JSON.stringify(allData, null, 2);
+                            break;
+                        case 'csv':
+                            Object.keys(allData).forEach(table => {
+                                content += `-- Table: ${table}\n`;
+                                content += arrayToCSV(allData[table]) + '\n\n';
+                            });
+                            break;
+                        case 'sql':
+                            Object.keys(allData).forEach(table => {
+                                content += `-- Table: ${table}\n`;
+                                content += generateInsertSQL(table, allData[table]) + '\n\n';
+                            });
+                            break;
+                    }
+                }
+
+                if (!content) {
+                    showNotification('沒有資料可以匯出', 'warning');
+                    return;
+                }
+
+                downloadFile(content, filename);
+                showNotification('資料匯出成功', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showNotification('匯出失敗: ' + error.message, 'error');
+            }
+        }
+
+        function arrayToCSV(data) {
+            if (!data || !data.columns || data.values.length === 0) return '';
+            
+            let csv = data.columns.join(',') + '\n';
+            data.values.forEach(row => {
+                csv += row.map(cell => {
+                    if (cell === null) return '';
+                    let str = cell.toString();
+                    // Escape quotes and wrap in quotes if contains comma or quote
+                    if (str.includes(',') || str.includes('"')) {
+                        str = '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                }).join(',') + '\n';
+            });
+            return csv;
+        }
+
+        function generateInsertSQL(tableName, data) {
+            let sql = '';
+            
+            data.values.forEach(row => {
+                const values = row.map(cell => {
+                    if (cell === null) return 'NULL';
+                    return `'${escapeSql(cell.toString())}'`;
+                }).join(', ');
+                sql += `INSERT INTO ${tableName} VALUES (${values});\n`;
+            });
+            
+            return sql;
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showDatabaseContent() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('dbContent').style.display = 'block';
+        }
+
+        function showNotification(message, type = 'info') {
+            const alertClass = {
+                'success': 'alert-success',
+                'error': 'alert-danger',
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            }[type];
+
+            const icon = {
+                'success': 'bi-check-circle',
+                'error': 'bi-exclamation-triangle',
+                'warning': 'bi-exclamation-circle',
+                'info': 'bi-info-circle'
+            }[type];
+
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            notification.style.zIndex = '9999';
+            notification.innerHTML = `
+                <i class="bi ${icon}"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+
+        function showHelp() {
+            const modal = new bootstrap.Modal(document.getElementById('helpModal'));
+            modal.show();
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function escapeSql(text) {
+            return text.replace(/'/g, "''");
+        }
+
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', () => {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+</body>
+</html>

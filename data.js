@@ -1,4 +1,5 @@
 const linksData = [
+   { name: "教學組專用課表查詢系統V6.0", description: "加入每週科目課表，可以自訂需要的項目轉出網頁下載，功能更完整<br><a href='課表測試資料.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "教學組專用課表查詢系統V6.0.html" },
    { name: "教學組專用課表查詢V1.6", description: "比上一版加入同班教師無課調課查詢，功能更強<br><a href='課表測試資料.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "班級課表查詢V1.6.html" },
     { name: "教學組專用課表查詢V1.5", description: "本程式加入全校教師節次任課一覽表，顯示教師節次有無課務，功能更完整<br><a href='課表測試資料.xlsx' >demo檔案：網頁測試用.xlsx</a>", link: "班級課表查詢V1.5.html" },
 
@@ -29,4 +30,6 @@ const linksData = [
   { name: "3D太陽軌道動畫", description: "利用three.製作的簡易3D太陽軌道動畫", link: "3D太陽軌道動畫.html" },
   { name: "影音錄影工具V2", description: "測試利用瀏覽器影音錄影的功能", link: "影音錄影工具V2.html" },
   { name: "cam控制走迷宮遊戲", description: "透過cam利用手勢控制走迷宮遊戲", link: "cam控制走迷宮遊戲.html" },
+  { name: "SQLite 資料庫管理系統", description: "可載入sqlite資料庫進行編修管理", link: "SQLite 資料庫管理系統.html" },
+
 ];
