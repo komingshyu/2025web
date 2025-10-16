@@ -31,5 +31,6 @@ const linksData = [
   { name: "影音錄影工具V2", description: "測試利用瀏覽器影音錄影的功能", link: "影音錄影工具V2.html" },
   { name: "cam控制走迷宮遊戲", description: "透過cam利用手勢控制走迷宮遊戲", link: "cam控制走迷宮遊戲.html" },
   { name: "SQLite 資料庫管理系統", description: "可載入sqlite資料庫進行編修管理", link: "SQLite 資料庫管理系統.html" },
+  { name: "IIS Log Analyzer (前端版)", description: "載入IIS日誌檔進行分析", link: "IIS Log Analyzer (前端版).html" },
 
 ];

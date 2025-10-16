@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIS Log Analyzer (前端版)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .container-fluid { max-width: 1400px; }
+        .upload-area {
+            border: 2px dashed #ced4da;
+            border-radius: .375rem;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #0d6efd;
+            background-color: #f0f6ff;
+        }
+        .chart-container { height: 400px; }
+        .data-table-container { max-height: 500px; overflow-y: auto; }
+        .kpi-card { text-align: center; }
+        .kpi-card .card-body { padding: 1.5rem; }
+        .kpi-value { font-size: 2rem; font-weight: bold; }
+        .kpi-label { color: #6c757d; font-size: 0.9rem; }
+        .nav-tabs .nav-link.active { font-weight: bold; }
+        #rawTable th { position: sticky; top: 0; background-color: #fff; z-index: 10; }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid py-4">
+        <header class="pb-3 mb-4 border-bottom">
+            <h1 class="h2">IIS Log Analyzer (前端版)</h1>
+            <p class="text-muted">拖放或選擇IIS日誌檔案進行本地分析。所有處理均在您的瀏覽器中完成。</p>
+        </header>
+
+        <!-- 檔案上傳區 -->
+        <div id="uploadSection" class="card mb-4">
+            <div class="card-body">
+                <div id="uploadArea" class="upload-area">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-cloud-arrow-up" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708l2-2z"/>
+                        <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383zm.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z"/>
+                    </svg>
+                    <h5 class="mt-3">拖放 .log 檔案到這裡</h5>
+                    <p class="text-muted">或點擊選擇檔案</p>
+                    <input type="file" id="fileInput" accept=".log" style="display: none;">
+                </div>
+                <div id="progressContainer" class="mt-3" style="display: none;">
+                    <label>解析進度:</label>
+                    <div class="progress">
+                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分析結果區 -->
+        <div id="resultsSection" style="display: none;">
+            <!-- KPI 卡片 -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card kpi-card">
+                        <div class="card-body">
+                            <div id="totalRequests" class="kpi-value text-primary">0</div>
+                            <div class="kpi-label">總請求數</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card kpi-card">
+                        <div class="card-body">
+                            <div id="uniqueVisitors" class="kpi-value text-info">0</div>
+                            <div class="kpi-label">獨立訪客 (IP)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card kpi-card">
+                        <div class="card-body">
+                            <div id="errorRate" class="kpi-value text-danger">0%</div>
+                            <div class="kpi-label">錯誤率 (4xx, 5xx)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card kpi-card">
+                        <div class="card-body">
+                            <div id="avgTimeTaken" class="kpi-value text-success">0ms</div>
+                            <div class="kpi-label">平均回應時間</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分析標籤頁 -->
+            <ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="traffic-tab" data-bs-toggle="tab" data-bs-target="#traffic" type="button" role="tab">流量分析</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="status-tab" data-bs-toggle="tab" data-bs-target="#status" type="button" role="tab">狀態碼分析</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab">效能分析</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">使用者分析</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw" type="button" role="tab">原始日誌</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="analysisTabsContent">
+                <div class="tab-pane fade show active" id="traffic" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <div id="trafficTrendChart" class="chart-container"></div>
+                        </div>
+                    </div>
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5>熱門頁面 Top 10</h5>
+                            <div id="topPagesChart" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="status" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>HTTP 狀態碼分佈</h5>
+                                    <div id="statusPieChart" class="chart-container"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>錯誤日誌 (4xx, 5xx)</h5>
+                                    <div class="data-table-container">
+                                        <table class="table table-striped table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>時間</th><th>狀態碼</th><th>URL</th><th>IP</th><th>User Agent</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="errorLogTable"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="performance" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5>最慢頁面 Top 10 (平均回應時間)</h5>
+                            <div id="slowestPagesChart" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="users" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>熱門 IP Top 10</h5>
+                                    <div id="topIpChart" class="chart-container"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>熱門 User Agent Top 10</h5>
+                                    <div id="topUaChart" class="chart-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="raw" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <input type="text" id="tableSearch" class="form-control mb-3" placeholder="搜尋...">
+                            <div class="data-table-container">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>時間</th><th>IP</th><th>方法</th><th>URL</th><th>查詢</th><th>狀態</th><th>回應時間</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="rawTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // --- Web Worker 程式碼 (以字串形式內嵌) ---
+        const workerCode = `
+            self.onmessage = function(e) {
+                const { fileContent } = e.data;
+                const lines = fileContent.split('\\n');
+                let headers = [];
+                const logEntries = [];
+                let processedLines = 0;
+
+                for (const line of lines) {
+                    if (line.startsWith('#Fields:')) {
+                        headers = line.substring('#Fields: '.length).trim().split(' ').map(h => 
+                            h.replace(/[()]/g, '').replace(/-/g, '_').toLowerCase()
+                        );
+                        continue;
+                    }
+                    if (line.startsWith('#') || !line.trim()) continue;
+
+                    const values = line.split(' ');
+                    if (values.length !== headers.length) continue;
+
+                    const entry = {};
+                    headers.forEach((header, index) => {
+                        entry[header] = values[index];
+                    });
+
+                    const date = entry.date + ' ' + entry.time;
+                    entry.timestamp = new Date(date);
+                    entry.sc_status = parseInt(entry.sc_status, 10);
+                    entry.time_taken = parseInt(entry.time_taken, 10);
+
+                    logEntries.push(entry);
+                    
+                    processedLines++;
+                    if (processedLines % 1000 === 0) {
+                        self.postMessage({ type: 'progress', percent: Math.round((processedLines / lines.length) * 100) });
+                    }
+                }
+
+                self.postMessage({ type: 'complete', logEntries: logEntries });
+            };
+        `;
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob));
+
+        // --- 全域變數 ---
+        let allLogEntries = [];
+        const renderedCharts = new Set(); // 用來追蹤已渲染的圖表，避免重複渲染
+
+        // --- DOM 元素 ---
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadSection = document.getElementById('uploadSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const tableSearch = document.getElementById('tableSearch');
+
+        // --- 事件監聽 ---
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+        tableSearch.addEventListener('input', (e) => renderRawTable(e.target.value));
+
+        // *** 修正點：為標籤頁添加事件監聽，只在顯示時才渲染圖表 ***
+        document.getElementById('performance-tab').addEventListener('shown.bs.tab', () => {
+            if (!renderedCharts.has('slowestPages')) {
+                renderSlowestPages();
+                renderedCharts.add('slowestPages');
+            }
+        });
+        document.getElementById('users-tab').addEventListener('shown.bs.tab', () => {
+            if (!renderedCharts.has('topIp')) {
+                renderTopIp();
+                renderedCharts.add('topIp');
+            }
+            if (!renderedCharts.has('topUa')) {
+                renderTopUa();
+                renderedCharts.add('topUa');
+            }
+        });
+
+        worker.onmessage = function(e) {
+            const { type, percent, logEntries } = e.data;
+            if (type === 'progress') {
+                progressBar.style.width = percent + '%';
+                progressBar.textContent = percent + '%';
+                progressBar.setAttribute('aria-valuenow', percent);
+            } else if (type === 'complete') {
+                allLogEntries = logEntries;
+                progressContainer.style.display = 'none';
+                if (allLogEntries.length > 0) {
+                    analyzeAndDisplay();
+                } else {
+                    alert('未能從檔案中解析出有效的日誌資料。請確認檔案格式。');
+                }
+            }
+        };
+
+        // --- 核心邏輯 ---
+        function handleFile(file) {
+            if (!file.name.endsWith('.log')) { alert('請選擇一個 .log 檔案！'); return; }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                progressContainer.style.display = 'block';
+                worker.postMessage({ fileContent: e.target.result });
+            };
+            reader.onerror = () => alert('檔案讀取失敗！');
+            reader.readAsText(file);
+        }
+
+        function analyzeAndDisplay() {
+            uploadSection.style.display = 'none';
+            resultsSection.style.display = 'block';
+
+            const totalRequests = allLogEntries.length;
+            const uniqueVisitors = new Set(allLogEntries.map(e => e.c_ip).filter(Boolean)).size;
+            const errorEntries = allLogEntries.filter(e => e.sc_status >= 400);
+            const errorRate = totalRequests > 0 ? ((errorEntries.length / totalRequests) * 100).toFixed(2) : 0;
+            const avgTimeTaken = totalRequests > 0 ? Math.round(allLogEntries.reduce((sum, e) => sum + (e.time_taken || 0), 0) / totalRequests) : 0;
+
+            document.getElementById('totalRequests').textContent = totalRequests.toLocaleString();
+            document.getElementById('uniqueVisitors').textContent = uniqueVisitors.toLocaleString();
+            document.getElementById('errorRate').textContent = errorRate + '%';
+            document.getElementById('avgTimeTaken').textContent = avgTimeTaken.toLocaleString() + 'ms';
+
+            // 只渲染預設可見標籤頁的圖表
+            renderTrafficTrend();
+            renderTopPages();
+            renderStatusPie();
+            renderErrorTable(errorEntries);
+            renderRawTable();
+        }
+
+        // --- 圖表渲染函數 (加入穩健性檢查) ---
+        function renderTrafficTrend() {
+            const hourlyData = {};
+            allLogEntries.forEach(e => {
+                if (!e.timestamp) return;
+                const hour = e.timestamp.toISOString().substring(0, 13) + ':00';
+                hourlyData[hour] = (hourlyData[hour] || 0) + 1;
+            });
+            const sortedHours = Object.keys(hourlyData).sort();
+            echarts.init(document.getElementById('trafficTrendChart')).setOption({
+                tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: sortedHours },
+                yAxis: { type: 'value' },
+                series: [{ data: sortedHours.map(h => hourlyData[h]), type: 'line', smooth: true, areaStyle: {} }],
+                title: { text: '每小時請求數趨勢' }
+            });
+        }
+
+        function renderTopPages() {
+            const pageCounts = {};
+            allLogEntries.forEach(e => {
+                if (e.cs_uri_stem) pageCounts[e.cs_uri_stem] = (pageCounts[e.cs_uri_stem] || 0) + 1;
+            });
+            const sortedPages = Object.entries(pageCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            echarts.init(document.getElementById('topPagesChart')).setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                xAxis: { type: 'value' }, yAxis: { type: 'category', data: sortedPages.map(p => p[0]), inverse: true },
+                series: [{ data: sortedPages.map(p => p[1]), type: 'bar' }],
+                title: { text: '熱門頁面 Top 10' }, grid: { left: '25%' }
+            });
+        }
+
+        function renderStatusPie() {
+            const statusCounts = { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 };
+            allLogEntries.forEach(e => {
+                if (e.sc_status >= 200 && e.sc_status < 300) statusCounts['2xx']++;
+                else if (e.sc_status >= 300 && e.sc_status < 400) statusCounts['3xx']++;
+                else if (e.sc_status >= 400 && e.sc_status < 500) statusCounts['4xx']++;
+                else if (e.sc_status >= 500) statusCounts['5xx']++;
+            });
+            echarts.init(document.getElementById('statusPieChart')).setOption({
+                tooltip: { trigger: 'item' },
+                series: [{ type: 'pie', radius: '50%', data: Object.entries(statusCounts).map(([key, value]) => ({ name: key, value: value })) }],
+                title: { text: 'HTTP 狀態碼分佈', left: 'center' }
+            });
+        }
+        
+        function renderErrorTable(errorEntries) {
+            const tbody = document.getElementById('errorLogTable'); tbody.innerHTML = '';
+            errorEntries.slice(0, 100).forEach(e => {
+                const row = tbody.insertRow();
+                row.innerHTML = `<td>${e.timestamp?.toLocaleString() ?? 'N/A'}</td>
+                                 <td><span class="badge bg-danger">${e.sc_status ?? 'N/A'}</span></td>
+                                 <td>${e.cs_uri_stem ?? 'N/A'}</td>
+                                 <td>${e.c_ip ?? 'N/A'}</td>
+                                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${e.cs_user_agent ?? 'N/A'}">${(e.cs_user_agent ?? 'N/A')}</td>`;
+            });
+        }
+
+        function renderSlowestPages() {
+            const pageTimes = {};
+            allLogEntries.forEach(e => {
+                if (!e.cs_uri_stem || e.time_taken == null) return;
+                if (!pageTimes[e.cs_uri_stem]) pageTimes[e.cs_uri_stem] = { total: 0, count: 0 };
+                pageTimes[e.cs_uri_stem].total += e.time_taken;
+                pageTimes[e.cs_uri_stem].count++;
+            });
+            const avgTimes = Object.entries(pageTimes).map(([url, data]) => ({ url, avg: Math.round(data.total / data.count) }));
+            const sortedPages = avgTimes.sort((a, b) => b.avg - a.avg).slice(0, 10);
+            echarts.init(document.getElementById('slowestPagesChart')).setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                xAxis: { type: 'value' }, yAxis: { type: 'category', data: sortedPages.map(p => p.url), inverse: true },
+                series: [{ data: sortedPages.map(p => p.avg), type: 'bar' }],
+                title: { text: '最慢頁面 Top 10 (平均 ms)', left: 'center' }, grid: { left: '25%' }
+            });
+        }
+
+        function renderTopIp() {
+            const ipCounts = {};
+            allLogEntries.forEach(e => { if (e.c_ip) ipCounts[e.c_ip] = (ipCounts[e.c_ip] || 0) + 1; });
+            const sortedIps = Object.entries(ipCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            echarts.init(document.getElementById('topIpChart')).setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                xAxis: { type: 'value' }, yAxis: { type: 'category', data: sortedIps.map(p => p[0]), inverse: true },
+                series: [{ data: sortedIps.map(p => p[1]), type: 'bar' }],
+                title: { text: '熱門 IP Top 10' }, grid: { left: '15%' }
+            });
+        }
+
+        function renderTopUa() {
+            const uaCounts = {};
+            allLogEntries.forEach(e => {
+                if (!e.cs_user_agent) return;
+                const ua = e.cs_user_agent.length > 50 ? e.cs_user_agent.substring(0, 50) + '...' : e.cs_user_agent;
+                uaCounts[ua] = (uaCounts[ua] || 0) + 1;
+            });
+            const sortedUas = Object.entries(uaCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            echarts.init(document.getElementById('topUaChart')).setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                xAxis: { type: 'value' }, yAxis: { type: 'category', data: sortedUas.map(p => p[0]), inverse: true },
+                series: [{ data: sortedUas.map(p => p[1]), type: 'bar' }],
+                title: { text: '熱門 User Agent Top 10' }, grid: { left: '20%' }
+            });
+        }
+
+        function renderRawTable(searchTerm = '') {
+            const tbody = document.getElementById('rawTable'); tbody.innerHTML = '';
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            const filteredEntries = searchTerm ? allLogEntries.filter(e => 
+                Object.values(e).some(v => String(v).toLowerCase().includes(lowerSearchTerm))
+            ) : allLogEntries;
+
+            filteredEntries.slice(0, 1000).forEach(e => {
+                const row = tbody.insertRow();
+                row.innerHTML = `<td>${e.timestamp?.toLocaleString() ?? 'N/A'}</td>
+                                 <td>${e.c_ip ?? 'N/A'}</td>
+                                 <td>${e.cs_method ?? 'N/A'}</td>
+                                 <td>${e.cs_uri_stem ?? 'N/A'}</td>
+                                 <td>${e.cs_uri_query ?? 'N/A'}</td>
+                                 <td>${e.sc_status ?? 'N/A'}</td>
+                                 <td>${(e.time_taken ?? 0) + 'ms'}</td>`;
+            });
+        }
+    </script>
+</body>
+</html>
