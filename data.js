@@ -30,6 +30,7 @@ const linksData = [
   { name: "3D太陽軌道動畫", description: "利用three.製作的簡易3D太陽軌道動畫", link: "3D太陽軌道動畫.html" },
   { name: "影音錄影工具V2", description: "測試利用瀏覽器影音錄影的功能", link: "影音錄影工具V2.html" },
   { name: "cam控制走迷宮遊戲", description: "透過cam利用手勢控制走迷宮遊戲", link: "cam控制走迷宮遊戲.html" },
+  { name: "手抓寶物-手勢辨識遊戲", description: "透過cam利用手勢位置抓取寶物-手勢辨識遊戲", link: "手抓寶物-手勢辨識遊戲.html" },
   { name: "SQLite 資料庫管理系統", description: "可載入sqlite資料庫進行編修管理", link: "SQLite 資料庫管理系統.html" },
   { name: "IIS Log Analyzer (前端版)", description: "載入IIS日誌檔進行分析", link: "IIS Log Analyzer (前端版).html" },
 

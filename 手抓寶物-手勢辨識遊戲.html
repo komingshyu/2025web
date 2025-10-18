@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手抓寶物 - 手勢辨識遊戲</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #webcam {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        #gameCanvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .game-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .score-board, .timer-board, .leaderboard {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-board {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .score {
+            color: #ffd700;
+            margin-left: 10px;
+            font-size: 32px;
+        }
+
+        .timer-board {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .timer {
+            color: #00ff00;
+            margin-left: 10px;
+            font-size: 32px;
+        }
+
+        .timer.warning {
+            color: #ffaa00;
+            animation: blink 1s infinite;
+        }
+
+        .timer.danger {
+            color: #ff4444;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .leaderboard {
+            font-size: 18px;
+            min-width: 200px;
+        }
+
+        .leaderboard h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .leaderboard-item.gold {
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.3), transparent);
+        }
+
+        .leaderboard-item.silver {
+            background: linear-gradient(90deg, rgba(192, 192, 192, 0.3), transparent);
+        }
+
+        .leaderboard-item.bronze {
+            background: linear-gradient(90deg, rgba(205, 127, 50, 0.3), transparent);
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+        }
+
+        #startScreen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        #startScreen p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            z-index: 50;
+            display: none;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        .sparkle {
+            width: 10px;
+            height: 10px;
+            background: gold;
+            border-radius: 50%;
+            animation: sparkle 1s ease-out forwards;
+        }
+
+        .explosion {
+            width: 20px;
+            height: 20px;
+            background: #ff4444;
+            border-radius: 50%;
+            animation: explode 0.8s ease-out forwards;
+        }
+
+        @keyframes sparkle {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(2);
+                opacity: 0;
+            }
+        }
+
+        .combo {
+            position: absolute;
+            color: #ffd700;
+            font-size: 36px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 25;
+            animation: comboFloat 1.5s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes comboFloat {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: translateY(-30px) scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-60px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        #handIndicator {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 3px solid #00ff00;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 11;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+        }
+
+        #gameOverScreen h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .final-score {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #00ff00;
+        }
+
+        .encouragement {
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+            color: #87ceeb;
+        }
+
+        .music-control {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 30;
+            pointer-events: auto;
+        }
+
+        .music-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #ffd700;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .music-btn:hover {
+            background: rgba(255, 215, 0, 0.3);
+            transform: scale(1.05);
+        }
+
+        .music-btn.muted {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="gameCanvas"></canvas>
+        <div id="handIndicator"></div>
+        
+        <div id="ui">
+            <div class="game-stats">
+                <div class="score-board">
+                    分數: <span class="score" id="score">0</span>
+                </div>
+                <div class="timer-board">
+                    時間: <span class="timer" id="timer">2:00</span>
+                </div>
+                <div class="leaderboard">
+                    <h3>🏆 排行榜</h3>
+                    <div id="leaderboardList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="music-control">
+            <button class="music-btn" id="musicBtn" onclick="toggleMusic()">🎵 音樂開啟</button>
+        </div>
+
+        <div id="startScreen">
+            <h1>🎮 手抓寶物 🎮</h1>
+            <p>
+                歡迎來到手抓寶物遊戲！<br>
+                💎 抓取寶物獲得分數<br>
+                👹 避開怪物以免扣分<br>
+                ⏱️ 遊戲時間2分鐘<br>
+                📹 請允許使用攝影機並伸出手開始遊戲
+            </p>
+            <button class="btn" onclick="startGame()">開始遊戲</button>
+        </div>
+
+        <div id="gameOverScreen">
+            <h2>🎊 遊戲結束！🎊</h2>
+            <div class="final-score">最終分數: <span id="finalScore">0</span></div>
+            <div class="encouragement" id="encouragement"></div>
+            <button class="btn" onclick="restartGame()">再玩一次</button>
+        </div>
+
+        <div id="loading">載入中，請稍候...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script>
+        // 遊戲狀態
+        let gameState = {
+            score: 0,
+            isPlaying: false,
+            handPosition: null,
+            items: [],
+            lastSpawnTime: 0,
+            spawnInterval: 1500,
+            combo: 0,
+            lastCatchTime: 0,
+            timeLeft: 120, // 2分鐘
+            gameTimer: null
+        };
+
+        // Canvas 設定
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const handIndicator = document.getElementById('handIndicator');
+
+        // 調整 canvas 大小
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 音效生成器
+        class SoundEffects {
+            constructor() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.backgroundMusic = null;
+                this.musicGainNode = null;
+                this.isMusicPlaying = false;
+            }
+
+            playCollect() {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(523.25, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1046.50, this.audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.3);
+            }
+
+            playHit() {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(100, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(50, this.audioContext.currentTime + 0.2);
+                
+                gainNode.gain.setValueAtTime(0.4, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.2);
+            }
+
+            playCombo() {
+                const notes = [523.25, 659.25, 783.99];
+                notes.forEach((freq, index) => {
+                    setTimeout(() => {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(this.audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                        
+                        oscillator.start(this.audioContext.currentTime);
+                        oscillator.stop(this.audioContext.currentTime + 0.2);
+                    }, index * 50);
+                });
+            }
+
+            startBackgroundMusic() {
+                if (this.backgroundMusic) return;
+                
+                this.musicGainNode = this.audioContext.createGain();
+                this.musicGainNode.gain.value = 0.1;
+                this.musicGainNode.connect(this.audioContext.destination);
+                
+                const playNote = (frequency, startTime, duration) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.musicGainNode);
+                    
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'sine';
+                    
+                    gainNode.gain.setValueAtTime(0, startTime);
+                    gainNode.gain.linearRampToValueAtTime(0.1, startTime + 0.05);
+                    gainNode.gain.linearRampToValueAtTime(0.05, startTime + duration - 0.05);
+                    gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+                    
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + duration);
+                };
+                
+                const melody = [
+                    { freq: 261.63, duration: 0.5 }, // C4
+                    { freq: 293.66, duration: 0.5 }, // D4
+                    { freq: 329.63, duration: 0.5 }, // E4
+                    { freq: 261.63, duration: 0.5 }, // C4
+                    { freq: 261.63, duration: 0.5 }, // C4
+                    { freq: 293.66, duration: 0.5 }, // D4
+                    { freq: 329.63, duration: 0.5 }, // E4
+                    { freq: 261.63, duration: 0.5 }, // C4
+                    { freq: 329.63, duration: 0.5 }, // E4
+                    { freq: 349.23, duration: 0.5 }, // F4
+                    { freq: 392.00, duration: 1.0 }, // G4
+                ];
+                
+                const playMelody = () => {
+                    if (!this.isMusicPlaying) return;
+                    
+                    let currentTime = this.audioContext.currentTime;
+                    melody.forEach(note => {
+                        playNote(note.freq, currentTime, note.duration);
+                        currentTime += note.duration;
+                    });
+                    
+                    setTimeout(playMelody, melody.reduce((sum, note) => sum + note.duration, 0) * 1000);
+                };
+                
+                this.isMusicPlaying = true;
+                playMelody();
+            }
+
+            stopBackgroundMusic() {
+                this.isMusicPlaying = false;
+                if (this.musicGainNode) {
+                    this.musicGainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+                }
+            }
+
+            toggleMusic() {
+                if (this.isMusicPlaying) {
+                    this.stopBackgroundMusic();
+                } else {
+                    this.startBackgroundMusic();
+                }
+            }
+        }
+
+        const soundEffects = new SoundEffects();
+
+        // 排行榜管理
+        class LeaderboardManager {
+            constructor() {
+                this.storageKey = 'treasureGameLeaderboard';
+                this.maxEntries = 3;
+            }
+
+            getLeaderboard() {
+                const stored = localStorage.getItem(this.storageKey);
+                return stored ? JSON.parse(stored) : [];
+            }
+
+            addScore(score) {
+                let leaderboard = this.getLeaderboard();
+                const entry = {
+                    score: score,
+                    date: new Date().toLocaleDateString('zh-TW')
+                };
+                
+                leaderboard.push(entry);
+                leaderboard.sort((a, b) => b.score - a.score);
+                leaderboard = leaderboard.slice(0, this.maxEntries);
+                
+                localStorage.setItem(this.storageKey, JSON.stringify(leaderboard));
+                return leaderboard;
+            }
+
+            displayLeaderboard() {
+                const leaderboard = this.getLeaderboard();
+                const listElement = document.getElementById('leaderboardList');
+                
+                if (leaderboard.length === 0) {
+                    listElement.innerHTML = '<div style="color: #888;">尚無紀錄</div>';
+                    return;
+                }
+                
+                const medals = ['🥇', '🥈', '🥉'];
+                const classes = ['gold', 'silver', 'bronze'];
+                
+                listElement.innerHTML = leaderboard.map((entry, index) => `
+                    <div class="leaderboard-item ${classes[index]}">
+                        <span>${medals[index]} ${entry.score}分</span>
+                        <span style="font-size: 12px; color: #aaa;">${entry.date}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        const leaderboardManager = new LeaderboardManager();
+
+        // 遊戲物件類別
+        class GameObject {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.size = type === 'treasure' ? 40 : 50;
+                this.createdAt = Date.now();
+                this.lifespan = 2000 + Math.random() * 1000;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 2,
+                    y: (Math.random() - 0.5) * 2
+                };
+                this.rotation = 0;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+            }
+
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.rotation += this.rotationSpeed;
+
+                if (this.x < this.size || this.x > canvas.width - this.size) {
+                    this.velocity.x *= -1;
+                }
+                if (this.y < this.size || this.y > canvas.height - this.size) {
+                    this.velocity.y *= -1;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                if (this.type === 'treasure') {
+                    ctx.fillStyle = '#FFD700';
+                    ctx.strokeStyle = '#FFA500';
+                    ctx.lineWidth = 3;
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (Math.PI / 3) * i;
+                        const x = Math.cos(angle) * this.size;
+                        const y = Math.sin(angle) * this.size;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.beginPath();
+                    ctx.arc(-this.size/3, -this.size/3, this.size/3, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#8B0000';
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath();
+                    ctx.arc(-this.size/3, -this.size/3, this.size/5, 0, Math.PI * 2);
+                    ctx.arc(this.size/3, -this.size/3, this.size/5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(-this.size/3, -this.size/3, this.size/10, 0, Math.PI * 2);
+                    ctx.arc(this.size/3, -this.size/3, this.size/10, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, this.size/4, this.size/2, 0, Math.PI);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            isExpired() {
+                return Date.now() - this.createdAt > this.lifespan;
+            }
+
+            checkCollision(handX, handY) {
+                const distance = Math.sqrt(
+                    Math.pow(this.x - handX, 2) + 
+                    Math.pow(this.y - handY, 2)
+                );
+                return distance < this.size + 30;
+            }
+        }
+
+        // 創建粒子效果
+        function createParticles(x, y, type) {
+            const particleCount = type === 'treasure' ? 12 : 8;
+            const particleClass = type === 'treasure' ? 'sparkle' : 'explosion';
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = `particle ${particleClass}`;
+                
+                const angle = (Math.PI * 2 / particleCount) * i;
+                const distance = 50 + Math.random() * 50;
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                document.getElementById('gameContainer').appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        // 顯示連擊效果
+        function showCombo(x, y, combo) {
+            const comboElement = document.createElement('div');
+            comboElement.className = 'combo';
+            comboElement.textContent = `連擊 x${combo}!`;
+            comboElement.style.left = `${x}px`;
+            comboElement.style.top = `${y}px`;
+            
+            document.getElementById('gameContainer').appendChild(comboElement);
+            
+            setTimeout(() => comboElement.remove(), 1500);
+        }
+
+        // 更新分數
+        function updateScore(points) {
+            gameState.score += points;
+            document.getElementById('score').textContent = gameState.score;
+            
+            const scoreElement = document.getElementById('score');
+            scoreElement.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                scoreElement.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        // 更新計時器
+        function updateTimer() {
+            gameState.timeLeft--;
+            const minutes = Math.floor(gameState.timeLeft / 60);
+            const seconds = gameState.timeLeft % 60;
+            const timerElement = document.getElementById('timer');
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // 時間警告效果
+            timerElement.classList.remove('warning', 'danger');
+            if (gameState.timeLeft <= 10) {
+                timerElement.classList.add('danger');
+            } else if (gameState.timeLeft <= 30) {
+                timerElement.classList.add('warning');
+            }
+            
+            if (gameState.timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        // 獲取鼓勵語句
+        function getEncouragement(score) {
+            const encouragements = [
+                { min: 0, max: 50, text: "繼續努力！多練習會越來越好的！💪" },
+                { min: 50, max: 100, text: "不錯的表現！你已經掌握基本技巧了！👍" },
+                { min: 100, max: 200, text: "太棒了！你的反應速度真快！⚡" },
+                { min: 200, max: 300, text: "令人印象深刻！你是抓寶高手！🌟" },
+                { min: 300, max: 500, text: "驚人的成績！你簡直是傳奇級玩家！🏆" },
+                { min: 500, max: Infinity, text: "不可思議！你創造了奇蹟！你是真正的寶物大師！👑" }
+            ];
+            
+            for (let encouragement of encouragements) {
+                if (score >= encouragement.min && score < encouragement.max) {
+                    return encouragement.text;
+                }
+            }
+            return encouragements[0].text;
+        }
+
+        // 結束遊戲
+        function endGame() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.gameTimer);
+            soundEffects.stopBackgroundMusic();
+            
+            // 更新排行榜
+            const leaderboard = leaderboardManager.addScore(gameState.score);
+            leaderboardManager.displayLeaderboard();
+            
+            // 顯示結束畫面
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('encouragement').textContent = getEncouragement(gameState.score);
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+
+        // MediaPipe Hands 設定
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        hands.onResults((results) => {
+            if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
+                const landmarks = results.multiHandLandmarks[0];
+                const palm = landmarks[9];
+                
+                const handX = (1 - palm.x) * canvas.width;
+                const handY = palm.y * canvas.height;
+                
+                gameState.handPosition = { x: handX, y: handY };
+                
+                handIndicator.style.display = 'block';
+                handIndicator.style.left = `${handX}px`;
+                handIndicator.style.top = `${handY}px`;
+            } else {
+                gameState.handPosition = null;
+                handIndicator.style.display = 'none';
+            }
+        });
+
+        // 攝影機設定
+        let camera;
+        async function setupCamera() {
+            const video = document.getElementById('webcam');
+            
+            camera = new Camera(video, {
+                onFrame: async () => {
+                    await hands.send({ image: video });
+                },
+                width: 1280,
+                height: 720
+            });
+            
+            await camera.start();
+        }
+
+        // 遊戲主循環
+        function gameLoop(timestamp) {
+            if (!gameState.isPlaying) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (timestamp - gameState.lastSpawnTime > gameState.spawnInterval) {
+                const type = Math.random() > 0.3 ? 'treasure' : 'monster';
+                const x = Math.random() * (canvas.width - 100) + 50;
+                const y = Math.random() * (canvas.height - 100) + 50;
+                
+                gameState.items.push(new GameObject(x, y, type));
+                gameState.lastSpawnTime = timestamp;
+                
+                gameState.spawnInterval = Math.max(800, 1500 - gameState.score * 2);
+            }
+
+            gameState.items = gameState.items.filter(item => {
+                item.update();
+                item.draw();
+
+                if (gameState.handPosition && item.checkCollision(gameState.handPosition.x, gameState.handPosition.y)) {
+                    if (item.type === 'treasure') {
+                        createParticles(item.x, item.y, 'treasure');
+                        soundEffects.playCollect();
+                        
+                        const now = Date.now();
+                        if (now - gameState.lastCatchTime < 2000) {
+                            gameState.combo++;
+                            if (gameState.combo > 1) {
+                                showCombo(item.x, item.y, gameState.combo);
+                                soundEffects.playCombo();
+                                updateScore(10 * gameState.combo);
+                            } else {
+                                updateScore(10);
+                            }
+                        } else {
+                            gameState.combo = 1;
+                            updateScore(10);
+                        }
+                        gameState.lastCatchTime = now;
+                    } else {
+                        createParticles(item.x, item.y, 'monster');
+                        soundEffects.playHit();
+                        updateScore(-5);
+                        gameState.combo = 0;
+                    }
+                    return false;
+                }
+
+                return !item.isExpired();
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 開始遊戲
+        async function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                await setupCamera();
+                document.getElementById('loading').style.display = 'none';
+                
+                // 重置遊戲狀態
+                gameState.isPlaying = true;
+                gameState.score = 0;
+                gameState.items = [];
+                gameState.combo = 0;
+                gameState.timeLeft = 120;
+                gameState.lastSpawnTime = 0;
+                
+                updateScore(0);
+                updateTimer();
+                
+                // 開始計時器
+                gameState.gameTimer = setInterval(updateTimer, 1000);
+                
+                // 開始背景音樂
+                soundEffects.startBackgroundMusic();
+                
+                // 顯示排行榜
+                leaderboardManager.displayLeaderboard();
+                
+                requestAnimationFrame(gameLoop);
+            } catch (error) {
+                console.error('無法啟動攝影機:', error);
+                document.getElementById('loading').innerHTML = 
+                    '無法啟動攝影機，請確保已授予權限並重新整理頁面';
+            }
+        }
+
+        // 重新開始遊戲
+        function restartGame() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            startGame();
+        }
+
+        // 切換音樂
+        function toggleMusic() {
+            soundEffects.toggleMusic();
+            const btn = document.getElementById('musicBtn');
+            if (soundEffects.isMusicPlaying) {
+                btn.textContent = '🎵 音樂開啟';
+                btn.classList.remove('muted');
+            } else {
+                btn.textContent = '🔇 音樂關閉';
+                btn.classList.add('muted');
+            }
+        }
+
+        // 鍵盤控制（測試用）
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.isPlaying) return;
+            
+            const step = 20;
+            let x = gameState.handPosition ? gameState.handPosition.x : canvas.width / 2;
+            let y = gameState.handPosition ? gameState.handPosition.y : canvas.height / 2;
+            
+            switch(e.key) {
+                case 'ArrowUp': y -= step; break;
+                case 'ArrowDown': y += step; break;
+                case 'ArrowLeft': x -= step; break;
+                case 'ArrowRight': x += step; break;
+                default: return;
+            }
+            
+            gameState.handPosition = { x, y };
+            handIndicator.style.display = 'block';
+            handIndicator.style.left = `${x}px`;
+            handIndicator.style.top = `${y}px`;
+        });
+
+        // 初始化排行榜顯示
+        leaderboardManager.displayLeaderboard();
+    </script>
+</body>
+</html>
