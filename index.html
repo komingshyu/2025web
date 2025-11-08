@@ -218,13 +218,13 @@
         <p>© 2025 Koming與AI合作設計 | 所有工具均在本地運行，保護您的隱私安全</p>
     </div>
 
-   
-<script id="dataScript"></script>
-<script>
-  // 動態載入 data.js 並加上時間戳記
-  const script = document.getElementById('dataScript');
-  script.src = 'data.js?t=' + new Date().getTime();
-
+    <!-- 使用動態載入的方式，並添加時間戳記 -->
+    <script id="dataScript"></script>
+    <script>
+        // 動態載入 data.js 並加上時間戳記，確保每次都獲取最新版本
+        const script = document.getElementById('dataScript');
+        script.src = 'data.js?t=' + new Date().getTime();
+        
         // 校園與風景相關圖標集合
         const iconClasses = [
             // 校園相關圖標
@@ -287,11 +287,19 @@
         
         // 頁面載入後執行
         window.addEventListener('DOMContentLoaded', function() {
-            if (typeof linksData !== 'undefined') {
-                loadLinks(linksData);
-            } else {
-                console.error('linksData is not defined');
-            }
+            // 等待 data.js 載入完成
+            script.onload = function() {
+                if (typeof linksData !== 'undefined') {
+                    loadLinks(linksData);
+                } else {
+                    console.error('linksData is not defined');
+                }
+            };
+            
+            // 處理載入錯誤
+            script.onerror = function() {
+                console.error('Failed to load data.js');
+            };
         });
     </script>
 </body>
