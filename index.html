@@ -218,7 +218,13 @@
         <p>© 2025 Koming與AI合作設計 | 所有工具均在本地運行，保護您的隱私安全</p>
     </div>
 
-    <script src="data.js"></script>
+   
+<script id="dataScript"></script>
+<script>
+  // 動態載入 data.js 並加上時間戳記
+  const script = document.getElementById('dataScript');
+  script.src = 'data.js?t=' + new Date().getTime();
+</script>
     <script>
         // 校園與風景相關圖標集合
         const iconClasses = [

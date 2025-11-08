@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google協作平台內容提取器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #4285f4;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result-container {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .preview {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+        .notification {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+        }
+        .tab-content {
+            display: none;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 0 0 4px 4px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .instructions {
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google協作平台內容提取器</h1>
+    
+    <div class="instructions">
+        <h3>使用說明：</h3>
+        <ol>
+            <li>在包含嵌入網頁的Google協作平台頁面上，按 <strong>Ctrl+U</strong> (Windows) 或 <strong>Cmd+Option+U</strong> (Mac) 來查看頁面原始碼。</li>
+            <li>全選 (<strong>Ctrl+A</strong>) 並複製 (<strong>Ctrl+C</strong>) 所有原始碼。</li>
+            <li>將複製的原始碼貼到下方的文字框中。</li>
+            <li>點擊「提取內容」按鈕。</li>
+            <li>在結果區域查看提取的內容，您可以選擇預覽或查看原始HTML。</li>
+            <li>點擊「下載內容」按鈕將提取的內容保存為HTML文件。</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <h2>貼上Google協作平台的頁面原始碼：</h2>
+        <textarea id="sourceCode" placeholder="在此貼上頁面原始碼..."></textarea>
+        <button id="extractBtn">提取內容</button>
+        <button id="clearBtn">清除</button>
+        
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <div class="result-container container" id="resultContainer" style="display: none;">
+        <h2>提取結果：</h2>
+        <div class="tabs">
+            <div class="tab active" data-tab="preview">預覽</div>
+            <div class="tab" data-tab="html">原始HTML</div>
+        </div>
+        
+        <div class="tab-content active" id="preview">
+            <div class="preview" id="previewContent"></div>
+        </div>
+        
+        <div class="tab-content" id="html">
+            <textarea id="htmlContent" readonly style="height: 400px;"></textarea>
+        </div>
+        
+        <button id="downloadBtn">下載內容</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const extractBtn = document.getElementById('extractBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const sourceCode = document.getElementById('sourceCode');
+            const resultContainer = document.getElementById('resultContainer');
+            const previewContent = document.getElementById('previewContent');
+            const htmlContent = document.getElementById('htmlContent');
+            const notification = document.getElementById('notification');
+            
+            // Tab switching functionality
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Show notification function
+            function showNotification(message, type) {
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.style.display = 'block';
+                
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Extract content function
+            function extractContent() {
+                const html = sourceCode.value.trim();
+                
+                if (!html) {
+                    showNotification('請先貼上頁面原始碼', 'error');
+                    return;
+                }
+                
+                try {
+                    // Parse the HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Find all sections with id starting with "h."
+                    const sections = doc.querySelectorAll('section[id^="h."]');
+                    
+                    if (sections.length === 0) {
+                        showNotification('無法找到內容部分，請確認您貼上了完整的Google協作平台頁面原始碼', 'error');
+                        return;
+                    }
+                    
+                    // Create a new document with extracted content
+                    const newDoc = document.implementation.createHTMLDocument('提取的內容');
+                    
+                    // Add basic structure and styling
+                    const head = newDoc.head;
+                    const title = newDoc.createElement('title');
+                    title.textContent = '提取的內容';
+                    head.appendChild(title);
+                    
+                    const style = newDoc.createElement('style');
+                    style.textContent = `
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 800px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        h1, h2, h3 {
+                            color: #4285f4;
+                        }
+                        img {
+                            max-width: 100%;
+                            height: auto;
+                        }
+                        a {
+                            color: #4285f4;
+                        }
+                        ul, ol {
+                            padding-left: 20px;
+                        }
+                    `;
+                    head.appendChild(style);
+                    
+                    // Add sections to the new document body
+                    const body = newDoc.body;
+                    sections.forEach(section => {
+                        const clonedSection = section.cloneNode(true);
+                        body.appendChild(clonedSection);
+                    });
+                    
+                    // Get the HTML of the new document
+                    const extractedHtml = newDoc.documentElement.outerHTML;
+                    
+                    // Display the results
+                    previewContent.innerHTML = body.innerHTML;
+                    htmlContent.value = extractedHtml;
+                    resultContainer.style.display = 'block';
+                    
+                    showNotification('內容提取成功！', 'success');
+                } catch (error) {
+                    showNotification('提取內容時發生錯誤：' + error.message, 'error');
+                    console.error(error);
+                }
+            }
+            
+            // Download content function
+            function downloadContent() {
+                const content = htmlContent.value;
+                
+                if (!content) {
+                    showNotification('沒有可下載的內容', 'error');
+                    return;
+                }
+                
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'extracted_content.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('內容已下載', 'success');
+            }
+            
+            // Clear function
+            function clearContent() {
+                sourceCode.value = '';
+                resultContainer.style.display = 'none';
+                previewContent.innerHTML = '';
+                htmlContent.value = '';
+            }
+            
+            // Event listeners
+            extractBtn.addEventListener('click', extractContent);
+            downloadBtn.addEventListener('click', downloadContent);
+            clearBtn.addEventListener('click', clearContent);
+        });
+    </script>
+</body>
+</html>
