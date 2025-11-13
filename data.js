@@ -34,5 +34,6 @@ const linksData = [
   { name: "SQLite 資料庫管理系統", description: "可載入sqlite資料庫進行編修管理", link: "SQLite 資料庫管理系統.html" },
   { name: "IIS Log Analyzer (前端版)", description: "載入IIS日誌檔進行分析", link: "IIS Log Analyzer (前端版).html" },
   { name: "Google協作平台內容提取器", description: "將Google協作平台內嵌網頁內容提取為獨立網頁", link: "Google協作平台內容提取器.html" },
+  { name: "QR Code 線上處理工具", description: "功能說明：QR Code 掃描 及QR Code 生成", link: "QRCode線上處理工具.html" },
 
 ];

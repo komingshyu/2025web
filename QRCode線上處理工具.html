@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code 線上處理工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f4f6;
+            --bg-tertiary: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-color: #d1d5db;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --bg-tertiary: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-tertiary: #9ca3af;
+            --border-color: #4b5563;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: var(--bg-primary);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .scanner-region {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+            background: var(--bg-tertiary);
+        }
+        
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            animation: scan 2s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .qr-result {
+            word-break: break-all;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px var(--shadow-color);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px var(--shadow-color);
+        }
+        
+        .scan-area {
+            position: absolute;
+            border: 2px solid #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            cursor: move;
+        }
+        
+        .scan-area-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+        
+        .scan-area-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+        .scan-area-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+        .scan-area-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .scan-area-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+        
+        .logo-preview {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 0.5rem;
+            border: 2px dashed var(--border-color);
+        }
+        
+        input, textarea, select {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .dark-mode-toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: var(--bg-tertiary);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .dark-mode-toggle.active {
+            background: #667eea;
+        }
+        
+        .dark-mode-toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .dark-mode-toggle.active .dark-mode-toggle-slider {
+            transform: translateX(30px);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .instruction-item {
+            transition: all 0.3s ease;
+        }
+        
+        .instruction-item:hover {
+            transform: translateX(5px);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: 1rem;
+            max-width: 800px;
+            max-height: 90vh;
+            width: 90%;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-3"></i>
+            <span id="toastMessage">操作成功</span>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructionsModal" class="modal">
+        <div class="modal-content glass-effect">
+            <div class="modal-header">
+                <h2 class="text-2xl font-bold" style="color: var(--text-primary)">
+                    <i class="fas fa-book text-purple-600 mr-3"></i>功能使用說明
+                </h2>
+                <button class="close-modal" onclick="closeInstructionsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- 掃描功能說明 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4" style="color: var(--text-primary)">
+                            <i class="fas fa-camera text-blue-500 mr-2"></i>QR Code 掃描
+                        </h3>
+                        
+                        <div class="space-y-3">
+                            <div class="instruction-item flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium" style="color: var(--text-primary)">攝影機掃描</h4>
+                                    <p class="text-sm" style="color: var(--text-secondary)">點擊「開始掃描」按鈕，允許瀏覽器使用攝影機，將QR Code對準攝影機即可自動識別</p>
+                                </div>
+                            </div>
+                            
+                            <div class="instruction-item flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium" style="color: var(--text-primary)">圖片上傳掃描</h4>
+                                    <p class="text-sm" style="color: var(--text-secondary)">點擊上傳區域選擇圖片檔案，或直接拖拽圖片到上傳區域，系統會自動掃描QR Code</p>
+                                </div>
+                            </div>
+                            
+                            <div class="instruction-item flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium" style="color: var(--text-primary)">精準掃描區域</h4>
+                                    <p class="text-sm" style="color: var(--text-secondary)">如果圖片掃描失敗，可點擊「調整掃描區域」，手動框選QR Code位置進行精準掃描</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 生成功能說明 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4" style="color: var(--text-primary)">
+                            <i class="fas fa-plus-circle text-green-500 mr-2"></i>QR Code 生成
+                        </h3>
+                        
+                        <div class="space-y-3">
+                            <div class="instruction-item flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium" style="color: var(--text-primary)">文字QR Code</h4>
+                                    <p class="text-sm" style="color: var(--text-secondary)">在輸入框中輸入文字、網址或任何內容，選擇尺寸和顏色後點擊生成</p>
+                                </div>
+                            </div>
+                            
+                            <div class="instruction-item flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium" style="color: var(--text-primary)">添加Logo標誌</h4>
+                                    <p class="text-sm" style="color: var(--text-secondary)">點擊「選擇Logo」上傳圖片，Logo會自動置中並添加白色背景以確保掃描效果</p>
+                                </div>
+                            </div>
+                            
+                            <div class="instruction-item flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                                <div>
+                                    <h4 class="font-medium" style="color: var(--text-primary)">Wi-Fi QR Code</h4>
+                                    <p class="text-sm" style="color: var(--text-secondary)">輸入Wi-Fi名稱、密碼和加密類型，生成後掃描即可自動連接網路</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 使用提示 -->
+                <div class="mt-6 p-4 rounded-lg" style="background: var(--bg-secondary)">
+                    <h4 class="font-semibold mb-2" style="color: var(--text-primary)">
+                        <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>使用提示
+                    </h4>
+                    <ul class="text-sm space-y-1" style="color: var(--text-secondary)">
+                        <li>• 支援明暗主題切換，點擊右上角切換按鈕</li>
+                        <li>• 掃描結果可複製到剪貼簿或直接開啟連結</li>
+                        <li>• 生成的QR Code可下載為PNG圖片或複製到剪貼簿</li>
+                        <li>• 所有操作統計會自動儲存在本地</li>
+                        <li>• 建議使用高對比度的顏色組合以提高掃描成功率</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-effect shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-qrcode text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold" style="color: var(--text-primary)">QR Code 線上處理工具</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="dark-mode-toggle" id="themeToggle" onclick="toggleTheme()">
+                        <div class="dark-mode-toggle-slider"></div>
+                    </div>
+                    <button onclick="showInstructions()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                        <i class="fas fa-info-circle" style="color: var(--text-secondary)"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Feature Cards -->
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="feature-card glass-effect rounded-xl p-6 text-center">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-camera text-white text-2xl"></i>
+                </div>
+                <h3 class="font-semibold mb-2" style="color: var(--text-primary)">即時掃描</h3>
+                <p class="text-sm" style="color: var(--text-secondary)">使用攝影機即時掃描QR Code</p>
+            </div>
+            <div class="feature-card glass-effect rounded-xl p-6 text-center">
+                <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-upload text-white text-2xl"></i>
+                </div>
+                <h3 class="font-semibold mb-2" style="color: var(--text-primary)">圖片上傳</h3>
+                <p class="text-sm" style="color: var(--text-secondary)">上傳圖片檔案掃描QR Code</p>
+            </div>
+            <div class="feature-card glass-effect rounded-xl p-6 text-center">
+                <div class="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-wifi text-white text-2xl"></i>
+                </div>
+                <h3 class="font-semibold mb-2" style="color: var(--text-primary)">Wi-Fi QR Code</h3>
+                <p class="text-sm" style="color: var(--text-secondary)">快速生成Wi-Fi連結QR Code</p>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="glass-effect rounded-xl p-2 mb-6">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="switchTab('scan')" id="scanTab" class="tab-btn flex-1 px-6 py-3 rounded-lg font-medium transition tab-active">
+                    <i class="fas fa-qrcode mr-2"></i>掃描QR Code
+                </button>
+                <button onclick="switchTab('generate')" id="generateTab" class="tab-btn flex-1 px-6 py-3 rounded-lg font-medium transition hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-plus-circle mr-2"></i>生成QR Code
+                </button>
+                <button onclick="switchTab('wifi')" id="wifiTab" class="tab-btn flex-1 px-6 py-3 rounded-lg font-medium transition hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-wifi mr-2"></i>Wi-Fi QR Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="glass-effect rounded-xl p-8">
+            <!-- Scan Tab -->
+            <div id="scanContent" class="tab-content fade-in">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary)">
+                    <i class="fas fa-camera text-purple-600 mr-3"></i>掃描QR Code
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Camera Scan -->
+                    <div>
+                        <h3 class="font-semibold mb-4" style="color: var(--text-primary)">攝影機掃描</h3>
+                        <div class="scanner-region rounded-lg h-80 relative">
+                            <video id="video" class="hidden"></video>
+                            <canvas id="cameraCanvas" class="hidden"></canvas>
+                            <div id="scanPlaceholder" class="flex items-center justify-center h-full" style="color: var(--text-secondary)">
+                                <div class="text-center">
+                                    <i class="fas fa-camera text-6xl mb-4 opacity-50"></i>
+                                    <p>點擊下方按鈕開始掃描</p>
+                                </div>
+                            </div>
+                            <div class="scan-line hidden" id="scanLine"></div>
+                        </div>
+                        <div class="mt-4 flex gap-3">
+                            <button onclick="startCamera()" class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover-scale">
+                                <i class="fas fa-play mr-2"></i>開始掃描
+                            </button>
+                            <button onclick="stopCamera()" class="flex-1 px-6 py-3 rounded-lg font-medium hover-scale" style="background: var(--bg-tertiary); color: var(--text-primary)">
+                                <i class="fas fa-stop mr-2"></i>停止掃描
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Scan -->
+                    <div>
+                        <h3 class="font-semibold mb-4" style="color: var(--text-primary)">圖片上傳掃描</h3>
+                        <div class="border-2 border-dashed rounded-lg p-8 text-center hover:border-purple-500 transition" style="border-color: var(--border-color)">
+                            <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+                            <label for="fileInput" class="cursor-pointer">
+                                <i class="fas fa-cloud-upload-alt text-6xl mb-4" style="color: var(--text-tertiary)"></i>
+                                <p class="mb-2" style="color: var(--text-secondary)">點擊或拖拽圖片至此</p>
+                                <p class="text-sm" style="color: var(--text-tertiary)">支援 JPG, PNG, GIF 格式</p>
+                            </label>
+                        </div>
+                        <div id="uploadPreview" class="mt-4 hidden relative">
+                            <img id="previewImage" class="w-full rounded-lg shadow-lg">
+                            <div id="scanArea" class="scan-area hidden">
+                                <div class="scan-area-handle nw"></div>
+                                <div class="scan-area-handle ne"></div>
+                                <div class="scan-area-handle sw"></div>
+                                <div class="scan-area-handle se"></div>
+                            </div>
+                            <div class="mt-3 flex gap-2">
+                                <button onclick="toggleScanArea()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                                    <i class="fas fa-crop mr-2"></i>調整掃描區域
+                                </button>
+                                <button onclick="scanSelectedArea()" class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                                    <i class="fas fa-search mr-2"></i>掃描選區
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Scan Result -->
+                <div id="scanResult" class="mt-6 p-6 rounded-lg hidden" style="background: var(--bg-secondary)">
+                    <h3 class="font-semibold mb-3" style="color: var(--text-primary)">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>掃描結果
+                    </h3>
+                    <div class="qr-result p-4 rounded-lg border" style="background: var(--bg-primary); border-color: var(--border-color)">
+                        <p id="scanResultText" style="color: var(--text-primary)"></p>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button onclick="copyScanResult()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                            <i class="fas fa-copy mr-2"></i>複製內容
+                        </button>
+                        <button onclick="openScanResult()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                            <i class="fas fa-external-link-alt mr-2"></i>開啟連結
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate Tab -->
+            <div id="generateContent" class="tab-content hidden">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary)">
+                    <i class="fas fa-plus-circle text-green-600 mr-3"></i>生成QR Code
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <div class="mb-4">
+                            <label class="block font-medium mb-2" style="color: var(--text-primary)">輸入內容</label>
+                            <textarea id="qrText" rows="6" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="請輸入要生成QR Code的內容..."></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block font-medium mb-2" style="color: var(--text-primary)">尺寸</label>
+                                <select id="qrSize" class="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                    <option value="128">小 (128x128)</option>
+                                    <option value="256" selected>中 (256x256)</option>
+                                    <option value="512">大 (512x512)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-medium mb-2" style="color: var(--text-primary)">顏色</label>
+                                <input type="color" id="qrColor" value="#000000" class="w-full h-10 rounded-lg cursor-pointer">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block font-medium mb-2" style="color: var(--text-primary)">添加標誌（Logo）</label>
+                            <div class="flex items-center gap-4">
+                                <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+                                <label for="logoInput" class="cursor-pointer px-4 py-2 rounded-lg border-2 border-dashed hover:border-purple-500 transition" style="border-color: var(--border-color)">
+                                    <i class="fas fa-image mr-2"></i>選擇Logo
+                                </label>
+                                <img id="logoPreview" class="logo-preview hidden">
+                                <button onclick="removeLogo()" class="hidden px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button onclick="generateQR()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-lg font-medium hover-scale">
+                            <i class="fas fa-magic mr-2"></i>生成QR Code
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <div class="rounded-lg p-8 text-center" style="background: var(--bg-secondary)">
+                            <div id="qrcode" class="flex justify-center items-center min-h-[256px]">
+                                <div id="qrPlaceholder" style="color: var(--text-tertiary)">
+                                    <i class="fas fa-qrcode text-8xl mb-4"></i>
+                                    <p>QR Code將顯示於此</p>
+                                </div>
+                            </div>
+                            <div id="qrLoading" class="hidden flex justify-center items-center min-h-[256px]">
+                                <div class="text-center">
+                                    <div class="loading-spinner mx-auto mb-4"></div>
+                                    <p style="color: var(--text-secondary)">生成中...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="qrActions" class="mt-4 flex gap-3 hidden">
+                            <button onclick="downloadQR()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                                <i class="fas fa-download mr-2"></i>下載
+                            </button>
+                            <button onclick="copyQR()" class="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
+                                <i class="fas fa-copy mr-2"></i>複製圖片
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WiFi Tab -->
+            <div id="wifiContent" class="tab-content hidden">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--text-primary)">
+                    <i class="fas fa-wifi text-purple-600 mr-3"></i>生成Wi-Fi QR Code
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block font-medium mb-2" style="color: var(--text-primary)">網路名稱 (SSID)</label>
+                                <input type="text" id="wifiSSID" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="請輸入Wi-Fi名稱">
+                            </div>
+                            
+                            <div>
+                                <label class="block font-medium mb-2" style="color: var(--text-primary)">密碼</label>
+                                <div class="relative">
+                                    <input type="password" id="wifiPassword" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="請輸入Wi-Fi密碼">
+                                    <button onclick="togglePassword()" class="absolute right-3 top-3" style="color: var(--text-secondary)">
+                                        <i class="fas fa-eye" id="passwordToggle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block font-medium mb-2" style="color: var(--text-primary)">加密類型</label>
+                                <select id="wifiType" class="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                    <option value="WPA">WPA/WPA2</option>
+                                    <option value="WEP">WEP</option>
+                                    <option value="nopass">無密碼</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block font-medium mb-2" style="color: var(--text-primary)">是否隱藏網路</label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" id="wifiHidden" class="mr-2">
+                                    <span style="color: var(--text-secondary)">隱藏SSID</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button onclick="generateWifiQR()" class="w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-medium hover-scale">
+                            <i class="fas fa-wifi mr-2"></i>生成Wi-Fi QR Code
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <div class="rounded-lg p-8 text-center" style="background: var(--bg-secondary)">
+                            <div id="wifiQrcode" class="flex justify-center items-center min-h-[256px]">
+                                <div id="wifiPlaceholder" style="color: var(--text-tertiary)">
+                                    <i class="fas fa-wifi text-8xl mb-4"></i>
+                                    <p>Wi-Fi QR Code將顯示於此</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="wifiActions" class="mt-4 flex gap-3 hidden">
+                            <button onclick="downloadWifiQR()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                                <i class="fas fa-download mr-2"></i>下載
+                            </button>
+                            <button onclick="copyWifiQR()" class="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
+                                <i class="fas fa-copy mr-2"></i>複製圖片
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-effect rounded-lg p-4 text-center">
+                <p class="text-3xl font-bold text-purple-600" id="scanCount">0</p>
+                <p class="text-sm" style="color: var(--text-secondary)">掃描次數</p>
+            </div>
+            <div class="glass-effect rounded-lg p-4 text-center">
+                <p class="text-3xl font-bold text-green-600" id="generateCount">0</p>
+                <p class="text-sm" style="color: var(--text-secondary)">生成次數</p>
+            </div>
+            <div class="glass-effect rounded-lg p-4 text-center">
+                <p class="text-3xl font-bold text-blue-600" id="wifiCount">0</p>
+                <p class="text-sm" style="color: var(--text-secondary)">Wi-Fi QR Code</p>
+            </div>
+            <div class="glass-effect rounded-lg p-4 text-center">
+                <p class="text-3xl font-bold text-orange-600" id="downloadCount">0</p>
+                <p class="text-sm" style="color: var(--text-secondary)">下載次數</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-effect mt-12">
+        <div class="container mx-auto px-6 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <p class="text-sm" style="color: var(--text-secondary)">網頁設計: koming design by 2025
+                
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+        let qrScanner = null;
+        let currentQR = null;
+        let currentWifiQR = null;
+        let currentLogo = null;
+        let scanAreaVisible = false;
+        let isDragging = false;
+        let isResizing = false;
+        let dragStart = { x: 0, y: 0 };
+        let scanArea = { x: 20, y: 20, width: 150, height: 150 };
+        let currentHandle = null;
+        let cameraStream = null;
+        let scanInterval = null;
+        let stats = {
+            scan: 0,
+            generate: 0,
+            wifi: 0,
+            download: 0
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadTheme();
+            initializeScanArea();
+            
+            // Close modal when clicking outside
+            document.getElementById('instructionsModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeInstructionsModal();
+                }
+            });
+        });
+
+        // Modal functions
+        function showInstructions() {
+            document.getElementById('instructionsModal').classList.add('show');
+        }
+
+        function closeInstructionsModal() {
+            document.getElementById('instructionsModal').classList.remove('show');
+        }
+
+        // Theme functions
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (savedTheme === 'dark') {
+                document.getElementById('themeToggle').classList.add('active');
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            const toggle = document.getElementById('themeToggle');
+            if (newTheme === 'dark') {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+            
+            showToast(`已切換至${newTheme === 'dark' ? '深色' : '淺色'}主題`);
+        }
+
+        // Tab switching
+        function switchTab(tab) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('hover:bg-gray-100', 'dark:hover:bg-gray-700');
+            });
+            
+            // Show selected content
+            document.getElementById(tab + 'Content').classList.remove('hidden');
+            document.getElementById(tab + 'Content').classList.add('fade-in');
+            
+            // Add active class to selected tab
+            const activeTab = document.getElementById(tab + 'Tab');
+            activeTab.classList.add('tab-active');
+            activeTab.classList.remove('hover:bg-gray-100', 'dark:hover:bg-gray-700');
+            
+            // Stop camera if switching away from scan tab
+            if (tab !== 'scan') {
+                stopCamera();
+            }
+        }
+
+        // Camera functions using jsQR
+        async function startCamera() {
+            try {
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('cameraCanvas');
+                const placeholder = document.getElementById('scanPlaceholder');
+                const scanLine = document.getElementById('scanLine');
+                const ctx = canvas.getContext('2d');
+                
+                placeholder.classList.add('hidden');
+                video.classList.remove('hidden');
+                scanLine.classList.remove('hidden');
+                
+                // Get camera stream
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                video.srcObject = cameraStream;
+                video.play();
+                
+                // Set canvas size
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                
+                // Start scanning
+                scanInterval = setInterval(() => {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+                        
+                        if (code) {
+                            handleScanResult({ data: code.data });
+                        }
+                    }
+                }, 100);
+                
+                showToast('攝影機已啟動');
+            } catch (error) {
+                console.error('Camera error:', error);
+                showToast('無法啟動攝影機，請檢查權限設定', 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+            
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            const video = document.getElementById('video');
+            const placeholder = document.getElementById('scanPlaceholder');
+            const scanLine = document.getElementById('scanLine');
+            
+            video.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            scanLine.classList.add('hidden');
+            
+            showToast('攝影機已停止');
+        }
+
+        function handleScanResult(result) {
+            if (result && result.data) {
+                const resultDiv = document.getElementById('scanResult');
+                const resultText = document.getElementById('scanResultText');
+                
+                resultDiv.classList.remove('hidden');
+                resultText.textContent = result.data;
+                
+                stats.scan++;
+                updateStats();
+                
+                // Stop scanning after successful scan
+                stopCamera();
+                
+                showToast('掃描成功！');
+            }
+        }
+
+        // Scan Area functions
+        function initializeScanArea() {
+            const scanAreaEl = document.getElementById('scanArea');
+            const handles = scanAreaEl.querySelectorAll('.scan-area-handle');
+            
+            // Drag to move
+            scanAreaEl.addEventListener('mousedown', (e) => {
+                if (e.target === scanAreaEl) {
+                    isDragging = true;
+                    dragStart.x = e.clientX - scanArea.x;
+                    dragStart.y = e.clientY - scanArea.y;
+                    e.preventDefault();
+                }
+            });
+            
+            // Resize handles
+            handles.forEach(handle => {
+                handle.addEventListener('mousedown', (e) => {
+                    isResizing = true;
+                    currentHandle = handle.className.split(' ')[1];
+                    dragStart.x = e.clientX;
+                    dragStart.y = e.clientY;
+                    e.stopPropagation();
+                    e.preventDefault();
+                });
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    scanArea.x = e.clientX - dragStart.x;
+                    scanArea.y = e.clientY - dragStart.y;
+                    updateScanAreaPosition();
+                } else if (isResizing) {
+                    handleResize(e);
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                isResizing = false;
+                currentHandle = null;
+            });
+        }
+
+        function updateScanAreaPosition() {
+            const scanAreaEl = document.getElementById('scanArea');
+            const preview = document.getElementById('uploadPreview');
+            
+            // Ensure scan area stays within image bounds
+            const maxX = preview.offsetWidth - scanArea.width;
+            const maxY = preview.offsetHeight - scanArea.height;
+            
+            scanArea.x = Math.max(0, Math.min(scanArea.x, maxX));
+            scanArea.y = Math.max(0, Math.min(scanArea.y, maxY));
+            
+            scanAreaEl.style.left = scanArea.x + 'px';
+            scanAreaEl.style.top = scanArea.y + 'px';
+            scanAreaEl.style.width = scanArea.width + 'px';
+            scanAreaEl.style.height = scanArea.height + 'px';
+        }
+
+        function handleResize(e) {
+            const dx = e.clientX - dragStart.x;
+            const dy = e.clientY - dragStart.y;
+            
+            switch(currentHandle) {
+                case 'se':
+                    scanArea.width = Math.max(50, scanArea.width + dx);
+                    scanArea.height = Math.max(50, scanArea.height + dy);
+                    break;
+                case 'sw':
+                    scanArea.x = Math.min(scanArea.x + dx, scanArea.x + scanArea.width - 50);
+                    scanArea.width = Math.max(50, scanArea.width - dx);
+                    scanArea.height = Math.max(50, scanArea.height + dy);
+                    break;
+                case 'ne':
+                    scanArea.y = Math.min(scanArea.y + dy, scanArea.y + scanArea.height - 50);
+                    scanArea.width = Math.max(50, scanArea.width + dx);
+                    scanArea.height = Math.max(50, scanArea.height - dy);
+                    break;
+                case 'nw':
+                    scanArea.x = Math.min(scanArea.x + dx, scanArea.x + scanArea.width - 50);
+                    scanArea.y = Math.min(scanArea.y + dy, scanArea.y + scanArea.height - 50);
+                    scanArea.width = Math.max(50, scanArea.width - dx);
+                    scanArea.height = Math.max(50, scanArea.height - dy);
+                    break;
+            }
+            
+            dragStart.x = e.clientX;
+            dragStart.y = e.clientY;
+            updateScanAreaPosition();
+        }
+
+        function toggleScanArea() {
+            scanAreaVisible = !scanAreaVisible;
+            const scanAreaEl = document.getElementById('scanArea');
+            
+            if (scanAreaVisible) {
+                scanAreaEl.classList.remove('hidden');
+                updateScanAreaPosition();
+                showToast('掃描區域已開啟，可拖拽調整');
+            } else {
+                scanAreaEl.classList.add('hidden');
+                showToast('掃描區域已關閉');
+            }
+        }
+
+        // Improved file upload and scanning using jsQR
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const preview = document.getElementById('uploadPreview');
+            const previewImage = document.getElementById('previewImage');
+            
+            // Show preview
+            preview.classList.remove('hidden');
+            previewImage.src = URL.createObjectURL(file);
+            
+            // Wait for image to load
+            previewImage.onload = function() {
+                // Reset scan area to center of image
+                scanArea = {
+                    x: (previewImage.width - 150) / 2,
+                    y: (previewImage.height - 150) / 2,
+                    width: 150,
+                    height: 150
+                };
+                updateScanAreaPosition();
+                
+                // Try to scan the entire image first
+                scanFullImage(file);
+            };
+        }
+
+        // Function to scan full image using jsQR
+        async function scanFullImage(file) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    const resultDiv = document.getElementById('scanResult');
+                    const resultText = document.getElementById('scanResultText');
+                    
+                    resultDiv.classList.remove('hidden');
+                    resultText.textContent = code.data;
+                    
+                    stats.scan++;
+                    updateStats();
+                    
+                    showToast('圖片掃描成功！');
+                } else {
+                    showToast('圖片已上傳，可使用掃描區域功能精準掃描');
+                }
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        // Function to scan selected area using jsQR
+        async function scanSelectedArea() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showToast('請先上傳圖片', 'error');
+                return;
+            }
+            
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Calculate scale between displayed image and actual image
+                const previewImage = document.getElementById('previewImage');
+                const scaleX = img.width / previewImage.width;
+                const scaleY = img.height / previewImage.height;
+                
+                // Set canvas size to selected area
+                canvas.width = scanArea.width * scaleX;
+                canvas.height = scanArea.height * scaleY;
+                
+                // Draw selected area from the original image
+                ctx.drawImage(
+                    img,
+                    scanArea.x * scaleX,
+                    scanArea.y * scaleY,
+                    scanArea.width * scaleX,
+                    scanArea.height * scaleY,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+                
+                // Scan the selected area
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    const resultDiv = document.getElementById('scanResult');
+                    const resultText = document.getElementById('scanResultText');
+                    
+                    resultDiv.classList.remove('hidden');
+                    resultText.textContent = code.data;
+                    
+                    stats.scan++;
+                    updateStats();
+                    
+                    showToast('選定區域掃描成功！');
+                } else {
+                    showToast('在選定區域中找不到QR Code，請調整掃描區域', 'error');
+                }
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        // Logo upload
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentLogo = e.target.result;
+                const preview = document.getElementById('logoPreview');
+                preview.src = currentLogo;
+                preview.classList.remove('hidden');
+                document.querySelector('label[for="logoInput"]').nextElementSibling.classList.remove('hidden');
+                showToast('Logo已上傳');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeLogo() {
+            currentLogo = null;
+            document.getElementById('logoPreview').classList.add('hidden');
+            document.querySelector('label[for="logoInput"]').nextElementSibling.classList.add('hidden');
+            document.getElementById('logoInput').value = '';
+            showToast('Logo已移除');
+        }
+
+        // Generate QR Code with logo
+        function generateQR() {
+            const text = document.getElementById('qrText').value;
+            const size = parseInt(document.getElementById('qrSize').value);
+            const color = document.getElementById('qrColor').value;
+            
+            if (!text) {
+                showToast('請輸入要生成QR Code的內容', 'error');
+                return;
+            }
+            
+            const qrContainer = document.getElementById('qrcode');
+            const placeholder = document.getElementById('qrPlaceholder');
+            const loading = document.getElementById('qrLoading');
+            const actions = document.getElementById('qrActions');
+            
+            // Show loading
+            placeholder.classList.add('hidden');
+            loading.classList.remove('hidden');
+            qrContainer.innerHTML = '';
+            
+            // Create a temporary div for QR code generation
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            document.body.appendChild(tempDiv);
+            
+            // Generate QR code
+            const qr = new QRCode(tempDiv, {
+                text: text,
+                width: size,
+                height: size,
+                colorDark: color,
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Wait for QR to be generated
+            setTimeout(() => {
+                const qrCanvas = tempDiv.querySelector('canvas');
+                if (qrCanvas) {
+                    // Create a new canvas for the final result
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Draw QR code
+                    ctx.drawImage(qrCanvas, 0, 0);
+                    
+                    // Add logo if exists
+                    if (currentLogo) {
+                        const logoImg = new Image();
+                        logoImg.onload = function() {
+                            const logoSize = size * 0.2;
+                            const logoX = (size - logoSize) / 2;
+                            const logoY = (size - logoSize) / 2;
+                            
+                            // Draw white background for logo
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10);
+                            
+                            // Draw logo with rounded corners
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2, 0, Math.PI * 2);
+                            ctx.closePath();
+                            ctx.clip();
+                            ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+                            ctx.restore();
+                            
+                            // Display final QR
+                            displayQRCode(canvas, placeholder, loading, actions);
+                        };
+                        logoImg.src = currentLogo;
+                    } else {
+                        // Display QR without logo
+                        displayQRCode(canvas, placeholder, loading, actions);
+                    }
+                }
+                
+                // Remove temporary div
+                document.body.removeChild(tempDiv);
+            }, 300);
+        }
+
+        function displayQRCode(canvas, placeholder, loading, actions) {
+            const qrContainer = document.getElementById('qrcode');
+            
+            // Hide loading
+            loading.classList.add('hidden');
+            
+            // Clear container and add canvas
+            qrContainer.innerHTML = '';
+            qrContainer.appendChild(canvas);
+            
+            // Show actions
+            actions.classList.remove('hidden');
+            
+            stats.generate++;
+            updateStats();
+            
+            showToast('QR Code生成成功！');
+        }
+
+        // Generate WiFi QR Code
+        function generateWifiQR() {
+            const ssid = document.getElementById('wifiSSID').value;
+            const password = document.getElementById('wifiPassword').value;
+            const type = document.getElementById('wifiType').value;
+            const hidden = document.getElementById('wifiHidden').checked;
+            
+            if (!ssid) {
+                showToast('請輸入Wi-Fi網路名稱', 'error');
+                return;
+            }
+            
+            // Build WiFi string
+            let wifiString = `WIFI:T:${type};S:${ssid};`;
+            if (type !== 'nopass' && password) {
+                wifiString += `P:${password};`;
+            }
+            if (hidden) {
+                wifiString += `H:true;`;
+            }
+            wifiString += ';';
+            
+            const qrContainer = document.getElementById('wifiQrcode');
+            const placeholder = document.getElementById('wifiPlaceholder');
+            const actions = document.getElementById('wifiActions');
+            
+            // Clear previous QR
+            qrContainer.innerHTML = '';
+            
+            // Generate new QR
+            currentWifiQR = new QRCode(qrContainer, {
+                text: wifiString,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            placeholder.classList.add('hidden');
+            actions.classList.remove('hidden');
+            
+            stats.wifi++;
+            updateStats();
+            
+            showToast('Wi-Fi QR Code生成成功！');
+        }
+
+        // Download functions
+        function downloadQR() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'qrcode.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                stats.download++;
+                updateStats();
+                showToast('QR Code已下載');
+            }
+        }
+
+        function downloadWifiQR() {
+            const canvas = document.querySelector('#wifiQrcode canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'wifi-qrcode.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                stats.download++;
+                updateStats();
+                showToast('Wi-Fi QR Code已下載');
+            }
+        }
+
+        // Copy functions
+        function copyScanResult() {
+            const text = document.getElementById('scanResultText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('內容已複製到剪貼簿');
+            });
+        }
+
+        function openScanResult() {
+            const text = document.getElementById('scanResultText').textContent;
+            if (text.startsWith('http://') || text.startsWith('https://')) {
+                window.open(text, '_blank');
+            } else {
+                showToast('此內容不是有效的網址', 'error');
+            }
+        }
+
+        function copyQR() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                canvas.toBlob(blob => {
+                    const item = new ClipboardItem({ 'image/png': blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        showToast('QR Code已複製到剪貼簿');
+                    });
+                });
+            }
+        }
+
+        function copyWifiQR() {
+            const canvas = document.querySelector('#wifiQrcode canvas');
+            if (canvas) {
+                canvas.toBlob(blob => {
+                    const item = new ClipboardItem({ 'image/png': blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        showToast('Wi-Fi QR Code已複製到剪貼簿');
+                    });
+                });
+            }
+        }
+
+        // Utility functions
+        function togglePassword() {
+            const passwordInput = document.getElementById('wifiPassword');
+            const toggleIcon = document.getElementById('passwordToggle');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const icon = toast.querySelector('i');
+            
+            toastMessage.textContent = message;
+            
+            if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle text-red-500 mr-3';
+            } else {
+                icon.className = 'fas fa-check-circle text-green-500 mr-3';
+            }
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showInfo() {
+            showToast('QR Code 線上處理工具 v2.4 - 專業二維碼處理工具');
+        }
+
+        // Statistics functions
+        function loadStats() {
+            const savedStats = localStorage.getItem('qrCodeStats');
+            if (savedStats) {
+                stats = JSON.parse(savedStats);
+                updateStats();
+            }
+        }
+
+        function saveStats() {
+            localStorage.setItem('qrCodeStats', JSON.stringify(stats));
+        }
+
+        function updateStats() {
+            document.getElementById('scanCount').textContent = stats.scan;
+            document.getElementById('generateCount').textContent = stats.generate;
+            document.getElementById('wifiCount').textContent = stats.wifi;
+            document.getElementById('downloadCount').textContent = stats.download;
+            saveStats();
+        }
+
+        // Drag and drop for file upload
+        const dropZone = document.querySelector('[for="fileInput"]').parentElement;
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-purple-500');
+            dropZone.style.background = 'rgba(102, 126, 234, 0.05)';
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-purple-500');
+            dropZone.style.background = '';
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-purple-500');
+            dropZone.style.background = '';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                handleFileUpload({ target: { files: files } });
+            }
+        });
+    </script>
+</body>
+</html>
