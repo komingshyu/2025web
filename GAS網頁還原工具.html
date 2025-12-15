@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Apps Script 網頁還原工具 - 比較版</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --accent-color: #fbbc05;
+            --danger-color: #ea4335;
+            --dark-color: #202124;
+            --light-color: #f8f9fa;
+            --border-color: #dadce0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4285f4, #1a73e8);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        main {
+            padding: 40px 30px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e8f0fe, #d2e3fc);
+            border-left: 5px solid var(--primary-color);
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+
+        .step {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            background: white;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .step-number {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .step-number.completed {
+            background: var(--secondary-color);
+        }
+
+        .step-number.processing {
+            background: var(--accent-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2);
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            gap: 12px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .primary-button {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .primary-button:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+
+        .secondary-button {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .secondary-button:hover {
+            background: rgba(66, 133, 244, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .progress-container {
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--secondary-color);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(66, 133, 244, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-container {
+            display: none;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        .result-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-title {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            background: white;
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 25px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .debug-info {
+            background: #f1f3f4;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 350px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .notification.error {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 25px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--dark-color);
+            border-top: 1px solid var(--border-color);
+        }
+
+        @media (max-width: 768px) {
+            .button-container {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-magic"></i> Google Apps Script 網頁還原工具</h1>
+            <p class="subtitle">比較版：只執行前3步驟，保留原始代碼</p>
+        </header>
+
+        <main>
+            <div class="info-box">
+                <i class="fas fa-info-circle"></i> 
+                <strong>比較版：</strong>此工具只執行前3步驟（提取、解碼、還原），不做任何代碼清理，以便與原始網頁進行比較。
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">準備開始...</div>
+            </div>
+
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number" id="step1-number">1</div>
+                    <h2 class="step-title"><i class="fas fa-search"></i> 粘上Google Apps Script 網頁代碼</h2>
+                </div>
+                <p>請將您從Google Apps Script 網頁代碼貼上到下方文字框中。</p>
+                <textarea id="input-code" placeholder="在此貼上Google Apps Script 網頁代碼..."></textarea>
+                <div class="button-container">
+                    <button class="secondary-button" onclick="clearInput()">
+                        <i class="fas fa-eraser"></i> 清空
+                    </button>
+                    <button class="primary-button" onclick="startProcess()">
+                        <i class="fas fa-play"></i> 開始處理
+                    </button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p id="loading-text">正在處理中，請稍候...</p>
+            </div>
+
+            <div class="result-container" id="result-container">
+                <div class="result-header">
+                    <h3 class="result-title"><i class="fas fa-cogs"></i> 處理結果</h3>
+                    <div class="button-container">
+                        <button class="secondary-button" onclick="copyResult()">
+                            <i class="fas fa-copy"></i> 複製結果
+                        </button>
+                        <button class="primary-button" onclick="downloadHtml()">
+                            <i class="fas fa-download"></i> 下載HTML
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('preview')">
+                        <i class="fas fa-eye"></i> 預覽
+                    </div>
+                    <div class="tab" onclick="switchTab('code')">
+                        <i class="fas fa-code"></i> 代碼
+                    </div>
+                    <div class="tab" onclick="switchTab('debug')">
+                        <i class="fas fa-bug"></i> 調試資訊
+                    </div>
+                </div>
+                
+                <div class="tab-content active" id="preview-tab">
+                    <iframe class="preview-frame" id="preview-frame"></iframe>
+                </div>
+                
+                <div class="tab-content" id="code-tab">
+                    <textarea id="output-code" readonly style="min-height: 400px;"></textarea>
+                </div>
+                
+                <div class="tab-content" id="debug-tab">
+                    <div class="debug-info" id="debug-info"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p><i class="fas fa-copyright"></i> 2025 Google Apps Script 網頁還原工具 | 比較版</p>
+            <p>本工具僅供學習和研究使用</p>
+        </footer>
+    </div>
+
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-message">操作成功</span>
+    </div>
+
+    <script>
+        // 全域變數
+        let finalHtml = '';
+        let debugInfo = '';
+
+        // 開始處理
+        function startProcess() {
+            const inputCode = document.getElementById('input-code').value.trim();
+            
+            if (!inputCode) {
+                showNotification('請輸入Google Apps Script 網頁代碼', 'error');
+                return;
+            }
+
+            console.log('開始處理...');
+            
+            // 顯示加載狀態
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('result-container').classList.remove('show');
+            
+            // 重置調試資訊
+            debugInfo = '開始處理Google Apps Script 網頁代碼...\n\n';
+            
+            // 使用setTimeout模擬異步處理
+            setTimeout(() => {
+                try {
+                    // 步驟1: 查找goog.script.init
+                    updateProgress(25, '步驟1: 查找goog.script.init函數...');
+                    const step1Result = findGoogScriptInit(inputCode);
+                    
+                    // 步驟2: 解碼JSON
+                    updateProgress(50, '步驟2: 解碼JSON內容...');
+                    const step2Result = decodeJson(step1Result.paramsOnly);
+                    
+                    // 步驟3: 提取userHtml
+                    updateProgress(75, '步驟3: 提取userHtml...');
+                    const step3Result = extractUserHtml(step2Result.userHtml);
+                    
+                    // 完成
+                    updateProgress(100, '處理完成！');
+                    
+                    // 設定最終結果為還原的userHtml，不做任何清理
+                    finalHtml = step3Result.decodedHtml;
+                    
+                    // 顯示結果
+                    setTimeout(() => {
+                        document.getElementById('loading').classList.remove('show');
+                        document.getElementById('result-container').classList.add('show');
+                        document.getElementById('output-code').value = finalHtml;
+                        document.getElementById('preview-frame').srcdoc = finalHtml;
+                        document.getElementById('debug-info').textContent = debugInfo;
+                        
+                        // 默認顯示預覽標籤頁
+                        switchTab('preview');
+                        
+                        showNotification('處理完成！HTML已成功還原（未清理）', 'success');
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error('處理失敗:', error);
+                    document.getElementById('loading').classList.remove('show');
+                    document.getElementById('debug-info').textContent = debugInfo + '\n\n錯誤: ' + error.message;
+                    document.getElementById('result-container').classList.add('show');
+                    switchTab('debug');
+                    showNotification('處理失敗: ' + error.message, 'error');
+                }
+            }, 1000);
+        }
+
+        // 查找goog.script.init
+        function findGoogScriptInit(inputCode) {
+            debugInfo += '步驟1: 查找goog.script.init函數\n';
+            
+            const startIndex = inputCode.indexOf('goog.script.init(');
+            if (startIndex === -1) {
+                throw new Error('無法找到goog.script.init函數');
+            }
+            
+            debugInfo += `找到goog.script.init在位置: ${startIndex}\n`;
+            
+            let parenCount = 0;
+            let inString = false;
+            let stringChar = '';
+            let endIndex = -1;
+            
+            for (let i = startIndex + 'goog.script.init('.length; i < inputCode.length; i++) {
+                const char = inputCode[i];
+                
+                if (inString) {
+                    if (char === '\\') {
+                        i++;
+                    } else if (char === stringChar) {
+                        inString = false;
+                        stringChar = '';
+                    }
+                } else {
+                    if (char === '"' || char === "'") {
+                        inString = true;
+                        stringChar = char;
+                    } else if (char === '(') {
+                        parenCount++;
+                    } else if (char === ')') {
+                        if (parenCount === 0) {
+                            endIndex = i;
+                            break;
+                        } else {
+                            parenCount--;
+                        }
+                    }
+                }
+            }
+            
+            if (endIndex === -1) {
+                throw new Error('無法找到goog.script.init函數的結束括號');
+            }
+            
+            const fullFunctionCall = inputCode.substring(startIndex, endIndex + 1);
+            const paramsOnly = fullFunctionCall.substring('goog.script.init('.length, fullFunctionCall.length - 1);
+            
+            debugInfo += `提取的參數長度: ${paramsOnly.length} 字符\n`;
+            
+            return {
+                fullFunctionCall: fullFunctionCall,
+                paramsOnly: paramsOnly
+            };
+        }
+
+        // 解碼JSON
+        function decodeJson(encodedString) {
+            debugInfo += '\n步驟2: 解碼JSON內容\n';
+            
+            // 處理Unicode轉義序列
+            let decoded = encodedString.replace(/\\x([0-9A-Fa-f]{2})/g, function(match, hex) {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+            
+            // 處理其他轉義字符
+            decoded = decoded.replace(/\\(.)/g, function(match, char) {
+                switch (char) {
+                    case 'n': return '\n';
+                    case 't': return '\t';
+                    case 'r': return '\r';
+                    case '\\': return '\\';
+                    case '"': return '"';
+                    case "'": return "'";
+                    default: return char;
+                }
+            });
+            
+            // 清理並解析JSON
+            let cleaned = decoded.trim();
+            if (!cleaned.startsWith('{')) {
+                const firstBraceIndex = cleaned.indexOf('{');
+                if (firstBraceIndex !== -1) {
+                    cleaned = cleaned.substring(firstBraceIndex);
+                }
+            }
+            
+            if (!cleaned.endsWith('}')) {
+                const lastBraceIndex = cleaned.lastIndexOf('}');
+                if (lastBraceIndex !== -1) {
+                    cleaned = cleaned.substring(0, lastBraceIndex + 1);
+                }
+            }
+            
+            let jsonData;
+            try {
+                jsonData = JSON.parse(cleaned);
+            } catch (e) {
+                const firstBraceIndex = cleaned.indexOf('{');
+                const lastBraceIndex = cleaned.lastIndexOf('}');
+                if (firstBraceIndex !== -1 && lastBraceIndex !== -1 && firstBraceIndex < lastBraceIndex) {
+                    const extractedJson = cleaned.substring(firstBraceIndex, lastBraceIndex + 1);
+                    jsonData = JSON.parse(extractedJson);
+                    cleaned = extractedJson;
+                } else {
+                    throw new Error('無法解析goog.script.init內容為JSON格式');
+                }
+            }
+            
+            if (!jsonData.userHtml) {
+                throw new Error('在解碼的內容中找不到userHtml欄位');
+            }
+            
+            debugInfo += `JSON解析成功，userHtml長度: ${jsonData.userHtml.length} 字符\n`;
+            
+            return {
+                jsonData: jsonData,
+                userHtml: jsonData.userHtml
+            };
+        }
+
+        // 提取userHtml
+        function extractUserHtml(userHtml) {
+            debugInfo += '\n步驟3: 提取userHtml\n';
+            
+            // 處理Unicode轉義序列
+            let decoded = userHtml.replace(/\\x([0-9A-Fa-f]{2})/g, function(match, hex) {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+            
+            // 處理其他轉義字符
+            decoded = decoded.replace(/\\(.)/g, function(match, char) {
+                switch (char) {
+                    case 'n': return '\n';
+                    case 't': return '\t';
+                    case 'r': return '\r';
+                    case '\\': return '\\';
+                    case '"': return '"';
+                    case "'": return "'";
+                    default: return char;
+                }
+            });
+            
+            debugInfo += `userHtml解碼完成，長度: ${decoded.length} 字符\n`;
+            
+            return {
+                decodedHtml: decoded
+            };
+        }
+
+        // 更新進度
+        function updateProgress(percent, text) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        // 切換標籤頁
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.tab').classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // 清空輸入
+        function clearInput() {
+            document.getElementById('input-code').value = '';
+            document.getElementById('result-container').classList.remove('show');
+            finalHtml = '';
+            debugInfo = '';
+        }
+
+        // 複製結果
+        function copyResult() {
+            if (!finalHtml) {
+                showNotification('沒有可複製的內容', 'error');
+                return;
+            }
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = finalHtml;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            showNotification('HTML已複製到剪貼簿', 'success');
+        }
+
+        // 下載HTML
+        function downloadHtml() {
+            if (!finalHtml) {
+                showNotification('沒有可下載的內容', 'error');
+                return;
+            }
+            
+            const blob = new Blob([finalHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'extracted-app.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('HTML檔案下載成功', 'success');
+        }
+
+        // 顯示通知
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            const notificationMessage = document.getElementById('notification-message');
+            
+            notificationMessage.textContent = message;
+            notification.className = 'notification ' + type;
+            
+            const icon = notification.querySelector('i');
+            if (type === 'success') {
+                icon.className = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle';
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 頁面加載完成後初始化
+        window.onload = function() {
+            console.log('頁面加載完成');
+        };
+    </script>
+</body>
+</html>

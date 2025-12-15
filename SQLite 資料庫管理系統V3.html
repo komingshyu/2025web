@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLite 資料庫管理系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/sql-wasm.js"></script>
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            overflow: hidden;
+        }
+
+        /* Header Styles */
+        .app-header {
+            height: var(--header-height);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .app-header .navbar-brand {
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 1rem;
+            z-index: 999;
+        }
+
+        .db-tree {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .db-tree li {
+            margin: 2px 0;
+        }
+
+        .db-tree .tree-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .db-tree .tree-item:hover {
+            background: #f0f2f5;
+        }
+
+        .db-tree .tree-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .db-tree .tree-item i {
+            font-size: 1.1rem;
+        }
+
+        .db-tree .tree-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .db-tree .tree-item:hover .tree-actions {
+            opacity: 1;
+        }
+
+        .db-tree .tree-actions button {
+            padding: 2px 6px;
+            font-size: 0.8rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 1.5rem;
+            height: calc(100vh - var(--header-height));
+            overflow-y: auto;
+        }
+
+        /* Cards */
+        .custom-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Table Styles */
+        .data-table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .data-table tbody tr.selected {
+            background: #e3f2fd;
+        }
+
+        .data-table td {
+            vertical-align: middle;
+        }
+
+        .data-table th.checkbox-column {
+            width: 50px;
+        }
+
+        .data-table .null-value {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Batch Operations Bar */
+        .batch-operations {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .batch-operations.show {
+            display: flex;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .batch-info {
+            flex: 1;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        /* SQL Editor */
+        .sql-editor {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 200px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .sql-editor:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Buttons */
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        /* File Upload Area */
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-badge.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Tabs */
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 12px 24px;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Modal */
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+
+        /* Column input group */
+        .column-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .column-input-group input, .column-input-group select {
+            flex: 1;
+        }
+
+        /* Table structure item */
+        .table-structure-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-structure-item .column-info {
+            flex: 1;
+        }
+
+        .table-structure-item .column-name {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .table-structure-item .column-type {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .table-structure-item .column-constraints {
+            display: flex;
+            gap: 5px;
+            margin-top: 4px;
+        }
+
+        .constraint-badge {
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .constraint-badge.primary {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .constraint-badge.not-null {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        /* Custom checkbox */
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        /* Delete options */
+        .delete-options {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .delete-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .delete-option:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-dark h-100">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-database-fill-gear"></i> SQLite Manager
+                </a>
+                <div class="d-flex align-items-center gap-3">
+                    <span id="dbStatus" class="status-badge disconnected">
+                        <i class="bi bi-circle-fill"></i> 未連接
+                    </span>
+                    <button class="btn btn-light btn-sm" onclick="showDatabaseMenu()">
+                        <i class="bi bi-database-plus"></i> 資料庫
+                    </button>
+                    <button class="btn btn-light btn-sm" onclick="showHelp()">
+                        <i class="bi bi-question-circle"></i> 說明
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-muted mb-0">資料庫結構</h6>
+                <button class="btn btn-sm btn-outline-primary" onclick="showCreateTableModal()" title="新增資料表">
+                    <i class="bi bi-plus-circle"></i>
+                </button>
+            </div>
+            <ul class="db-tree" id="dbTree">
+                <li class="text-muted text-center py-4">
+                    <i class="bi bi-database-x" style="font-size: 2rem;"></i>
+                    <p class="mt-2">請先載入或建立資料庫</p>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Upload Area (shown when no database is loaded) -->
+        <div id="uploadSection" class="custom-card">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="upload-area" id="uploadArea">
+                        <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #667eea;"></i>
+                        <h4 class="mt-3">上傳 SQLite 資料庫</h4>
+                        <p class="text-muted">拖放 .db 檔案到這裡，或點擊選擇檔案</p>
+                        <input type="file" id="dbFileInput" accept=".db,.sqlite,.sqlite3" style="display: none;">
+                        <button class="btn btn-gradient mt-3" onclick="document.getElementById('dbFileInput').click()">
+                            <i class="bi bi-folder-open"></i> 選擇檔案
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="custom-card h-100 d-flex flex-column justify-content-center">
+                        <h5 class="mb-3"><i class="bi bi-plus-square"></i> 建立新資料庫</h5>
+                        <p class="text-muted">建立一個全新的空白 SQLite 資料庫</p>
+                        <button class="btn btn-gradient" onclick="createNewDatabase()">
+                            <i class="bi bi-database-add"></i> 建立空白資料庫
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Content (shown when database is loaded) -->
+        <div id="dbContent" style="display: none;">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#tablePanel" type="button">
+                        <i class="bi bi-table"></i> 資料表
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#queryPanel" type="button">
+                        <i class="bi bi-code-slash"></i> SQL 查詢
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="schema-tab" data-bs-toggle="tab" data-bs-target="#schemaPanel" type="button">
+                        <i class="bi bi-diagram-3"></i> 結構
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="export-tab" data-bs-toggle="tab" data-bs-target="#exportPanel" type="button">
+                        <i class="bi bi-download"></i> 匯出
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabContent">
+                <!-- Table Panel -->
+                <div class="tab-pane fade show active" id="tablePanel">
+                    <div class="custom-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-table"></i> 
+                                <span id="currentTableName">選擇一個資料表</span>
+                            </h5>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="refreshTable()">
+                                    <i class="bi bi-arrow-clockwise"></i> 重新整理
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="showAddRowModal()">
+                                    <i class="bi bi-plus-circle"></i> 新增資料
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Batch Operations Bar -->
+                        <div id="batchOperations" class="batch-operations">
+                            <div class="batch-info">
+                                已選擇 <span id="selectedCount">0</span> 筆資料
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="selectAll()">
+                                    <i class="bi bi-check-all"></i> 全選
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">
+                                    <i class="bi bi-x-square"></i> 取消選擇
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="showBatchDeleteModal()">
+                                    <i class="bi bi-trash"></i> 批次刪除
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="tableContent">
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-table" style="font-size: 3rem;"></i>
+                                <p class="mt-3">請從左側選擇一個資料表</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Query Panel -->
+                <div class="tab-pane fade" id="queryPanel">
+                    <div class="custom-card">
+                        <h5 class="mb-3"><i class="bi bi-code-slash"></i> SQL 查詢編輯器</h5>
+                        <textarea id="sqlEditor" class="form-control sql-editor" placeholder="輸入 SQL 查詢語句...&#10;例如: SELECT * FROM table_name LIMIT 10;"></textarea>
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-gradient" onclick="executeSQL()">
+                                <i class="bi bi-play-fill"></i> 執行查詢
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearSQLEditor()">
+                                <i class="bi bi-x-circle"></i> 清空
+                            </button>
+                        </div>
+                        <div id="queryResult" class="mt-4"></div>
+                    </div>
+                </div>
+
+                <!-- Schema Panel -->
+                <div class="tab-pane fade" id="schemaPanel">
+                    <div class="custom-card">
+                        <h5 class="mb-3"><i class="bi bi-diagram-3"></i> 資料庫結構</h5>
+                        <div id="schemaContent"></div>
+                    </div>
+                </div>
+
+                <!-- Export Panel -->
+                <div class="tab-pane fade" id="exportPanel">
+                    <div class="custom-card">
+                        <h5 class="mb-3"><i class="bi bi-download"></i> 匯出資料</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">選擇資料表</label>
+                                    <select id="exportTableSelect" class="form-select">
+                                        <option value="">所有資料表</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">匯出格式</label>
+                                    <select id="exportFormat" class="form-select">
+                                        <option value="json">JSON</option>
+                                        <option value="csv">CSV</option>
+                                        <option value="sql">SQL</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-gradient" onclick="exportData()">
+                                    <i class="bi bi-download"></i> 開始匯出
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-info-circle"></i> 匯出說明</h6>
+                                    <ul class="mb-0">
+                                        <li>JSON: 適合程式開發使用</li>
+                                        <li>CSV: 適合 Excel 開啟</li>
+                                        <li>SQL: 可用於重建資料庫</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Database Menu Modal -->
+    <div class="modal fade" id="databaseMenuModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">資料庫管理</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="createNewDatabase(); bootstrap.Modal.getInstance(document.getElementById('databaseMenuModal')).hide();">
+                            <i class="bi bi-database-add"></i> 建立新資料庫
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="document.getElementById('dbFileInput').click(); bootstrap.Modal.getInstance(document.getElementById('databaseMenuModal')).hide();">
+                            <i class="bi bi-folder-open"></i> 載入現有資料庫
+                        </button>
+                        <button class="btn btn-outline-success" onclick="saveDatabase(); bootstrap.Modal.getInstance(document.getElementById('databaseMenuModal')).hide();">
+                            <i class="bi bi-download"></i> 儲存資料庫
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Table Modal -->
+    <div class="modal fade" id="createTableModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">建立新資料表</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">資料表名稱</label>
+                        <input type="text" class="form-control" id="newTableName" placeholder="輸入資料表名稱">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">欄位定義</label>
+                        <div id="columnsContainer">
+                            <div class="column-input-group">
+                                <input type="text" class="form-control" placeholder="欄位名稱" data-field="name">
+                                <select class="form-select" data-field="type">
+                                    <option value="INTEGER">INTEGER</option>
+                                    <option value="TEXT">TEXT</option>
+                                    <option value="REAL">REAL</option>
+                                    <option value="BLOB">BLOB</option>
+                                    <option value="NUMERIC">NUMERIC</option>
+                                </select>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" data-field="pk">
+                                    <label class="form-check-label">PK</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" data-field="notnull">
+                                    <label class="form-check-label">NOT NULL</label>
+                                </div>
+                                <button class="btn btn-sm btn-danger" onclick="removeColumn(this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="addColumn()">
+                            <i class="bi bi-plus"></i> 新增欄位
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-gradient" onclick="createTable()">建立</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Table Modal -->
+    <div class="modal fade" id="editTableModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">編輯資料表結構</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">資料表名稱</label>
+                        <input type="text" class="form-control" id="editTableName" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">現有欄位</label>
+                        <div id="existingColumns"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">新增欄位</label>
+                        <div id="newColumnsContainer">
+                            <div class="column-input-group">
+                                <input type="text" class="form-control" placeholder="欄位名稱" data-field="name">
+                                <select class="form-select" data-field="type">
+                                    <option value="INTEGER">INTEGER</option>
+                                    <option value="TEXT">TEXT</option>
+                                    <option value="REAL">REAL</option>
+                                    <option value="BLOB">BLOB</option>
+                                    <option value="NUMERIC">NUMERIC</option>
+                                </select>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" data-field="notnull">
+                                    <label class="form-check-label">NOT NULL</label>
+                                </div>
+                                <button class="btn btn-sm btn-danger" onclick="removeNewColumn(this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="addNewColumn()">
+                            <i class="bi bi-plus"></i> 新增欄位
+                        </button>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>注意：</strong>SQLite 限制只能新增欄位，無法刪除或修改現有欄位。
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-gradient" onclick="saveTableStructure()">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Table Modal -->
+    <div class="modal fade" id="deleteTableModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">刪除資料表</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>警告：</strong>此操作無法復原！
+                    </div>
+                    <p>確定要刪除資料表 <strong id="deleteTableName"></strong> 嗎？</p>
+                    <p>所有資料將會永久遺失。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeleteTable()">確定刪除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Delete Modal -->
+    <div class="modal fade" id="batchDeleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">批次刪除資料</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>警告：</strong>此操作無法復原！
+                    </div>
+                    <p>確定要刪除已選擇的 <strong id="batchDeleteCount">0</strong> 筆資料嗎？</p>
+                    <p>所有資料將會永久遺失。</p>
+                    
+                    <div class="delete-options">
+                        <h6>刪除選項：</h6>
+                        <div class="delete-option">
+                            <input type="radio" name="deleteMethod" id="deleteMethodStandard" value="standard" checked>
+                            <label for="deleteMethodStandard">
+                                <strong>標準刪除</strong> - 使用主鍵精確匹配（推薦）
+                            </label>
+                        </div>
+                        <div class="delete-option">
+                            <input type="radio" name="deleteMethod" id="deleteMethodForce" value="force">
+                            <label for="deleteMethodForce">
+                                <strong>強制刪除</strong> - 使用所有欄位匹配（包含 NULL 值）
+                            </label>
+                        </div>
+                        <div class="delete-option">
+                            <input type="radio" name="deleteMethod" id="deleteMethodRowid" value="rowid">
+                            <label for="deleteMethodRowid">
+                                <strong>ROWID 刪除</strong> - 使用內部 ROWID（最強制）
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>將要刪除的資料：</h6>
+                        <div id="batchDeletePreview" class="border rounded p-2" style="max-height: 200px; overflow-y: auto; font-size: 0.9rem;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmBatchDelete()">確定刪除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Row Modal -->
+    <div class="modal fade" id="rowModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rowModalTitle">新增資料</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="rowForm">
+                        <div id="rowFormFields"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-gradient" onclick="saveRow()">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">使用說明</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>基本操作</h6>
+                    <ul>
+                        <li>可以建立新的空白資料庫或載入現有的 .db 檔案</li>
+                        <li>左側邊欄顯示所有資料表</li>
+                        <li>點擊資料表名稱查看內容</li>
+                    </ul>
+                    <h6>功能說明</h6>
+                    <ul>
+                        <li><strong>建立資料庫:</strong> 建立全新的空白 SQLite 資料庫</li>
+                        <li><strong>建立資料表:</strong> 定義欄位和類型建立新表</li>
+                        <li><strong>編輯資料表:</strong> 新增欄位到現有資料表</li>
+                        <li><strong>刪除資料表:</strong> 刪除整個資料表及其資料</li>
+                        <li><strong>批次刪除:</strong> 選擇多筆資料同時刪除，支援 NULL 值</li>
+                        <li><strong>資料表:</strong> 瀏覽、編輯、新增、刪除資料</li>
+                        <li><strong>SQL 查詢:</strong> 執行自訂 SQL 語句</li>
+                        <li><strong>結構:</strong> 查看資料庫結構和索引</li>
+                        <li><strong>匯出:</strong> 將資料匯出為各種格式</li>
+                    </ul>
+                    <h6>刪除說明</h6>
+                    <ul>
+                        <li><strong>標準刪除:</strong> 使用主鍵匹配，適合一般情況</li>
+                        <li><strong>強制刪除:</strong> 使用所有欄位匹配，可處理 NULL 值</li>
+                        <li><strong>ROWID 刪除:</strong> 使用 SQLite 內部 ROWID，最強制的方法</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let db = null;
+        let currentTable = null;
+        let tableSchemas = {};
+        let currentEditIndex = null;
+        let currentTableData = null;
+        let currentDatabaseName = null;
+        let tableToDelete = null;
+        let selectedRows = new Set();
+        let tableRowids = {};
+
+        // Initialize SQL.js
+        let sqlPromise = initSqlJs({
+            locateFile: file => `https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/${file}`
+        });
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const dbFileInput = document.getElementById('dbFileInput');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        dbFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Create new database
+        function createNewDatabase() {
+            try {
+                sqlPromise.then(SQL => {
+                    db = new SQL.Database();
+                    currentDatabaseName = 'new_database.db';
+                    updateConnectionStatus(true);
+                    loadDatabaseStructure();
+                    showDatabaseContent();
+                    showNotification('成功建立新資料庫', 'success');
+                });
+            } catch (error) {
+                console.error('Error creating database:', error);
+                showNotification('建立資料庫失敗: ' + error.message, 'error');
+            }
+        }
+
+        // Save database
+        function saveDatabase() {
+            if (!db) {
+                showNotification('沒有可儲存的資料庫', 'warning');
+                return;
+            }
+
+            try {
+                const data = db.export();
+                const blob = new Blob([data], { type: 'application/x-sqlite3' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentDatabaseName || 'database.db';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showNotification('資料庫儲存成功', 'success');
+            } catch (error) {
+                console.error('Error saving database:', error);
+                showNotification('儲存資料庫失敗: ' + error.message, 'error');
+            }
+        }
+
+        async function handleFile(file) {
+            if (!file.name.match(/\.(db|sqlite|sqlite3)$/i)) {
+                showNotification('請選擇有效的 SQLite 資料庫檔案', 'error');
+                return;
+            }
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const uInt8Array = new Uint8Array(arrayBuffer);
+                const SQL = await sqlPromise;
+                db = new SQL.Database(uInt8Array);
+                currentDatabaseName = file.name;
+                
+                updateConnectionStatus(true);
+                await loadDatabaseStructure();
+                showDatabaseContent();
+                showNotification(`成功載入資料庫: ${file.name}`, 'success');
+            } catch (error) {
+                console.error('Error loading database:', error);
+                showNotification('載入資料庫失敗: ' + error.message, 'error');
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusBadge = document.getElementById('dbStatus');
+            if (connected) {
+                statusBadge.className = 'status-badge connected';
+                statusBadge.innerHTML = '<i class="bi bi-circle-fill"></i> 已連接';
+            } else {
+                statusBadge.className = 'status-badge disconnected';
+                statusBadge.innerHTML = '<i class="bi bi-circle-fill"></i> 未連接';
+            }
+        }
+
+        async function loadDatabaseStructure() {
+            try {
+                const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                const dbTree = document.getElementById('dbTree');
+                dbTree.innerHTML = '';
+
+                if (tables.length === 0) {
+                    dbTree.innerHTML = '<li class="text-muted text-center py-4">沒有資料表，點擊 + 按鈕建立</li>';
+                    return;
+                }
+
+                // Load schemas for all tables
+                for (const [tableName] of tables[0].values) {
+                    try {
+                        const schemaResult = db.exec(`PRAGMA table_info(${tableName})`);
+                        if (schemaResult.length > 0) {
+                            tableSchemas[tableName] = schemaResult[0].values;
+                        }
+                    } catch (e) {
+                        console.warn('Error loading schema for table ' + tableName, e);
+                    }
+                }
+
+                tables[0].values.forEach(([tableName]) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="tree-item">
+                            <div onclick="selectTable('${tableName}')" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                <i class="bi bi-table"></i>
+                                <span>${tableName}</span>
+                            </div>
+                            <div class="tree-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="showEditTableModal('${tableName}'); event.stopPropagation();" title="編輯結構">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="showDeleteTableModal('${tableName}'); event.stopPropagation();" title="刪除資料表">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    dbTree.appendChild(li);
+                });
+
+                // Update export table select
+                const exportSelect = document.getElementById('exportTableSelect');
+                exportSelect.innerHTML = '<option value="">所有資料表</option>';
+                tables[0].values.forEach(([tableName]) => {
+                    const option = document.createElement('option');
+                    option.value = tableName;
+                    option.textContent = tableName;
+                    exportSelect.appendChild(option);
+                });
+
+                // Load schema display
+                loadSchema();
+            } catch (error) {
+                console.error('Error loading structure:', error);
+                showNotification('載入資料庫結構失敗', 'error');
+            }
+        }
+
+        function selectTable(tableName) {
+            currentTable = tableName;
+            currentEditIndex = null;
+            selectedRows.clear();
+            tableRowids = {};
+            hideBatchOperations();
+            
+            // Update active state in sidebar
+            document.querySelectorAll('.tree-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Switch to table tab
+            const tableTab = document.getElementById('table-tab');
+            const tab = new bootstrap.Tab(tableTab);
+            tab.show();
+
+            // Load table data
+            loadTableData(tableName);
+        }
+
+        function loadTableData(tableName) {
+            try {
+                // Get table data with ROWID
+                const dataResult = db.exec(`SELECT rowid, * FROM ${tableName}`);
+                currentTableData = dataResult[0] || { columns: [], values: [] };
+                
+                // Store ROWIDs for each row
+                tableRowids = {};
+                if (currentTableData.values.length > 0) {
+                    currentTableData.values.forEach((row, index) => {
+                        tableRowids[index] = row[0]; // First column is rowid
+                    });
+                }
+                
+                document.getElementById('currentTableName').textContent = tableName;
+                
+                if (currentTableData.values.length === 0) {
+                    document.getElementById('tableContent').innerHTML = `
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-3">資料表是空的</p>
+                        </div>
+                    `;
+                    hideBatchOperations();
+                    return;
+                }
+
+                const columns = currentTableData.columns.slice(1); // Skip rowid column
+                const values = currentTableData.values.map(row => row.slice(1)); // Skip rowid
+
+                let html = `
+                    <div class="table-responsive">
+                        <table class="table table-hover data-table">
+                            <thead>
+                                <tr>
+                                    <th class="checkbox-column">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                        </div>
+                                    </th>
+                `;
+
+                columns.forEach(col => {
+                    html += `<th>${col}</th>`;
+                });
+                html += `<th>操作</th></tr></thead><tbody>`;
+
+                values.forEach((row, index) => {
+                    const isSelected = selectedRows.has(index);
+                    html += `<tr class="${isSelected ? 'selected' : ''}">`;
+                    html += `
+                        <td>
+                            <div class="form-check">
+                                <input class="form-check-input row-checkbox" type="checkbox" 
+                                    data-index="${index}" ${isSelected ? 'checked' : ''} 
+                                    onchange="toggleRowSelection(${index})">
+                            </div>
+                        </td>
+                    `;
+                    row.forEach(cell => {
+                        if (cell === null) {
+                            html += `<td><span class="null-value">NULL</span></td>`;
+                        } else {
+                            html += `<td>${escapeHtml(cell.toString())}</td>`;
+                        }
+                    });
+                    html += `
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editRow(${index})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteRow(${index})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+                
+                html += '<div class="alert alert-info mt-3">顯示 ' + values.length + ' 筆資料</div>';
+
+                document.getElementById('tableContent').innerHTML = html;
+                updateBatchOperations();
+            } catch (error) {
+                console.error('Error loading table data:', error);
+                showNotification('載入資料失敗: ' + error.message, 'error');
+            }
+        }
+
+        function refreshTable() {
+            if (currentTable) {
+                selectedRows.clear();
+                hideBatchOperations();
+                loadTableData(currentTable);
+            }
+        }
+
+        // Batch selection functions
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            
+            if (selectAllCheckbox.checked) {
+                // Select all rows
+                rowCheckboxes.forEach(checkbox => {
+                    const index = parseInt(checkbox.dataset.index);
+                    selectedRows.add(index);
+                    checkbox.checked = true;
+                    checkbox.closest('tr').classList.add('selected');
+                });
+            } else {
+                // Deselect all rows
+                selectedRows.clear();
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.closest('tr').classList.remove('selected');
+                });
+            }
+            
+            updateBatchOperations();
+        }
+
+        function toggleRowSelection(index) {
+            const checkbox = document.querySelector(`.row-checkbox[data-index="${index}"]`);
+            const row = checkbox.closest('tr');
+            
+            if (checkbox.checked) {
+                selectedRows.add(index);
+                row.classList.add('selected');
+            } else {
+                selectedRows.delete(index);
+                row.classList.remove('selected');
+            }
+            
+            updateBatchOperations();
+            updateSelectAllCheckbox();
+        }
+
+        function selectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            if (!selectAllCheckbox.checked) {
+                selectAllCheckbox.checked = true;
+                toggleSelectAll();
+            }
+        }
+
+        function deselectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            if (selectAllCheckbox.checked) {
+                selectAllCheckbox.checked = false;
+                toggleSelectAll();
+            }
+        }
+
+        function updateSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const checkedCount = document.querySelectorAll('.row-checkbox:checked').length;
+            
+            if (rowCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCount === rowCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        function updateBatchOperations() {
+            const batchOps = document.getElementById('batchOperations');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedRows.size > 0) {
+                batchOps.classList.add('show');
+                selectedCount.textContent = selectedRows.size;
+            } else {
+                hideBatchOperations();
+            }
+        }
+
+        function hideBatchOperations() {
+            const batchOps = document.getElementById('batchOperations');
+            batchOps.classList.remove('show');
+        }
+
+        // Show batch delete modal
+        function showBatchDeleteModal() {
+            if (selectedRows.size === 0) {
+                showNotification('請先選擇要刪除的資料', 'warning');
+                return;
+            }
+
+            document.getElementById('batchDeleteCount').textContent = selectedRows.size;
+            
+            // Generate preview of data to be deleted
+            let previewHtml = '';
+            const schema = tableSchemas[currentTable];
+            
+            selectedRows.forEach(index => {
+                const row = currentTableData.values[index].slice(1); // Skip rowid
+                let rowText = '';
+                
+                schema.forEach((col, i) => {
+                    if (col[5] === 1) { // Primary key
+                        rowText += `${col[1]}: ${row[i] !== null ? row[i] : 'NULL'}`;
+                    }
+                });
+                
+                if (!rowText) {
+                    // If no primary key, show first few columns
+                    rowText = row.slice(0, 3).map(cell => 
+                        cell !== null ? cell.toString() : 'NULL'
+                    ).join(', ');
+                }
+                
+                previewHtml += `<div class="mb-1">• ${rowText}</div>`;
+            });
+            
+            document.getElementById('batchDeletePreview').innerHTML = previewHtml;
+            
+            const modal = new bootstrap.Modal(document.getElementById('batchDeleteModal'));
+            modal.show();
+        }
+
+        // Confirm batch delete
+        function confirmBatchDelete() {
+            if (selectedRows.size === 0) return;
+
+            try {
+                const deleteMethod = document.querySelector('input[name="deleteMethod"]:checked').value;
+                const schema = tableSchemas[currentTable];
+                let deletedCount = 0;
+                
+                // Start transaction
+                db.run('BEGIN TRANSACTION');
+                
+                try {
+                    selectedRows.forEach(index => {
+                        const row = currentTableData.values[index];
+                        const rowid = tableRowids[index];
+                        let sql = '';
+                        
+                        if (deleteMethod === 'rowid') {
+                            // Use ROWID (most reliable)
+                            sql = `DELETE FROM ${currentTable} WHERE rowid = ${rowid}`;
+                        } else if (deleteMethod === 'force') {
+                            // Use all columns with IS NULL handling
+                            let whereClause = [];
+                            schema.forEach((col, i) => {
+                                const colName = col[1];
+                                const value = row[i + 1]; // +1 to skip rowid
+                                
+                                if (value === null) {
+                                    whereClause.push(`${colName} IS NULL`);
+                                } else {
+                                    whereClause.push(`${colName} = '${escapeSql(value.toString())}'`);
+                                }
+                            });
+                            sql = `DELETE FROM ${currentTable} WHERE ${whereClause.join(' AND ')}`;
+                        } else {
+                            // Standard method using primary key
+                            let whereClause = [];
+                            schema.forEach((col, i) => {
+                                if (col[5] === 1) { // Primary key
+                                    const value = row[i + 1]; // +1 to skip rowid
+                                    if (value === null) {
+                                        whereClause.push(`${col[1]} IS NULL`);
+                                    } else {
+                                        whereClause.push(`${col[1]} = '${escapeSql(value.toString())}'`);
+                                    }
+                                }
+                            });
+
+                            if (whereClause.length === 0) {
+                                // If no primary key, use all columns
+                                schema.forEach((col, i) => {
+                                    const value = row[i + 1]; // +1 to skip rowid
+                                    if (value === null) {
+                                        whereClause.push(`${col[1]} IS NULL`);
+                                    } else {
+                                        whereClause.push(`${col[1]} = '${escapeSql(value.toString())}'`);
+                                    }
+                                });
+                            }
+                            sql = `DELETE FROM ${currentTable} WHERE ${whereClause.join(' AND ')}`;
+                        }
+                        
+                        db.run(sql);
+                        deletedCount++;
+                    });
+                    
+                    // Commit transaction
+                    db.run('COMMIT');
+                    
+                    bootstrap.Modal.getInstance(document.getElementById('batchDeleteModal')).hide();
+                    selectedRows.clear();
+                    hideBatchOperations();
+                    refreshTable();
+                    showNotification(`成功刪除 ${deletedCount} 筆資料 (${deleteMethod})`, 'success');
+                } catch (error) {
+                    // Rollback on error
+                    db.run('ROLLBACK');
+                    throw error;
+                }
+            } catch (error) {
+                console.error('Error batch deleting rows:', error);
+                showNotification('批次刪除失敗: ' + error.message, 'error');
+            }
+        }
+
+        // Show create table modal
+        function showCreateTableModal() {
+            if (!db) {
+                showNotification('請先建立或載入資料庫', 'warning');
+                return;
+            }
+            
+            // Reset form
+            document.getElementById('newTableName').value = '';
+            document.getElementById('columnsContainer').innerHTML = `
+                <div class="column-input-group">
+                    <input type="text" class="form-control" placeholder="欄位名稱" data-field="name">
+                    <select class="form-select" data-field="type">
+                        <option value="INTEGER">INTEGER</option>
+                        <option value="TEXT">TEXT</option>
+                        <option value="REAL">REAL</option>
+                        <option value="BLOB">BLOB</option>
+                        <option value="NUMERIC">NUMERIC</option>
+                    </select>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" data-field="pk">
+                        <label class="form-check-label">PK</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" data-field="notnull">
+                        <label class="form-check-label">NOT NULL</label>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="removeColumn(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('createTableModal'));
+            modal.show();
+        }
+
+        // Show edit table modal
+        function showEditTableModal(tableName) {
+            if (!db) {
+                showNotification('請先建立或載入資料庫', 'warning');
+                return;
+            }
+
+            const schema = tableSchemas[tableName];
+            if (!schema || !Array.isArray(schema)) {
+                showNotification('無法取得資料表結構', 'error');
+                return;
+            }
+
+            document.getElementById('editTableName').value = tableName;
+
+            // Show existing columns
+            let existingHtml = '';
+            schema.forEach(col => {
+                const name = col[1];
+                const type = col[2];
+                const notnull = col[3] === 1;
+                const pk = col[5] === 1;
+
+                existingHtml += `
+                    <div class="table-structure-item">
+                        <div class="column-info">
+                            <div class="column-name">${name}</div>
+                            <div class="column-type">${type}</div>
+                            <div class="column-constraints">
+                                ${pk ? '<span class="constraint-badge primary">PRIMARY KEY</span>' : ''}
+                                ${notnull ? '<span class="constraint-badge not-null">NOT NULL</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('existingColumns').innerHTML = existingHtml;
+
+            // Reset new columns
+            document.getElementById('newColumnsContainer').innerHTML = `
+                <div class="column-input-group">
+                    <input type="text" class="form-control" placeholder="欄位名稱" data-field="name">
+                    <select class="form-select" data-field="type">
+                        <option value="INTEGER">INTEGER</option>
+                        <option value="TEXT">TEXT</option>
+                        <option value="REAL">REAL</option>
+                        <option value="BLOB">BLOB</option>
+                        <option value="NUMERIC">NUMERIC</option>
+                    </select>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" data-field="notnull">
+                        <label class="form-check-label">NOT NULL</label>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="removeNewColumn(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+
+            const modal = new bootstrap.Modal(document.getElementById('editTableModal'));
+            modal.show();
+        }
+
+        // Show delete table modal
+        function showDeleteTableModal(tableName) {
+            tableToDelete = tableName;
+            document.getElementById('deleteTableName').textContent = tableName;
+            const modal = new bootstrap.Modal(document.getElementById('deleteTableModal'));
+            modal.show();
+        }
+
+        // Add column to create table form
+        function addColumn() {
+            const container = document.getElementById('columnsContainer');
+            const columnDiv = document.createElement('div');
+            columnDiv.className = 'column-input-group';
+            columnDiv.innerHTML = `
+                <input type="text" class="form-control" placeholder="欄位名稱" data-field="name">
+                <select class="form-select" data-field="type">
+                    <option value="INTEGER">INTEGER</option>
+                    <option value="TEXT">TEXT</option>
+                    <option value="REAL">REAL</option>
+                    <option value="BLOB">BLOB</option>
+                    <option value="NUMERIC">NUMERIC</option>
+                </select>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" data-field="pk">
+                    <label class="form-check-label">PK</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" data-field="notnull">
+                    <label class="form-check-label">NOT NULL</label>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="removeColumn(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            container.appendChild(columnDiv);
+        }
+
+        // Add new column to edit table form
+        function addNewColumn() {
+            const container = document.getElementById('newColumnsContainer');
+            const columnDiv = document.createElement('div');
+            columnDiv.className = 'column-input-group';
+            columnDiv.innerHTML = `
+                <input type="text" class="form-control" placeholder="欄位名稱" data-field="name">
+                <select class="form-select" data-field="type">
+                    <option value="INTEGER">INTEGER</option>
+                    <option value="TEXT">TEXT</option>
+                    <option value="REAL">REAL</option>
+                    <option value="BLOB">BLOB</option>
+                    <option value="NUMERIC">NUMERIC</option>
+                </select>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" data-field="notnull">
+                    <label class="form-check-label">NOT NULL</label>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="removeNewColumn(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            container.appendChild(columnDiv);
+        }
+
+        // Remove column from create table form
+        function removeColumn(button) {
+            const container = document.getElementById('columnsContainer');
+            if (container.children.length > 1) {
+                button.parentElement.remove();
+            } else {
+                showNotification('至少需要一個欄位', 'warning');
+            }
+        }
+
+        // Remove new column from edit table form
+        function removeNewColumn(button) {
+            button.parentElement.remove();
+        }
+
+        // Create table
+        function createTable() {
+            const tableName = document.getElementById('newTableName').value.trim();
+            if (!tableName) {
+                showNotification('請輸入資料表名稱', 'warning');
+                return;
+            }
+
+            const columnGroups = document.querySelectorAll('#columnsContainer .column-input-group');
+            if (columnGroups.length === 0) {
+                showNotification('請至少定義一個欄位', 'warning');
+                return;
+            }
+
+            let columns = [];
+            let hasPrimaryKey = false;
+
+            columnGroups.forEach(group => {
+                const name = group.querySelector('[data-field="name"]').value.trim();
+                const type = group.querySelector('[data-field="type"]').value;
+                const pk = group.querySelector('[data-field="pk"]').checked;
+                const notnull = group.querySelector('[data-field="notnull"]').checked;
+
+                if (!name) {
+                    showNotification('請輸入欄位名稱', 'warning');
+                    return;
+                }
+
+                if (pk) hasPrimaryKey = true;
+
+                let columnDef = `"${name}" ${type}`;
+                if (pk) columnDef += ' PRIMARY KEY';
+                if (notnull && !pk) columnDef += ' NOT NULL';
+                
+                columns.push(columnDef);
+            });
+
+            if (columns.length === 0) return;
+
+            try {
+                const sql = `CREATE TABLE "${tableName}" (${columns.join(', ')})`;
+                db.run(sql);
+                
+                bootstrap.Modal.getInstance(document.getElementById('createTableModal')).hide();
+                loadDatabaseStructure();
+                showNotification(`資料表 ${tableName} 建立成功`, 'success');
+            } catch (error) {
+                console.error('Error creating table:', error);
+                showNotification('建立資料表失敗: ' + error.message, 'error');
+            }
+        }
+
+        // Save table structure (add columns)
+        function saveTableStructure() {
+            const tableName = document.getElementById('editTableName').value;
+            const newColumnGroups = document.querySelectorAll('#newColumnsContainer .column-input-group');
+
+            if (newColumnGroups.length === 0) {
+                showNotification('沒有新增欄位', 'info');
+                return;
+            }
+
+            try {
+                newColumnGroups.forEach(group => {
+                    const name = group.querySelector('[data-field="name"]').value.trim();
+                    const type = group.querySelector('[data-field="type"]').value;
+                    const notnull = group.querySelector('[data-field="notnull"]').checked;
+
+                    if (!name) {
+                        showNotification('請輸入欄位名稱', 'warning');
+                        return;
+                    }
+
+                    let columnDef = `"${name}" ${type}`;
+                    if (notnull) columnDef += ' NOT NULL';
+
+                    const sql = `ALTER TABLE "${tableName}" ADD COLUMN ${columnDef}`;
+                    db.run(sql);
+                });
+
+                bootstrap.Modal.getInstance(document.getElementById('editTableModal')).hide();
+                loadDatabaseStructure();
+                if (currentTable === tableName) {
+                    loadTableData(tableName);
+                }
+                showNotification(`資料表 ${tableName} 結構更新成功`, 'success');
+            } catch (error) {
+                console.error('Error saving table structure:', error);
+                showNotification('更新資料表結構失敗: ' + error.message, 'error');
+            }
+        }
+
+        // Confirm delete table
+        function confirmDeleteTable() {
+            if (!tableToDelete) return;
+
+            try {
+                const sql = `DROP TABLE "${tableToDelete}"`;
+                db.run(sql);
+                
+                // Clear current table if it was deleted
+                if (currentTable === tableToDelete) {
+                    currentTable = null;
+                    selectedRows.clear();
+                    hideBatchOperations();
+                    document.getElementById('currentTableName').textContent = '選擇一個資料表';
+                    document.getElementById('tableContent').innerHTML = `
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-table" style="font-size: 3rem;"></i>
+                            <p class="mt-3">請從左側選擇一個資料表</p>
+                        </div>
+                    `;
+                }
+                
+                bootstrap.Modal.getInstance(document.getElementById('deleteTableModal')).hide();
+                loadDatabaseStructure();
+                showNotification(`資料表 ${tableToDelete} 刪除成功`, 'success');
+                tableToDelete = null;
+            } catch (error) {
+                console.error('Error deleting table:', error);
+                showNotification('刪除資料表失敗: ' + error.message, 'error');
+            }
+        }
+
+        function showAddRowModal() {
+            if (!currentTable) {
+                showNotification('請先選擇一個資料表', 'warning');
+                return;
+            }
+
+            currentEditIndex = null;
+            const schema = tableSchemas[currentTable];
+            
+            if (!schema || !Array.isArray(schema)) {
+                showNotification('無法取得資料表結構', 'error');
+                return;
+            }
+
+            let formHtml = '';
+
+            schema.forEach(col => {
+                const cid = col[0];
+                const name = col[1];
+                const type = col[2];
+                const notNull = col[3] === 1;
+                const pk = col[5] === 1;
+
+                if (pk) return; // Skip primary key for insert
+
+                formHtml += `
+                    <div class="mb-3">
+                        <label class="form-label">${name} ${notNull ? '<span class="text-danger">*</span>' : ''}</label>
+                        <input type="text" class="form-control" name="${name}" ${notNull ? 'required' : ''}>
+                        <small class="text-muted">類型: ${type}</small>
+                    </div>
+                `;
+            });
+
+            document.getElementById('rowFormFields').innerHTML = formHtml;
+            document.getElementById('rowModalTitle').textContent = `新增資料到 ${currentTable}`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('rowModal'));
+            modal.show();
+        }
+
+        function editRow(index) {
+            if (!currentTable || !currentTableData || index >= currentTableData.values.length) {
+                showNotification('無法編輯資料', 'error');
+                return;
+            }
+
+            currentEditIndex = index;
+            const schema = tableSchemas[currentTable];
+            
+            if (!schema || !Array.isArray(schema)) {
+                showNotification('無法取得資料表結構', 'error');
+                return;
+            }
+
+            const row = currentTableData.values[index].slice(1); // Skip rowid
+            let formHtml = '';
+
+            schema.forEach((col, i) => {
+                const name = col[1];
+                const type = col[2];
+                const pk = col[5] === 1;
+                const value = row[i];
+
+                formHtml += `
+                    <div class="mb-3">
+                        <label class="form-label">${name} ${pk ? '<span class="text-primary">(主鍵)</span>' : ''}</label>
+                        <input type="text" class="form-control" name="${name}" value="${value !== null ? escapeHtml(value.toString()) : ''}" ${pk ? 'readonly' : ''}>
+                        <small class="text-muted">類型: ${type}</small>
+                    </div>
+                `;
+            });
+
+            document.getElementById('rowFormFields').innerHTML = formHtml;
+            document.getElementById('rowModalTitle').textContent = `編輯 ${currentTable} 的資料`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('rowModal'));
+            modal.show();
+        }
+
+        function saveRow() {
+            const form = document.getElementById('rowForm');
+            const formData = new FormData(form);
+            const schema = tableSchemas[currentTable];
+            
+            if (!schema || !Array.isArray(schema)) {
+                showNotification('無法取得資料表結構', 'error');
+                return;
+            }
+            
+            try {
+                if (currentEditIndex !== null) {
+                    // Update existing row
+                    const row = currentTableData.values[currentEditIndex].slice(1); // Skip rowid
+                    let setClause = [];
+                    let whereClause = [];
+
+                    schema.forEach((col, i) => {
+                        const name = col[1];
+                        const pk = col[5] === 1;
+                        const value = formData.get(name);
+                        
+                        if (pk) {
+                            if (row[i] === null) {
+                                whereClause.push(`${name} IS NULL`);
+                            } else {
+                                whereClause.push(`${name} = '${escapeSql(row[i].toString())}'`);
+                            }
+                        } else {
+                            setClause.push(`${name} = ${value === null || value === '' ? 'NULL' : `'${escapeSql(value)}'`}`);
+                        }
+                    });
+
+                    const sql = `UPDATE ${currentTable} SET ${setClause.join(', ')} WHERE ${whereClause.join(' AND ')}`;
+                    db.run(sql);
+                    showNotification('資料更新成功', 'success');
+                } else {
+                    // Insert new row
+                    let columns = [];
+                    let values = [];
+
+                    schema.forEach(col => {
+                        const name = col[1];
+                        const pk = col[5] === 1;
+                        
+                        if (!pk) {
+                            columns.push(name);
+                            const value = formData.get(name);
+                            values.push(value === null || value === '' ? 'NULL' : `'${escapeSql(value)}'`);
+                        }
+                    });
+
+                    const sql = `INSERT INTO ${currentTable} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+                    db.run(sql);
+                    showNotification('資料新增成功', 'success');
+                }
+                
+                bootstrap.Modal.getInstance(document.getElementById('rowModal')).hide();
+                refreshTable();
+            } catch (error) {
+                console.error('Error saving row:', error);
+                showNotification('儲存失敗: ' + error.message, 'error');
+            }
+        }
+
+        function deleteRow(index) {
+            if (!confirm('確定要刪除這筆資料嗎？')) return;
+
+            try {
+                if (!currentTableData || index >= currentTableData.values.length) {
+                    showNotification('無法刪除資料', 'error');
+                    return;
+                }
+
+                const rowid = tableRowids[index];
+                
+                // Use ROWID for reliable deletion
+                const sql = `DELETE FROM ${currentTable} WHERE rowid = ${rowid}`;
+                db.run(sql);
+                
+                refreshTable();
+                showNotification('資料刪除成功', 'success');
+            } catch (error) {
+                console.error('Error deleting row:', error);
+                showNotification('刪除資料失敗: ' + error.message, 'error');
+            }
+        }
+
+        function executeSQL() {
+            const sql = document.getElementById('sqlEditor').value.trim();
+            if (!sql) {
+                showNotification('請輸入 SQL 查詢', 'warning');
+                return;
+            }
+
+            try {
+                const result = db.exec(sql);
+                const resultDiv = document.getElementById('queryResult');
+                
+                if (result.length === 0) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> 查詢執行成功（沒有返回資料）
+                        </div>
+                    `;
+                    // Refresh structure if DDL was executed
+                    if (sql.toUpperCase().includes('CREATE') || sql.toUpperCase().includes('DROP') || sql.toUpperCase().includes('ALTER')) {
+                        loadDatabaseStructure();
+                    }
+                    return;
+                }
+
+                let html = '<h6 class="mb-3">查詢結果</h6>';
+                html += '<div class="table-responsive"><table class="table table-bordered">';
+                
+                result.forEach(resultSet => {
+                    html += '<thead><tr>';
+                    resultSet.columns.forEach(col => {
+                        html += `<th>${col}</th>`;
+                    });
+                    html += '</tr></thead><tbody>';
+                    
+                    resultSet.values.forEach(row => {
+                        html += '<tr>';
+                        row.forEach(cell => {
+                            html += `<td>${cell !== null ? escapeHtml(cell.toString()) : '<span class="null-value">NULL</span>'}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                });
+                
+                html += '</tbody></table></div>';
+                resultDiv.innerHTML = html;
+                
+                showNotification('查詢執行成功', 'success');
+            } catch (error) {
+                console.error('SQL Error:', error);
+                document.getElementById('queryResult').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>SQL 錯誤:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function clearSQLEditor() {
+            document.getElementById('sqlEditor').value = '';
+            document.getElementById('queryResult').innerHTML = '';
+        }
+
+        function loadSchema() {
+            try {
+                const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                let html = '';
+
+                if (tables.length === 0) {
+                    document.getElementById('schemaContent').innerHTML = '<p class="text-muted">沒有資料表</p>';
+                    return;
+                }
+
+                tables[0].values.forEach(([tableName]) => {
+                    const schema = tableSchemas[tableName];
+                    
+                    if (!schema || !Array.isArray(schema)) {
+                        html += `
+                            <div class="mb-4">
+                                <h6><i class="bi bi-table"></i> ${tableName}</h6>
+                                <p class="text-muted">無法載入結構</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const indexes = db.exec(`PRAGMA index_list(${tableName})`);
+                    
+                    html += `
+                        <div class="mb-4">
+                            <h6><i class="bi bi-table"></i> ${tableName}</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>欄位名稱</th>
+                                            <th>類型</th>
+                                            <th>非空</th>
+                                            <th>預設值</th>
+                                            <th>主鍵</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    schema.forEach(row => {
+                        html += `
+                            <tr>
+                                <td>${row[1]}</td>
+                                <td>${row[2]}</td>
+                                <td>${row[3] ? '是' : '否'}</td>
+                                <td>${row[4] || '-'}</td>
+                                <td>${row[5] ? '是' : '否'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    
+                    if (indexes.length > 0) {
+                        html += '<h6 class="mt-3">索引</h6>';
+                        html += '<ul>';
+                        indexes[0].values.forEach(index => {
+                            html += `<li>${index[1]} (${index[2] === 1 ? '唯一' : '非唯一'})</li>`;
+                        });
+                        html += '</ul>';
+                    }
+                    
+                    html += '</div>';
+                });
+
+                document.getElementById('schemaContent').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading schema:', error);
+                document.getElementById('schemaContent').innerHTML = '<p class="text-danger">載入結構失敗</p>';
+            }
+        }
+
+        function exportData() {
+            const tableName = document.getElementById('exportTableSelect').value;
+            const format = document.getElementById('exportFormat').value;
+            
+            try {
+                let content = '';
+                let filename = '';
+                
+                if (tableName) {
+                    // Export single table
+                    const result = db.exec(`SELECT * FROM ${tableName}`);
+                    if (result.length > 0) {
+                        const data = result[0];
+                        filename = `${tableName}.${format}`;
+                        
+                        switch(format) {
+                            case 'json':
+                                content = JSON.stringify({
+                                    table: tableName,
+                                    columns: data.columns,
+                                    data: data.values
+                                }, null, 2);
+                                break;
+                            case 'csv':
+                                content = arrayToCSV(data);
+                                break;
+                            case 'sql':
+                                content = generateInsertSQL(tableName, data);
+                                break;
+                        }
+                    } else {
+                        showNotification('資料表沒有資料', 'warning');
+                        return;
+                    }
+                } else {
+                    // Export all tables
+                    const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+                    let allData = {};
+                    
+                    tables[0].values.forEach(([name]) => {
+                        try {
+                            const result = db.exec(`SELECT * FROM ${name}`);
+                            if (result.length > 0) {
+                                allData[name] = result[0];
+                            }
+                        } catch (e) {
+                            console.warn('Error exporting table ' + name, e);
+                        }
+                    });
+                    
+                    filename = `database_export.${format}`;
+                    
+                    switch(format) {
+                        case 'json':
+                            content = JSON.stringify(allData, null, 2);
+                            break;
+                        case 'csv':
+                            Object.keys(allData).forEach(table => {
+                                content += `-- Table: ${table}\n`;
+                                content += arrayToCSV(allData[table]) + '\n\n';
+                            });
+                            break;
+                        case 'sql':
+                            Object.keys(allData).forEach(table => {
+                                content += `-- Table: ${table}\n`;
+                                content += generateInsertSQL(table, allData[table]) + '\n\n';
+                            });
+                            break;
+                    }
+                }
+
+                if (!content) {
+                    showNotification('沒有資料可以匯出', 'warning');
+                    return;
+                }
+
+                downloadFile(content, filename);
+                showNotification('資料匯出成功', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showNotification('匯出失敗: ' + error.message, 'error');
+            }
+        }
+
+        function arrayToCSV(data) {
+            if (!data || !data.columns || data.values.length === 0) return '';
+            
+            let csv = data.columns.join(',') + '\n';
+            data.values.forEach(row => {
+                csv += row.map(cell => {
+                    if (cell === null) return '';
+                    let str = cell.toString();
+                    // Escape quotes and wrap in quotes if contains comma or quote
+                    if (str.includes(',') || str.includes('"')) {
+                        str = '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                }).join(',') + '\n';
+            });
+            return csv;
+        }
+
+        function generateInsertSQL(tableName, data) {
+            let sql = '';
+            
+            data.values.forEach(row => {
+                const values = row.map(cell => {
+                    if (cell === null) return 'NULL';
+                    return `'${escapeSql(cell.toString())}'`;
+                }).join(', ');
+                sql += `INSERT INTO ${tableName} VALUES (${values});\n`;
+            });
+            
+            return sql;
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showDatabaseContent() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('dbContent').style.display = 'block';
+        }
+
+        function showDatabaseMenu() {
+            const modal = new bootstrap.Modal(document.getElementById('databaseMenuModal'));
+            modal.show();
+        }
+
+        function showNotification(message, type = 'info') {
+            const alertClass = {
+                'success': 'alert-success',
+                'error': 'alert-danger',
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            }[type];
+
+            const icon = {
+                'success': 'bi-check-circle',
+                'error': 'bi-exclamation-triangle',
+                'warning': 'bi-exclamation-circle',
+                'info': 'bi-info-circle'
+            }[type];
+
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            notification.style.zIndex = '9999';
+            notification.innerHTML = `
+                <i class="bi ${icon}"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+
+        function showHelp() {
+            const modal = new bootstrap.Modal(document.getElementById('helpModal'));
+            modal.show();
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function escapeSql(text) {
+            return text.replace(/'/g, "''");
+        }
+
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', () => {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+</body>
+</html>
