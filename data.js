@@ -39,6 +39,8 @@ const linksData = [
   { name: "Google sites平台內嵌網頁內容提取器", description: "將Google協作平台設計的內嵌網頁網頁內容提取為獨立網頁", link: "Google內嵌網頁內容提取器.html" },
   { name: "Google Apps Script 網頁還原工具", description: "將Google Apps Script 網頁還原為獨立網頁", link: "GAS網頁還原工具.html" },
   { name: "SQLite 資料庫管理系統V3", description: "可載入sqlite資料庫進行編修管理", link: "SQLite 資料庫管理系統V3.html" },
+  { name: "資料夾檔案日期整理工具", description: "根據資料夾內檔案日期分類整理工具", link: "檔案日期整理工具.html" },
+
 
 
 
